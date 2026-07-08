@@ -1,0 +1,39 @@
+services:
+  mcp-kec:
+    build: .
+    env_file:
+      - .env
+    command: pnpm --filter @voltai/mcp-kec start
+  mcp-cad:
+    build: .
+    env_file:
+      - .env
+    command: pnpm --filter @voltai/mcp-cad start
+  mcp-material:
+    build: .
+    env_file:
+      - .env
+    command: pnpm --filter @voltai/mcp-material start
+  mcp-estimate:
+    build: .
+    env_file:
+      - .env
+    command: pnpm --filter @voltai/mcp-estimate start
+  mcp-project-files:
+    build: .
+    env_file:
+      - .env
+    command: pnpm --filter @voltai/mcp-project-files start
+    volumes:
+      - ${PROJECT_ROOT:-./project}:/project:ro
+    environment:
+      PROJECT_ROOT: /project
+  mcp-agent:
+    build: .
+    env_file:
+      - .env
+    command: pnpm --filter @voltai/mcp-agent start
+    volumes:
+      - ${PROJECT_ROOT:-./project}:/project:ro
+    environment:
+      PROJECT_ROOT: /project

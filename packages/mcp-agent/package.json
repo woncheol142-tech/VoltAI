@@ -1,0 +1,25 @@
+{
+  "name": "@voltai/mcp-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "vitest run --root ../.. packages/mcp-agent/test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@voltai/agent-review": "workspace:*",
+    "@voltai/mcp-core": "workspace:*",
+    "@voltai/mcp-kec": "workspace:*",
+    "@voltai/mcp-project-files": "workspace:*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
