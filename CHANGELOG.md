@@ -40,7 +40,7 @@ Implemented:
 Test status:
 
 - Test Files: 18 passed
-- Tests: 117 passed
+- Tests: 123 passed
 
 ## v0.1 Scaffold
 

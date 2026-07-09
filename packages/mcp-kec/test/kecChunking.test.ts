@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createPageChunks,
@@ -34,6 +34,50 @@ class KeywordEmbeddingProvider implements EmbeddingProvider {
       normalized.includes("ground") || normalized.includes("접지") ? 1 : 0,
       normalized.length > 0 ? 1 : 0,
     ];
+  }
+}
+
+class ObservedEmbeddingProvider implements EmbeddingProvider {
+  active = 0;
+  maxActive = 0;
+  calls = 0;
+
+  constructor(
+    private readonly delayMs = 5,
+    private readonly failuresBeforeSuccess = 0,
+  ) {}
+
+  getMetadata(): EmbeddingProviderMetadata {
+    return {
+      provider: "test",
+      model: "observed",
+    };
+  }
+
+  async embed(text: string): Promise<number[]> {
+    this.calls += 1;
+    this.active += 1;
+    this.maxActive = Math.max(this.maxActive, this.active);
+
+    try {
+      await new Promise((resolve) => {
+        setTimeout(resolve, this.delayMs);
+      });
+
+      if (this.calls <= this.failuresBeforeSuccess) {
+        throw new Error("temporary embedding failure");
+      }
+
+      const normalized = text.toLowerCase();
+
+      return [
+        normalized.includes("cable") || normalized.includes("케이블") ? 1 : 0,
+        normalized.includes("ground") || normalized.includes("접지") ? 1 : 0,
+        normalized.length > 0 ? 1 : 0,
+      ];
+    } finally {
+      this.active -= 1;
+    }
   }
 }
 
@@ -87,6 +131,14 @@ function createTextPdf(text: string): string {
 
 function createStore(root: string): VectorStore {
   return new SqliteVectorStore(join(root, ".voltai", "kec.sqlite"));
+}
+
+function createManyParagraphs(count: number): string {
+  return Array.from(
+    { length: count },
+    () =>
+      "KEC 232.5 cable paragraph alpha alpha alpha cable paragraph beta beta beta cable paragraph gamma gamma gamma",
+  ).join(" ");
 }
 
 describe("KEC chunking", () => {
@@ -248,6 +300,158 @@ describe("KEC chunking", () => {
       similarity: expect.any(Number),
       sourcePath: "kec/kec.pdf",
     });
+  });
+
+  it("limits embedding concurrency to the default of 4", async () => {
+    const root = createTempProject();
+    const vectorStore = createStore(root);
+    const embeddingProvider = new ObservedEmbeddingProvider();
+    writeProjectFile(
+      root,
+      "kec/kec.pdf",
+      createTextPdf(createManyParagraphs(12)),
+    );
+
+    await indexKec(
+      root,
+      {
+        relativePath: "kec/kec.pdf",
+        chunkSize: 15,
+        chunkOverlap: 1,
+      },
+      { embeddingProvider, vectorStore },
+    );
+
+    expect(embeddingProvider.calls).toBeGreaterThan(4);
+    expect(embeddingProvider.maxActive).toBeLessThanOrEqual(4);
+  });
+
+  it("allows embedding concurrency override from index_kec input", async () => {
+    const root = createTempProject();
+    const vectorStore = createStore(root);
+    const embeddingProvider = new ObservedEmbeddingProvider();
+    writeProjectFile(
+      root,
+      "kec/kec.pdf",
+      createTextPdf(createManyParagraphs(12)),
+    );
+
+    await indexKec(
+      root,
+      {
+        relativePath: "kec/kec.pdf",
+        chunkSize: 15,
+        chunkOverlap: 1,
+        embeddingConcurrency: 2,
+      },
+      { embeddingProvider, vectorStore },
+    );
+
+    expect(embeddingProvider.maxActive).toBeLessThanOrEqual(2);
+  });
+
+  it("allows embedding concurrency override from environment", async () => {
+    const root = createTempProject();
+    const vectorStore = createStore(root);
+    const embeddingProvider = new ObservedEmbeddingProvider();
+    const originalConcurrency = process.env.KEC_EMBED_CONCURRENCY;
+    process.env.KEC_EMBED_CONCURRENCY = "3";
+    writeProjectFile(
+      root,
+      "kec/kec.pdf",
+      createTextPdf(createManyParagraphs(12)),
+    );
+
+    try {
+      await indexKec(
+        root,
+        {
+          relativePath: "kec/kec.pdf",
+          chunkSize: 15,
+          chunkOverlap: 1,
+        },
+        { embeddingProvider, vectorStore },
+      );
+
+      expect(embeddingProvider.maxActive).toBeLessThanOrEqual(3);
+    } finally {
+      if (originalConcurrency === undefined) {
+        delete process.env.KEC_EMBED_CONCURRENCY;
+      } else {
+        process.env.KEC_EMBED_CONCURRENCY = originalConcurrency;
+      }
+    }
+  });
+
+  it("retries transient embedding failures and succeeds", async () => {
+    const root = createTempProject();
+    const vectorStore = createStore(root);
+    const embeddingProvider = new ObservedEmbeddingProvider(0, 1);
+    writeProjectFile(root, "kec/kec.pdf", createTextPdf("KEC 232.5 cable sizing rule"));
+
+    const result = await indexKec(
+      root,
+      {
+        relativePath: "kec/kec.pdf",
+        embeddingMaxAttempts: 2,
+        embeddingRetryDelayMs: 0,
+      },
+      { embeddingProvider, vectorStore },
+    );
+
+    expect(result.indexedChunks).toBe(1);
+    expect(embeddingProvider.calls).toBe(2);
+  });
+
+  it("fails indexKec after embedding retry attempts are exhausted", async () => {
+    const root = createTempProject();
+    const vectorStore = createStore(root);
+    const embeddingProvider = new ObservedEmbeddingProvider(0, 10);
+    writeProjectFile(root, "kec/kec.pdf", createTextPdf("KEC 232.5 cable sizing rule"));
+
+    await expect(
+      indexKec(
+        root,
+        {
+          relativePath: "kec/kec.pdf",
+          embeddingMaxAttempts: 2,
+          embeddingRetryDelayMs: 0,
+        },
+        { embeddingProvider, vectorStore },
+      ),
+    ).rejects.toThrow(
+      "Embedding failed for kec/kec.pdf page 1 chunk 0 after 2 attempts: temporary embedding failure",
+    );
+  });
+
+  it("does not write vector store data when embedding fails", async () => {
+    const root = createTempProject();
+    const embeddingProvider = new ObservedEmbeddingProvider(0, 10);
+    const vectorStore: VectorStore = {
+      upsert: vi.fn(),
+      replaceSource: vi.fn(),
+      deleteBySourcePath: vi.fn(),
+      search: vi.fn(),
+      listChunks: vi.fn(),
+      saveIndexMetadata: vi.fn(),
+      getIndexMetadata: vi.fn(),
+      close: vi.fn(),
+    };
+    writeProjectFile(root, "kec/kec.pdf", createTextPdf("KEC 232.5 cable sizing rule"));
+
+    await expect(
+      indexKec(
+        root,
+        {
+          relativePath: "kec/kec.pdf",
+          embeddingMaxAttempts: 1,
+          embeddingRetryDelayMs: 0,
+        },
+        { embeddingProvider, vectorStore },
+      ),
+    ).rejects.toThrow("Embedding failed for kec/kec.pdf page 1 chunk 0");
+
+    expect(vectorStore.replaceSource).not.toHaveBeenCalled();
   });
 
   it("migrates old databases without chunk_index column", async () => {

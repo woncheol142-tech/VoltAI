@@ -161,7 +161,7 @@ pnpm build
 Current v0.2 status:
 
 - Test Files: 18 passed
-- Tests: 117 passed
+- Tests: 123 passed
 
 ## CI
 
