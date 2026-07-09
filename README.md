@@ -6,7 +6,7 @@ VoltAI is an early electric-design AI platform built as a pnpm TypeScript monore
 - Knowledge Layer: local KEC indexing/search with SQLite and replaceable local embeddings.
 - Agent Layer: engineering review orchestration that produces a markdown design review report.
 
-OpenAI API dependencies are intentionally not used in v0.2. LLM behavior is mocked while the workflow and evidence pipeline stabilize.
+OpenAI API dependencies are intentionally not used in v0.2. LLM behavior is mocked while the workflow, evidence pipeline, and MCP runtime safety stabilize.
 
 ## Architecture
 
@@ -113,6 +113,7 @@ OLLAMA_EMBED_MODEL=nomic-embed-text
 ```
 
 Set `KEC_EMBED_PROVIDER=ollama` only when Ollama and the embedding model are available.
+`MCP_TRANSPORT`, `LOG_LEVEL`, and `NODE_ENV` are not required by the current runtime and are intentionally omitted from the default environment template.
 
 ## Run
 
@@ -159,8 +160,8 @@ pnpm build
 
 Current v0.2 status:
 
-- Test Files: 17 passed
-- Tests: 95 passed
+- Test Files: 18 passed
+- Tests: 107 passed
 
 ## CI
 
@@ -172,3 +173,7 @@ pnpm lint
 pnpm test
 pnpm build
 ```
+
+## License
+
+VoltAI is released under the MIT License. See `LICENSE` for details.

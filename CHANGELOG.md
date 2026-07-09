@@ -25,11 +25,18 @@ Implemented:
 - Relationship-based review findings with severity, confidence, and proximity.
 - Docker Compose support for MCP services.
 - GitHub Actions CI for install, lint, test, build.
+- Runtime Safety Fix:
+  - Zod-backed MCP tool input schemas.
+  - MCP protocol round-trip coverage with in-memory client/server transport.
+  - `PROJECT_ROOT` realpath validation and symlink escape defense.
+  - `review_project` constrained to `PROJECT_ROOT`.
+  - `pathToFileURL`-based entrypoint guards.
+- MIT License added for open source readiness.
 
 Test status:
 
-- Test Files: 17 passed
-- Tests: 95 passed
+- Test Files: 18 passed
+- Tests: 107 passed
 
 ## v0.1 Scaffold
 

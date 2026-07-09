@@ -47,6 +47,7 @@ describe("VoltAI monorepo scaffold", () => {
 
     const pkg = JSON.parse(readFileSync(packagePath, "utf8"));
     expect(pkg.packageManager).toMatch(/^pnpm@/);
+    expect(pkg.engines?.node).toBeDefined();
     expect(pkg.scripts).toMatchObject({
       lint: expect.any(String),
       test: expect.any(String),
@@ -84,6 +85,10 @@ describe("VoltAI monorepo scaffold", () => {
     expect(existsSync(readmePath)).toBe(true);
 
     const readme = readFileSync(readmePath, "utf8");
+    const changelog = readFileSync(join(root, "CHANGELOG.md"), "utf8");
+    const nextSteps = readFileSync(join(root, "NEXT_STEPS.md"), "utf8");
+    const workspace = readFileSync(join(root, "pnpm-workspace.yaml"), "utf8");
+
     for (const phrase of [
       "pnpm install",
       "pnpm lint",
@@ -96,6 +101,25 @@ describe("VoltAI monorepo scaffold", () => {
       "mcp-estimate",
     ]) {
       expect(readme).toContain(phrase);
+    }
+
+    expect(readme).toContain("Test Files: 18 passed");
+    expect(readme).toContain("Tests: 107 passed");
+    expect(readme).toContain("MIT License");
+    expect(changelog).toContain("Runtime Safety Fix");
+    expect(changelog).toContain("MIT License");
+    expect(workspace.toLowerCase()).not.toContain("placeholder");
+    expect(nextSteps).toMatch(/## P0[\s\S]*Excel Parser Security/);
+    expect(nextSteps).toContain("xlsx");
+
+    for (const envName of [
+      "PROJECT_ROOT",
+      "KEC_DB_PATH",
+      "KEC_EMBED_PROVIDER",
+      "OLLAMA_BASE_URL",
+      "OLLAMA_EMBED_MODEL",
+    ]) {
+      expect(readme).toContain(envName);
     }
   });
 
