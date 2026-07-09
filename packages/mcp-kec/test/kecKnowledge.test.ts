@@ -36,6 +36,48 @@ class KeywordEmbeddingProvider implements EmbeddingProvider {
   }
 }
 
+function createTimeoutError(timeoutMs: number): Error {
+  const error = new Error(`Ollama embedding request timed out after ${timeoutMs}ms`);
+  error.name = "OllamaTimeoutError";
+  return error;
+}
+
+class TimeoutThenSuccessEmbeddingProvider implements EmbeddingProvider {
+  calls = 0;
+
+  getMetadata(): EmbeddingProviderMetadata {
+    return {
+      provider: "test",
+      model: "timeout-then-success",
+    };
+  }
+
+  async embed(text: string): Promise<number[]> {
+    this.calls += 1;
+
+    if (this.calls === 1) {
+      throw createTimeoutError(10);
+    }
+
+    const normalized = text.toLowerCase();
+
+    return [normalized.includes("cable") ? 1 : 0];
+  }
+}
+
+class AlwaysTimeoutEmbeddingProvider implements EmbeddingProvider {
+  getMetadata(): EmbeddingProviderMetadata {
+    return {
+      provider: "test",
+      model: "always-timeout",
+    };
+  }
+
+  async embed(): Promise<number[]> {
+    throw createTimeoutError(10);
+  }
+}
+
 function createTempProject(): string {
   const root = mkdtempSync(join(tmpdir(), "voltai-kec-"));
   tempRoots.push(root);
@@ -153,6 +195,70 @@ describe("KEC knowledge base", () => {
       text: expect.stringContaining("cable sizing"),
     });
     expect(results[0].similarity).toBeGreaterThan(0);
+  });
+
+  it("retries timeout failures during KEC indexing", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "kec/kec.pdf", createTextPdf("KEC 232.5 cable sizing rule"));
+
+    const embeddingProvider = new TimeoutThenSuccessEmbeddingProvider();
+    const vectorStore = createStore(root);
+
+    const result = await indexKec(
+      root,
+      {
+        relativePath: "kec/kec.pdf",
+        embeddingMaxAttempts: 2,
+        embeddingRetryDelayMs: 0,
+      },
+      { embeddingProvider, vectorStore },
+    );
+
+    expect(result.indexedChunks).toBe(1);
+    expect(embeddingProvider.calls).toBe(2);
+  });
+
+  it("returns a clear timeout failure after indexing retries are exhausted", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "kec/kec.pdf", createTextPdf("KEC 232.5 cable sizing rule"));
+
+    await expect(
+      indexKec(
+        root,
+        {
+          relativePath: "kec/kec.pdf",
+          embeddingMaxAttempts: 2,
+          embeddingRetryDelayMs: 0,
+        },
+        {
+          embeddingProvider: new AlwaysTimeoutEmbeddingProvider(),
+          vectorStore: createStore(root),
+        },
+      ),
+    ).rejects.toThrow(
+      "Embedding failed for kec/kec.pdf page 1 chunk 0 after 2 attempts: Ollama embedding request timed out after 10ms",
+    );
+  });
+
+  it("does not let KEC search hang when the query embedding times out", async () => {
+    const root = createTempProject();
+    const vectorStore = createStore(root);
+    await vectorStore.saveIndexMetadata("kec", {
+      embeddingProvider: "test",
+      embeddingModel: "always-timeout",
+      dimensions: 1,
+      indexedAt: "2026-07-09T00:00:00.000Z",
+    });
+
+    await expect(
+      searchKec(
+        { question: "케이블 규격", topK: 5 },
+        {
+          embeddingProvider: new AlwaysTimeoutEmbeddingProvider(),
+          vectorStore,
+        },
+      ),
+    ).rejects.toThrow("Ollama embedding request timed out after 10ms");
   });
 
   it("isolates search results by collection", async () => {
