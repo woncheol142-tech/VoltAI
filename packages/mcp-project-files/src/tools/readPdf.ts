@@ -20,6 +20,10 @@ export type ReadPdfResult = {
   relativePath: string;
   pageCount: number;
   text: string;
+  pages: Array<{
+    page: number;
+    text: string;
+  }>;
 };
 
 function assertReadPdfInput(input: unknown): ReadPdfInput {
@@ -64,6 +68,25 @@ function appendWithLimit(current: string, addition: string, maxChars?: number): 
   return next.slice(0, maxChars);
 }
 
+function truncatePageTextForAggregate(
+  current: string,
+  pageText: string,
+  maxChars?: number,
+): string {
+  if (maxChars === undefined) {
+    return pageText;
+  }
+
+  const separatorLength = current.length === 0 ? 0 : 1;
+  const remaining = maxChars - current.length - separatorLength;
+
+  if (remaining <= 0) {
+    return "";
+  }
+
+  return pageText.slice(0, remaining);
+}
+
 function hasTextString(item: unknown): item is { str: string } {
   return (
     typeof item === "object" &&
@@ -91,6 +114,7 @@ export async function readPdf(
   });
   const document = await loadingTask.promise;
   let text = "";
+  const pages: ReadPdfResult["pages"] = [];
 
   try {
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
@@ -107,6 +131,15 @@ export async function readPdf(
         .trim();
 
       if (pageText.length > 0) {
+        const includedPageText = truncatePageTextForAggregate(text, pageText, maxChars).trim();
+
+        if (includedPageText.length > 0) {
+          pages.push({
+            page: pageNumber,
+            text: includedPageText,
+          });
+        }
+
         text = appendWithLimit(text, pageText, maxChars);
       }
     }
@@ -125,6 +158,7 @@ export async function readPdf(
     relativePath,
     pageCount: document.numPages,
     text: normalizedText,
+    pages,
   };
 }
 

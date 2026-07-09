@@ -12,6 +12,27 @@ import { analyzeDesignItemRelations } from "./designRelations.js";
 
 export type ReviewProjectInput = {
   projectPath: string;
+  ingestionPolicy?: ReviewIngestionPolicy;
+};
+
+export type ReviewIngestionPolicy = {
+  excel: {
+    sheetSelection: "first";
+    maxRowsPerSheet: number;
+  };
+  pdf: {
+    maxCharsPerFile?: number;
+  };
+  coverageWarnings: boolean;
+};
+
+export const defaultReviewIngestionPolicy: ReviewIngestionPolicy = {
+  excel: {
+    sheetSelection: "first",
+    maxRowsPerSheet: 50,
+  },
+  pdf: {},
+  coverageWarnings: true,
 };
 
 function assertReviewProjectInput(input: ReviewProjectInput): void {
@@ -46,12 +67,92 @@ function buildKecQuestion(pdfs: PdfReadResult[], excels: ExcelReadResult[]): str
   return source.length > 0 ? source.slice(0, 500) : "전기 설계 검토 관련 KEC 조항";
 }
 
+function resolveReviewIngestionPolicy(input: ReviewProjectInput): ReviewIngestionPolicy {
+  return input.ingestionPolicy ?? defaultReviewIngestionPolicy;
+}
+
+function addCoverageWarning(
+  findings: ReviewFinding[],
+  policy: ReviewIngestionPolicy,
+  message: string,
+): void {
+  if (!policy.coverageWarnings) {
+    return;
+  }
+
+  findings.push({
+    severity: "warning",
+    message,
+  });
+}
+
+async function readPdfWithPolicy(
+  file: ProjectFile,
+  ports: ReviewProjectPorts,
+  policy: ReviewIngestionPolicy,
+  findings: ReviewFinding[],
+): Promise<PdfReadResult> {
+  const options =
+    policy.pdf.maxCharsPerFile === undefined
+      ? undefined
+      : { maxChars: policy.pdf.maxCharsPerFile };
+  const pdf = await ports.readPdf(file.relativePath, options);
+
+  if (policy.pdf.maxCharsPerFile !== undefined) {
+    addCoverageWarning(
+      findings,
+      policy,
+      `${file.relativePath} was limited to ${policy.pdf.maxCharsPerFile} characters`,
+    );
+  }
+
+  return pdf;
+}
+
+async function readExcelWithPolicy(
+  file: ProjectFile,
+  ports: ReviewProjectPorts,
+  policy: ReviewIngestionPolicy,
+  findings: ReviewFinding[],
+): Promise<ExcelReadResult> {
+  const workbook = await ports.readExcel(file.relativePath);
+  const selectedSheet = workbook.sheets[0];
+
+  if (!selectedSheet) {
+    return workbook;
+  }
+
+  if (workbook.sheets.length > 1) {
+    addCoverageWarning(
+      findings,
+      policy,
+      `${file.relativePath} has ${workbook.sheets.length} sheets; reviewed first sheet only: ${selectedSheet}`,
+    );
+  }
+
+  const excel = await ports.readExcel(file.relativePath, {
+    sheetName: selectedSheet,
+    maxRows: policy.excel.maxRowsPerSheet,
+  });
+
+  if ((excel.rows?.length ?? 0) === policy.excel.maxRowsPerSheet) {
+    addCoverageWarning(
+      findings,
+      policy,
+      `${file.relativePath} [${selectedSheet}] was limited to ${policy.excel.maxRowsPerSheet} rows`,
+    );
+  }
+
+  return excel;
+}
+
 export async function reviewProject(
   input: ReviewProjectInput,
   ports: ReviewProjectPorts,
 ): Promise<string> {
   try {
     assertReviewProjectInput(input);
+    const ingestionPolicy = resolveReviewIngestionPolicy(input);
 
     const files = await ports.listProjectFiles(input.projectPath);
     const pdfs: PdfReadResult[] = [];
@@ -60,7 +161,7 @@ export async function reviewProject(
 
     for (const file of files.filter(isPdf)) {
       try {
-        pdfs.push(await ports.readPdf(file.relativePath));
+        pdfs.push(await readPdfWithPolicy(file, ports, ingestionPolicy, findings));
       } catch (error) {
         findings.push({
           severity: "warning",
@@ -71,7 +172,7 @@ export async function reviewProject(
 
     for (const file of files.filter(isExcel)) {
       try {
-        excels.push(await ports.readExcel(file.relativePath));
+        excels.push(await readExcelWithPolicy(file, ports, ingestionPolicy, findings));
       } catch (error) {
         findings.push({
           severity: "warning",

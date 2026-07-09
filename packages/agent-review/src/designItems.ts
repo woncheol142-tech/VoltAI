@@ -64,18 +64,34 @@ function evidenceKey(evidence: StructuredEvidence): string {
   ].join(":");
 }
 
-function collectCorpusEvidence(corpus: DesignItemCorpus): StructuredEvidence[] {
-  const pdfLines = corpus.pdfs.flatMap((pdf) =>
-    pdf.text
-      .split(/\n+|(?<=[.!?。])\s+/)
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .map((line) => ({
+function splitEvidenceText(text: string): string[] {
+  return text
+    .split(/\n+|(?<=[.!?。])\s+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+function collectPdfEvidence(pdf: PdfReadResult): StructuredEvidence[] {
+  if (pdf.pages && pdf.pages.length > 0) {
+    return pdf.pages.flatMap((page) =>
+      splitEvidenceText(page.text).map((line) => ({
         sourceType: "pdf" as const,
         sourcePath: pdf.relativePath,
-        excerpt: `${pdf.relativePath}: ${line}`,
+        page: page.page,
+        excerpt: line,
       })),
-  );
+    );
+  }
+
+  return splitEvidenceText(pdf.text).map((line) => ({
+    sourceType: "pdf" as const,
+    sourcePath: pdf.relativePath,
+    excerpt: `${pdf.relativePath}: ${line}`,
+  }));
+}
+
+function collectCorpusEvidence(corpus: DesignItemCorpus): StructuredEvidence[] {
+  const pdfLines = corpus.pdfs.flatMap(collectPdfEvidence);
   const excelLines = corpus.excels.flatMap((excel) =>
     (excel.rows ?? []).flatMap((row, index) => {
       const excerpt = row

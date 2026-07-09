@@ -129,6 +129,40 @@ describe("analyzeDesignItemRelations", () => {
     });
   });
 
+  it("does not treat Excel evidence from different sheets as the same row", () => {
+    const findings = analyzeDesignItemRelations([
+      {
+        name: "차단기",
+        evidence: [
+          {
+            sourceType: "excel",
+            sourcePath: "estimate/load.xlsx",
+            sheetName: "Panel A",
+            rowIndex: 7,
+            excerpt: "MCCB rating",
+          },
+        ],
+      },
+      {
+        name: "부하",
+        evidence: [
+          {
+            sourceType: "excel",
+            sourcePath: "estimate/load.xlsx",
+            sheetName: "Panel B",
+            rowIndex: 7,
+            excerpt: "Load calculation",
+          },
+        ],
+      },
+    ]);
+
+    expect(findings[0]).toMatchObject({
+      proximity: "project-level",
+      confidence: "medium",
+    });
+  });
+
   it("creates a finding for breaker and load", () => {
     const findings = analyzeDesignItemRelations(items(["차단기", "부하"]));
 

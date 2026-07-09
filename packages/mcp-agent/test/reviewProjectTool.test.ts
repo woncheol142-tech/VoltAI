@@ -184,6 +184,21 @@ describe("review_project MCP tool", () => {
     );
   });
 
+  it("local ports forward readPdf and readExcel options to project file readers", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/panel.pdf", createTextPdf("Panel cable design"));
+
+    const ports = createLocalReviewPorts(root);
+    const pdf = await ports.readPdf("docs/panel.pdf", { maxChars: 5 });
+    const workbook = await ports.readExcel("missing.xlsx").catch((error: unknown) => error);
+
+    expect(pdf.text).toBe("Panel");
+    expect(workbook).toBeInstanceOf(Error);
+    await expect(ports.readExcel("missing.xlsx", { sheetName: "Summary", maxRows: 50 })).rejects.toThrow(
+      "Excel file does not exist",
+    );
+  });
+
   it("local ports reuse one vector store across multiple searchKec calls", async () => {
     const root = createTempProject();
     const vectorStore = {

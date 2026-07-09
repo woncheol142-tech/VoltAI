@@ -29,6 +29,37 @@ describe("extractDesignItems", () => {
     expect(items[0].evidence[0]).not.toHaveProperty("page");
   });
 
+  it("extracts PDF evidence with page provenance when page text is available", () => {
+    const items = extractDesignItems({
+      pdfs: [
+        {
+          relativePath: "docs/design.pdf",
+          pageCount: 2,
+          text: "케이블 포설 계획을 확인한다.\n접지 저항 기준을 확인한다.",
+          pages: [
+            { page: 1, text: "케이블 포설 계획을 확인한다." },
+            { page: 2, text: "접지 저항 기준을 확인한다." },
+          ],
+        },
+      ],
+      excels: [],
+    });
+
+    expect(items.map((item) => item.name)).toEqual(["케이블", "접지"]);
+    expect(items[0].evidence[0]).toEqual({
+      sourceType: "pdf",
+      sourcePath: "docs/design.pdf",
+      page: 1,
+      excerpt: "케이블 포설 계획을 확인한다.",
+    });
+    expect(items[1].evidence[0]).toEqual({
+      sourceType: "pdf",
+      sourcePath: "docs/design.pdf",
+      page: 2,
+      excerpt: "접지 저항 기준을 확인한다.",
+    });
+  });
+
   it("extracts breaker and panel items from Excel rows", () => {
     const items = extractDesignItems({
       pdfs: [],

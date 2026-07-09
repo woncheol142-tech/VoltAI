@@ -10,6 +10,10 @@ export type PdfReadResult = {
   relativePath: string;
   pageCount: number;
   text: string;
+  pages?: Array<{
+    page: number;
+    text: string;
+  }>;
 };
 
 export type ExcelReadResult = {
@@ -64,8 +68,11 @@ export type ReviewLlm = {
 
 export type ReviewProjectPorts = {
   listProjectFiles: (projectPath: string) => Promise<ProjectFile[]>;
-  readPdf: (relativePath: string) => Promise<PdfReadResult>;
-  readExcel: (relativePath: string) => Promise<ExcelReadResult>;
+  readPdf: (relativePath: string, options?: { maxChars?: number }) => Promise<PdfReadResult>;
+  readExcel: (
+    relativePath: string,
+    options?: { sheetName?: string; maxRows?: number },
+  ) => Promise<ExcelReadResult>;
   searchKec: (question: string) => Promise<KecSearchResult[]>;
   llm: ReviewLlm;
   close?: () => Promise<void> | void;

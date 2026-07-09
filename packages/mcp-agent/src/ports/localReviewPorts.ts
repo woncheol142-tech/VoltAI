@@ -28,21 +28,14 @@ export function createLocalReviewPorts(
 
   return {
     listProjectFiles: async (path) => listProjectFiles(path),
-    readPdf: async (relativePath) => readPdf(projectPath, { relativePath }),
-    readExcel: async (relativePath) => {
-      const workbook = await readExcel(projectPath, { relativePath });
-      const firstSheet = workbook.sheets[0];
-
-      if (!firstSheet) {
-        return workbook;
-      }
-
-      return readExcel(projectPath, {
+    readPdf: async (relativePath, options) =>
+      readPdf(projectPath, { relativePath, maxChars: options?.maxChars }),
+    readExcel: async (relativePath, options) =>
+      readExcel(projectPath, {
         relativePath,
-        sheetName: firstSheet,
-        maxRows: 50,
-      });
-    },
+        sheetName: options?.sheetName,
+        maxRows: options?.maxRows,
+      }),
     searchKec: async (question) =>
       searchKec(
         { question, topK: 5 },

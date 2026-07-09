@@ -41,6 +41,10 @@ function formatEvidence(evidence: StructuredEvidence): string {
     return `${evidence.sourcePath}${suffix}: ${evidence.excerpt}`;
   }
 
+  if (evidence.sourceType === "pdf" && evidence.page !== undefined) {
+    return `${evidence.sourcePath} p.${evidence.page}: ${evidence.excerpt}`;
+  }
+
   if (evidence.excerpt.startsWith(`${evidence.sourcePath}:`)) {
     return evidence.excerpt;
   }
