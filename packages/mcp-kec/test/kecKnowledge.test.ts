@@ -117,7 +117,7 @@ describe("KEC knowledge base", () => {
       },
     );
 
-    const chunks = await store.listChunks();
+    const chunks = await store.listChunks("kec");
 
     expect(result).toMatchObject({
       relativePath: "kec/kec.pdf",
@@ -153,6 +153,65 @@ describe("KEC knowledge base", () => {
       text: expect.stringContaining("cable sizing"),
     });
     expect(results[0].similarity).toBeGreaterThan(0);
+  });
+
+  it("isolates search results by collection", async () => {
+    const root = createTempProject();
+    const vectorStore = createStore(root);
+
+    await vectorStore.upsert("kec", [
+      {
+        id: "kec#page=1#chunk=0",
+        sourcePath: "kec.pdf",
+        page: 1,
+        chunkIndex: 0,
+        clause: "KEC 232.5",
+        text: "kec cable rule",
+        embedding: [1, 0, 0],
+      },
+    ]);
+    await vectorStore.upsert("company", [
+      {
+        id: "company#page=1#chunk=0",
+        sourcePath: "company.pdf",
+        page: 1,
+        chunkIndex: 0,
+        clause: null,
+        text: "company cable standard",
+        embedding: [1, 0, 0],
+      },
+    ]);
+
+    const kecResults = await vectorStore.search("kec", [1, 0, 0], 5);
+    const companyResults = await vectorStore.search("company", [1, 0, 0], 5);
+
+    expect(kecResults).toHaveLength(1);
+    expect(kecResults[0].sourcePath).toBe("kec.pdf");
+    expect(companyResults).toHaveLength(1);
+    expect(companyResults[0].sourcePath).toBe("company.pdf");
+  });
+
+  it("re-indexes KEC sourcePath by replacing old chunks", async () => {
+    const root = createTempProject();
+    const sourcePath = "kec/kec.pdf";
+    const embeddingProvider = new KeywordEmbeddingProvider();
+    const vectorStore = createStore(root);
+
+    writeProjectFile(root, sourcePath, createTextPdf("KEC 232.5 cable old rule"));
+    await indexKec(root, { relativePath: sourcePath }, { embeddingProvider, vectorStore });
+
+    writeProjectFile(root, sourcePath, createTextPdf("KEC 140 ground new rule"));
+    await indexKec(root, { relativePath: sourcePath }, { embeddingProvider, vectorStore });
+
+    const chunks = await vectorStore.listChunks("kec");
+
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]).toMatchObject({
+      sourcePath,
+      clause: "KEC 140",
+    });
+    expect(chunks[0].text).toContain("ground new");
+    expect(chunks[0].text).not.toContain("old rule");
   });
 
   it("works without an OpenAI API key", async () => {

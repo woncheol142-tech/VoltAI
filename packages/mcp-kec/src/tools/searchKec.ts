@@ -6,9 +6,10 @@ import { z } from "zod";
 import { createEmbeddingProviderFromEnv, type EmbeddingProvider } from "../knowledge/embedding.js";
 import { assertProjectRoot } from "../knowledge/projectPath.js";
 import { SqliteVectorStore } from "../knowledge/sqliteVectorStore.js";
-import type { KecSearchResult, VectorStore } from "../knowledge/vectorStore.js";
+import type { KecSearchResult, KnowledgeCollection, VectorStore } from "../knowledge/vectorStore.js";
 
 const metadataMismatchError = "KEC index embedding metadata mismatch. Please re-run index_kec.";
+const kecCollection: KnowledgeCollection = "kec";
 
 export type SearchKecInput = {
   question?: string;
@@ -60,7 +61,7 @@ export async function searchKec(
   const { question, topK } = assertSearchKecInput(input);
   const embedding = await deps.embeddingProvider.embed(question);
   const providerMetadata = deps.embeddingProvider.getMetadata();
-  const indexMetadata = await deps.vectorStore.getIndexMetadata();
+  const indexMetadata = await deps.vectorStore.getIndexMetadata(kecCollection);
 
   if (
     !indexMetadata ||
@@ -71,7 +72,7 @@ export async function searchKec(
     throw new Error(metadataMismatchError);
   }
 
-  return deps.vectorStore.search(embedding, topK);
+  return deps.vectorStore.search(kecCollection, embedding, topK);
 }
 
 export function createSearchKecTool(deps: SearchKecToolDependencies = {}): VoltAiTool {
@@ -84,12 +85,20 @@ export function createSearchKecTool(deps: SearchKecToolDependencies = {}): VoltA
     },
     handler: async (input) => {
       const root = assertProjectRoot(process.env.PROJECT_ROOT);
-      const results = await searchKec(input, {
-        embeddingProvider: deps.embeddingProvider ?? createEmbeddingProviderFromEnv(),
-        vectorStore: deps.vectorStore ?? createDefaultVectorStore(root),
-      });
+      const vectorStore = deps.vectorStore ?? createDefaultVectorStore(root);
 
-      return JSON.stringify({ results });
+      try {
+        const results = await searchKec(input, {
+          embeddingProvider: deps.embeddingProvider ?? createEmbeddingProviderFromEnv(),
+          vectorStore,
+        });
+
+        return JSON.stringify({ results });
+      } finally {
+        if (!deps.vectorStore) {
+          await vectorStore.close();
+        }
+      }
     },
   };
 }

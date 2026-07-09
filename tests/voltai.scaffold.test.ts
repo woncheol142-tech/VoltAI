@@ -104,13 +104,17 @@ describe("VoltAI monorepo scaffold", () => {
     }
 
     expect(readme).toContain("Test Files: 18 passed");
-    expect(readme).toContain("Tests: 107 passed");
+    expect(readme).toContain("Tests: 117 passed");
     expect(readme).toContain("MIT License");
     expect(changelog).toContain("Runtime Safety Fix");
     expect(changelog).toContain("MIT License");
     expect(workspace.toLowerCase()).not.toContain("placeholder");
     expect(nextSteps).toMatch(/## P0[\s\S]*Excel Parser Security/);
     expect(nextSteps).toContain("xlsx");
+    expect(readme).toContain("ExcelJS");
+    expect(readme).toContain(".xls");
+    expect(changelog).toContain("ExcelJS");
+    expect(changelog).toContain(".xls");
 
     for (const envName of [
       "PROJECT_ROOT",
@@ -132,5 +136,13 @@ describe("VoltAI monorepo scaffold", () => {
     expect(ci).toContain("pnpm lint");
     expect(ci).toContain("pnpm test");
     expect(ci).toContain("pnpm build");
+  });
+
+  it("uses ExcelJS instead of the vulnerable xlsx package", () => {
+    const packagePath = join(root, "packages", "mcp-project-files", "package.json");
+    const pkg = JSON.parse(readFileSync(packagePath, "utf8"));
+
+    expect(pkg.dependencies).toHaveProperty("exceljs");
+    expect(pkg.dependencies).not.toHaveProperty("xlsx");
   });
 });

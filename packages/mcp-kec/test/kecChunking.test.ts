@@ -160,7 +160,7 @@ describe("KEC chunking", () => {
       },
     );
 
-    const chunks = await vectorStore.listChunks();
+    const chunks = await vectorStore.listChunks("kec");
 
     expect(result.indexedChunks).toBeGreaterThan(1);
     expect(chunks.map((chunk) => chunk.chunkIndex)).toEqual([0, 1, 2]);
@@ -269,6 +269,6 @@ describe("KEC chunking", () => {
 
     const vectorStore = new SqliteVectorStore(dbPath);
 
-    await expect(vectorStore.listChunks()).resolves.toEqual([]);
+    await expect(vectorStore.listChunks("kec")).resolves.toEqual([]);
   });
 });

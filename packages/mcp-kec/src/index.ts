@@ -7,7 +7,9 @@ import { createSearchKecTool } from "./tools/searchKec.js";
 export { createEmbeddingProviderFromEnv } from "./knowledge/embedding.js";
 export { SqliteVectorStore } from "./knowledge/sqliteVectorStore.js";
 export { searchKec } from "./tools/searchKec.js";
+export type { EmbeddingProvider } from "./knowledge/embedding.js";
 export type { KecSearchResult } from "./knowledge/vectorStore.js";
+export type { VectorStore } from "./knowledge/vectorStore.js";
 
 export function createServer() {
   return createVoltAiMcpServer({

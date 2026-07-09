@@ -50,83 +50,87 @@ export async function reviewProject(
   input: ReviewProjectInput,
   ports: ReviewProjectPorts,
 ): Promise<string> {
-  assertReviewProjectInput(input);
-
-  const files = await ports.listProjectFiles(input.projectPath);
-  const pdfs: PdfReadResult[] = [];
-  const excels: ExcelReadResult[] = [];
-  const findings: ReviewFinding[] = [];
-
-  for (const file of files.filter(isPdf)) {
-    try {
-      pdfs.push(await ports.readPdf(file.relativePath));
-    } catch (error) {
-      findings.push({
-        severity: "warning",
-        message: `${file.relativePath}: ${errorMessage(error)}`,
-      });
-    }
-  }
-
-  for (const file of files.filter(isExcel)) {
-    try {
-      excels.push(await ports.readExcel(file.relativePath));
-    } catch (error) {
-      findings.push({
-        severity: "warning",
-        message: `${file.relativePath}: ${errorMessage(error)}`,
-      });
-    }
-  }
-
-  let kecResults: KecSearchResult[] = [];
-
   try {
-    kecResults = await ports.searchKec(buildKecQuestion(pdfs, excels));
-  } catch (error) {
-    findings.push({
-      severity: "warning",
-      message: `KEC search: ${errorMessage(error)}`,
-    });
-  }
+    assertReviewProjectInput(input);
 
-  const itemReviews: DesignItemReview[] = [];
-  const designItems = extractDesignItems({ pdfs, excels });
-  const relationFindings = analyzeDesignItemRelations(designItems);
+    const files = await ports.listProjectFiles(input.projectPath);
+    const pdfs: PdfReadResult[] = [];
+    const excels: ExcelReadResult[] = [];
+    const findings: ReviewFinding[] = [];
 
-  for (const item of designItems) {
-    const itemFindings: ReviewFinding[] = relationFindings
-      .filter((finding) => finding.items.includes(item.name))
-      .map((finding) => ({
-        severity: "warning",
-        message: `${finding.message} (severity: ${finding.severity}, confidence: ${finding.confidence}, proximity: ${finding.proximity})`,
-      }));
-    let itemKecResults: KecSearchResult[] = [];
+    for (const file of files.filter(isPdf)) {
+      try {
+        pdfs.push(await ports.readPdf(file.relativePath));
+      } catch (error) {
+        findings.push({
+          severity: "warning",
+          message: `${file.relativePath}: ${errorMessage(error)}`,
+        });
+      }
+    }
+
+    for (const file of files.filter(isExcel)) {
+      try {
+        excels.push(await ports.readExcel(file.relativePath));
+      } catch (error) {
+        findings.push({
+          severity: "warning",
+          message: `${file.relativePath}: ${errorMessage(error)}`,
+        });
+      }
+    }
+
+    let kecResults: KecSearchResult[] = [];
 
     try {
-      itemKecResults = (await ports.searchKec(`${item.name} KEC 기준`)) ?? [];
+      kecResults = await ports.searchKec(buildKecQuestion(pdfs, excels));
     } catch (error) {
-      itemFindings.push({
+      findings.push({
         severity: "warning",
-        message: errorMessage(error),
+        message: `KEC search: ${errorMessage(error)}`,
       });
     }
 
-    itemReviews.push({
-      name: item.name,
-      evidence: item.evidence,
-      kecResults: itemKecResults,
-      findings: itemFindings,
-    });
-  }
+    const itemReviews: DesignItemReview[] = [];
+    const designItems = extractDesignItems({ pdfs, excels });
+    const relationFindings = analyzeDesignItemRelations(designItems);
 
-  return ports.llm.generateReview({
-    projectPath: input.projectPath,
-    files,
-    pdfs,
-    excels,
-    kecResults,
-    itemReviews,
-    findings,
-  });
+    for (const item of designItems) {
+      const itemFindings: ReviewFinding[] = relationFindings
+        .filter((finding) => finding.items.includes(item.name))
+        .map((finding) => ({
+          severity: "warning",
+          message: `${finding.message} (severity: ${finding.severity}, confidence: ${finding.confidence}, proximity: ${finding.proximity})`,
+        }));
+      let itemKecResults: KecSearchResult[] = [];
+
+      try {
+        itemKecResults = (await ports.searchKec(`${item.name} KEC 기준`)) ?? [];
+      } catch (error) {
+        itemFindings.push({
+          severity: "warning",
+          message: errorMessage(error),
+        });
+      }
+
+      itemReviews.push({
+        name: item.name,
+        evidence: item.evidence,
+        kecResults: itemKecResults,
+        findings: itemFindings,
+      });
+    }
+
+    return ports.llm.generateReview({
+      projectPath: input.projectPath,
+      files,
+      pdfs,
+      excels,
+      kecResults,
+      itemReviews,
+      findings,
+    });
+  } finally {
+    await ports.close?.();
+  }
 }

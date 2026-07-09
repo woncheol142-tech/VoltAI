@@ -11,6 +11,8 @@ export type EmbeddedKecChunk = KecChunk & {
   embedding: number[];
 };
 
+export type KnowledgeCollection = "kec" | "company" | "materials" | "estimates" | "drawings";
+
 export type KecSearchResult = {
   clause: string | null;
   page: number;
@@ -27,9 +29,24 @@ export type KecIndexMetadata = {
 };
 
 export type VectorStore = {
-  upsert: (chunks: EmbeddedKecChunk[]) => Promise<void>;
-  search: (embedding: number[], topK: number) => Promise<KecSearchResult[]>;
-  listChunks: () => Promise<KecChunk[]>;
-  saveIndexMetadata: (metadata: KecIndexMetadata) => Promise<void>;
-  getIndexMetadata: () => Promise<KecIndexMetadata | null>;
+  upsert: (collection: KnowledgeCollection, chunks: EmbeddedKecChunk[]) => Promise<void>;
+  replaceSource: (
+    collection: KnowledgeCollection,
+    sourcePath: string,
+    chunks: EmbeddedKecChunk[],
+    metadata: KecIndexMetadata,
+  ) => Promise<void>;
+  deleteBySourcePath: (collection: KnowledgeCollection, sourcePath: string) => Promise<void>;
+  search: (
+    collection: KnowledgeCollection,
+    embedding: number[],
+    topK: number,
+  ) => Promise<KecSearchResult[]>;
+  listChunks: (collection: KnowledgeCollection) => Promise<KecChunk[]>;
+  saveIndexMetadata: (
+    collection: KnowledgeCollection,
+    metadata: KecIndexMetadata,
+  ) => Promise<void>;
+  getIndexMetadata: (collection: KnowledgeCollection) => Promise<KecIndexMetadata | null>;
+  close: () => Promise<void> | void;
 };

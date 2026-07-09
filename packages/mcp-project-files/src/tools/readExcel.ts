@@ -1,7 +1,7 @@
 import { extname } from "node:path";
 
 import type { VoltAiTool } from "@voltai/mcp-core";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { z } from "zod";
 
 import {
@@ -57,34 +57,62 @@ function assertAllowedRelativePath(relativePath: string): void {
 
   const extension = extname(relativePath).toLowerCase();
 
-  if (extension !== ".xlsx" && extension !== ".xls") {
-    throw new Error("Only .xlsx and .xls files are supported");
+  if (extension !== ".xlsx") {
+    throw new Error("Only .xlsx files are supported");
   }
 }
 
 function readSheetRows(
-  workbook: XLSX.WorkBook,
+  workbook: ExcelJS.Workbook,
   sheetName: string,
   maxRows?: number,
 ): unknown[][] {
-  const sheet = workbook.Sheets[sheetName];
+  const sheet = workbook.getWorksheet(sheetName);
 
   if (!sheet) {
     throw new Error("Sheet not found");
   }
 
-  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-    header: 1,
-    blankrows: false,
-    defval: null,
-    raw: true,
+  const rows: unknown[][] = [];
+
+  sheet.eachRow((row) => {
+    if (maxRows !== undefined && rows.length >= maxRows) {
+      return;
+    }
+
+    const values = Array.isArray(row.values) ? row.values.slice(1) : [];
+    let lastValueIndex = -1;
+
+    for (let index = 0; index < values.length; index += 1) {
+      if (values[index] !== null && values[index] !== undefined) {
+        lastValueIndex = index;
+      }
+    }
+
+    if (lastValueIndex < 0) {
+      return;
+    }
+
+    const normalizedValues: unknown[] = [];
+
+    for (let index = 0; index <= lastValueIndex; index += 1) {
+      const value = values[index];
+
+      if (value === undefined) {
+        normalizedValues.push(null);
+      } else if (value instanceof Date) {
+        normalizedValues.push(value);
+      } else if (typeof value === "object" && value !== null && "result" in value) {
+        normalizedValues.push((value as { result?: unknown }).result ?? null);
+      } else {
+        normalizedValues.push(value);
+      }
+    }
+
+    rows.push(normalizedValues);
   });
 
-  if (maxRows === undefined) {
-    return rows;
-  }
-
-  return rows.slice(0, maxRows);
+  return rows;
 }
 
 export async function readExcel(
@@ -97,10 +125,11 @@ export async function readExcel(
   assertAllowedRelativePath(relativePath);
 
   const absolutePath = resolveProjectFile(root, relativePath, "Excel file does not exist");
-  const workbook = XLSX.readFile(absolutePath);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(absolutePath);
   const result: ReadExcelResult = {
     relativePath,
-    sheets: workbook.SheetNames,
+    sheets: workbook.worksheets.map((sheet) => sheet.name),
   };
 
   if (sheetName === undefined) {

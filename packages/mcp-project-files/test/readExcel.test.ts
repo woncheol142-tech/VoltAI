@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 import { createReadExcelTool, readExcel } from "../src/tools/readExcel.js";
 
@@ -32,18 +32,17 @@ function writeProjectFile(root: string, relativePath: string, content: string): 
   writeFileSync(ensureProjectDirectory(root, relativePath), content);
 }
 
-function writeWorkbook(root: string, relativePath: string): void {
-  const workbook = XLSX.utils.book_new();
-  const summary = XLSX.utils.aoa_to_sheet([
-    ["Item", "Qty", "Unit"],
-    ["Cable", 10, "m"],
-    ["Panel", undefined, "ea"],
-  ]);
-  const notes = XLSX.utils.aoa_to_sheet([["Note"], ["Check load"]]);
+async function writeWorkbook(root: string, relativePath: string): Promise<void> {
+  const workbook = new ExcelJS.Workbook();
+  const summary = workbook.addWorksheet("Summary");
+  summary.addRow(["Item", "Qty", "Unit"]);
+  summary.addRow(["Cable", 10, "m"]);
+  summary.addRow(["Panel", null, "ea"]);
+  const notes = workbook.addWorksheet("Notes");
+  notes.addRow(["Note"]);
+  notes.addRow(["Check load"]);
 
-  XLSX.utils.book_append_sheet(workbook, summary, "Summary");
-  XLSX.utils.book_append_sheet(workbook, notes, "Notes");
-  XLSX.writeFile(workbook, ensureProjectDirectory(root, relativePath));
+  await workbook.xlsx.writeFile(ensureProjectDirectory(root, relativePath));
 }
 
 describe("readExcel", () => {
@@ -55,7 +54,7 @@ describe("readExcel", () => {
 
   it("returns workbook sheet names", async () => {
     const root = createTempProject();
-    writeWorkbook(root, "estimate/input.xlsx");
+    await writeWorkbook(root, "estimate/input.xlsx");
 
     const result = await readExcel(root, { relativePath: "estimate/input.xlsx" });
 
@@ -67,7 +66,7 @@ describe("readExcel", () => {
 
   it("returns a specific sheet as JSON rows", async () => {
     const root = createTempProject();
-    writeWorkbook(root, "estimate/input.xlsx");
+    await writeWorkbook(root, "estimate/input.xlsx");
 
     const result = await readExcel(root, {
       relativePath: "estimate/input.xlsx",
@@ -88,7 +87,7 @@ describe("readExcel", () => {
 
   it("limits returned rows with maxRows", async () => {
     const root = createTempProject();
-    writeWorkbook(root, "estimate/input.xlsx");
+    await writeWorkbook(root, "estimate/input.xlsx");
 
     const result = await readExcel(root, {
       relativePath: "estimate/input.xlsx",
@@ -123,7 +122,7 @@ describe("readExcel", () => {
   it("rejects symlinks that resolve outside PROJECT_ROOT", async () => {
     const root = createTempProject();
     const outside = createTempProject();
-    writeWorkbook(outside, "secret.xlsx");
+    await writeWorkbook(outside, "secret.xlsx");
     symlinkSync(join(outside, "secret.xlsx"), join(root, "linked.xlsx"));
 
     await expect(readExcel(root, { relativePath: "linked.xlsx" })).rejects.toThrow(
@@ -136,7 +135,16 @@ describe("readExcel", () => {
     writeProjectFile(root, "estimate/input.csv", "Item,Qty");
 
     await expect(readExcel(root, { relativePath: "estimate/input.csv" })).rejects.toThrow(
-      "Only .xlsx and .xls files are supported",
+      "Only .xlsx files are supported",
+    );
+  });
+
+  it("rejects legacy .xls files with a clear unsupported policy", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "estimate/input.xls", "legacy binary excel placeholder");
+
+    await expect(readExcel(root, { relativePath: "estimate/input.xls" })).rejects.toThrow(
+      "Only .xlsx files are supported",
     );
   });
 
@@ -150,8 +158,8 @@ describe("readExcel", () => {
 
   it("rejects hidden folders and node_modules paths", async () => {
     const root = createTempProject();
-    writeWorkbook(root, ".hidden/input.xlsx");
-    writeWorkbook(root, "node_modules/pkg/input.xlsx");
+    await writeWorkbook(root, ".hidden/input.xlsx");
+    await writeWorkbook(root, "node_modules/pkg/input.xlsx");
 
     await expect(readExcel(root, { relativePath: ".hidden/input.xlsx" })).rejects.toThrow(
       "relativePath cannot include hidden folders or node_modules",
@@ -163,7 +171,7 @@ describe("readExcel", () => {
 
   it("rejects missing sheets", async () => {
     const root = createTempProject();
-    writeWorkbook(root, "estimate/input.xlsx");
+    await writeWorkbook(root, "estimate/input.xlsx");
 
     await expect(
       readExcel(root, {
@@ -175,7 +183,7 @@ describe("readExcel", () => {
 
   it("creates a read_excel tool that reads PROJECT_ROOT and returns JSON", async () => {
     const root = createTempProject();
-    writeWorkbook(root, "estimate/input.xlsx");
+    await writeWorkbook(root, "estimate/input.xlsx");
 
     const originalProjectRoot = process.env.PROJECT_ROOT;
     process.env.PROJECT_ROOT = root;

@@ -31,12 +31,16 @@ Implemented:
   - `PROJECT_ROOT` realpath validation and symlink escape defense.
   - `review_project` constrained to `PROJECT_ROOT`.
   - `pathToFileURL`-based entrypoint guards.
+- Excel parser security:
+  - Removed the vulnerable npm `xlsx@0.18.5` dependency.
+  - Migrated `.xlsx` reading to ExcelJS.
+  - Marked legacy `.xls` input as unsupported in `read_excel`.
 - MIT License added for open source readiness.
 
 Test status:
 
 - Test Files: 18 passed
-- Tests: 107 passed
+- Tests: 117 passed
 
 ## v0.1 Scaffold
 

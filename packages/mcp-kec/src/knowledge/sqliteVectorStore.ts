@@ -7,6 +7,7 @@ import type {
   KecChunk,
   KecIndexMetadata,
   KecSearchResult,
+  KnowledgeCollection,
   VectorStore,
 } from "./vectorStore.js";
 
@@ -14,6 +15,7 @@ const require = createRequire(import.meta.url);
 const { DatabaseSync } = require("node:sqlite") as typeof import("node:sqlite");
 
 type StoredChunkRow = {
+  collection: string;
   id: string;
   source_path: string;
   page: number;
@@ -58,13 +60,15 @@ export class SqliteVectorStore implements VectorStore {
     this.database = new DatabaseSync(dbPath);
     this.database.exec(`
       CREATE TABLE IF NOT EXISTS kec_chunks (
-        id TEXT PRIMARY KEY,
+        collection TEXT NOT NULL DEFAULT 'kec',
+        id TEXT NOT NULL,
         source_path TEXT NOT NULL,
         page INTEGER NOT NULL,
         chunk_index INTEGER NOT NULL DEFAULT 0,
         clause TEXT,
         text TEXT NOT NULL,
-        embedding TEXT NOT NULL
+        embedding TEXT NOT NULL,
+        PRIMARY KEY (collection, id)
       );
 
       CREATE TABLE IF NOT EXISTS index_metadata (
@@ -75,7 +79,23 @@ export class SqliteVectorStore implements VectorStore {
         indexed_at TEXT NOT NULL
       );
     `);
+    this.migrateCollectionColumn();
     this.migrateChunkIndexColumn();
+    this.migrateChunkPrimaryKey();
+    this.database.exec(`
+      CREATE INDEX IF NOT EXISTS idx_kec_chunks_collection_source
+      ON kec_chunks(collection, source_path);
+    `);
+  }
+
+  private migrateCollectionColumn(): void {
+    const columns = this.database
+      .prepare("PRAGMA table_info(kec_chunks)")
+      .all() as Array<{ name: string }>;
+
+    if (!columns.some((column) => column.name === "collection")) {
+      this.database.exec("ALTER TABLE kec_chunks ADD COLUMN collection TEXT NOT NULL DEFAULT 'kec'");
+    }
   }
 
   private migrateChunkIndexColumn(): void {
@@ -88,11 +108,74 @@ export class SqliteVectorStore implements VectorStore {
     }
   }
 
-  async upsert(chunks: EmbeddedKecChunk[]): Promise<void> {
+  private migrateChunkPrimaryKey(): void {
+    const indexRows = this.database
+      .prepare("PRAGMA index_list(kec_chunks)")
+      .all() as Array<{ name: string; origin: string }>;
+    const primaryKeyIndex = indexRows.find((row) => row.origin === "pk");
+
+    if (!primaryKeyIndex) {
+      return;
+    }
+
+    const primaryKeyColumns = this.database
+      .prepare(`PRAGMA index_info(${JSON.stringify(primaryKeyIndex.name)})`)
+      .all() as Array<{ name: string }>;
+
+    if (
+      primaryKeyColumns.length === 2 &&
+      primaryKeyColumns[0].name === "collection" &&
+      primaryKeyColumns[1].name === "id"
+    ) {
+      return;
+    }
+
+    this.database.exec(`
+      ALTER TABLE kec_chunks RENAME TO kec_chunks_legacy_pk;
+
+      CREATE TABLE kec_chunks (
+        collection TEXT NOT NULL DEFAULT 'kec',
+        id TEXT NOT NULL,
+        source_path TEXT NOT NULL,
+        page INTEGER NOT NULL,
+        chunk_index INTEGER NOT NULL DEFAULT 0,
+        clause TEXT,
+        text TEXT NOT NULL,
+        embedding TEXT NOT NULL,
+        PRIMARY KEY (collection, id)
+      );
+
+      INSERT INTO kec_chunks (
+        collection,
+        id,
+        source_path,
+        page,
+        chunk_index,
+        clause,
+        text,
+        embedding
+      )
+      SELECT
+        collection,
+        id,
+        source_path,
+        page,
+        chunk_index,
+        clause,
+        text,
+        embedding
+      FROM kec_chunks_legacy_pk;
+
+      DROP TABLE kec_chunks_legacy_pk;
+    `);
+  }
+
+  private insertChunks(collection: KnowledgeCollection, chunks: EmbeddedKecChunk[]): void {
     const insert = this.database.prepare(`
-      INSERT INTO kec_chunks (id, source_path, page, chunk_index, clause, text, embedding)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET
+      INSERT INTO kec_chunks (collection, id, source_path, page, chunk_index, clause, text, embedding)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(collection, id) DO UPDATE SET
+        collection = excluded.collection,
         source_path = excluded.source_path,
         page = excluded.page,
         chunk_index = excluded.chunk_index,
@@ -101,21 +184,58 @@ export class SqliteVectorStore implements VectorStore {
         embedding = excluded.embedding;
     `);
 
+    for (const chunk of chunks) {
+      insert.run(
+        collection,
+        chunk.id,
+        chunk.sourcePath,
+        chunk.page,
+        chunk.chunkIndex,
+        chunk.clause,
+        chunk.text,
+        JSON.stringify(chunk.embedding),
+      );
+    }
+  }
+
+  private saveIndexMetadataInTransaction(
+    collection: KnowledgeCollection,
+    metadata: KecIndexMetadata,
+  ): void {
+    if (metadata.dimensions < 1) {
+      throw new Error("metadata dimensions must be a positive integer");
+    }
+
+    this.database
+      .prepare(`
+        INSERT INTO index_metadata (
+          id,
+          embedding_provider,
+          embedding_model,
+          dimensions,
+          indexed_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          embedding_provider = excluded.embedding_provider,
+          embedding_model = excluded.embedding_model,
+          dimensions = excluded.dimensions,
+          indexed_at = excluded.indexed_at;
+      `)
+      .run(
+        collection,
+        metadata.embeddingProvider,
+        metadata.embeddingModel,
+        metadata.dimensions,
+        metadata.indexedAt,
+      );
+  }
+
+  async upsert(collection: KnowledgeCollection, chunks: EmbeddedKecChunk[]): Promise<void> {
     this.database.exec("BEGIN");
 
     try {
-      for (const chunk of chunks) {
-        insert.run(
-          chunk.id,
-          chunk.sourcePath,
-          chunk.page,
-          chunk.chunkIndex,
-          chunk.clause,
-          chunk.text,
-          JSON.stringify(chunk.embedding),
-        );
-      }
-
+      this.insertChunks(collection, chunks);
       this.database.exec("COMMIT");
     } catch (error) {
       this.database.exec("ROLLBACK");
@@ -123,10 +243,43 @@ export class SqliteVectorStore implements VectorStore {
     }
   }
 
-  async search(embedding: number[], topK: number): Promise<KecSearchResult[]> {
+  async replaceSource(
+    collection: KnowledgeCollection,
+    sourcePath: string,
+    chunks: EmbeddedKecChunk[],
+    metadata: KecIndexMetadata,
+  ): Promise<void> {
+    this.database.exec("BEGIN");
+
+    try {
+      this.database
+        .prepare("DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?")
+        .run(collection, sourcePath);
+      this.insertChunks(collection, chunks);
+      this.saveIndexMetadataInTransaction(collection, metadata);
+      this.database.exec("COMMIT");
+    } catch (error) {
+      this.database.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  async deleteBySourcePath(collection: KnowledgeCollection, sourcePath: string): Promise<void> {
+    this.database
+      .prepare("DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?")
+      .run(collection, sourcePath);
+  }
+
+  async search(
+    collection: KnowledgeCollection,
+    embedding: number[],
+    topK: number,
+  ): Promise<KecSearchResult[]> {
     const rows = this.database
-      .prepare("SELECT id, source_path, page, chunk_index, clause, text, embedding FROM kec_chunks")
-      .all() as StoredChunkRow[];
+      .prepare(
+        "SELECT collection, id, source_path, page, chunk_index, clause, text, embedding FROM kec_chunks WHERE collection = ?",
+      )
+      .all(collection) as StoredChunkRow[];
 
     return rows
       .map((row) => ({
@@ -140,10 +293,12 @@ export class SqliteVectorStore implements VectorStore {
       .slice(0, topK);
   }
 
-  async listChunks(): Promise<KecChunk[]> {
+  async listChunks(collection: KnowledgeCollection): Promise<KecChunk[]> {
     const rows = this.database
-      .prepare("SELECT id, source_path, page, chunk_index, clause, text FROM kec_chunks ORDER BY page, chunk_index, id")
-      .all() as Omit<StoredChunkRow, "embedding">[];
+      .prepare(
+        "SELECT collection, id, source_path, page, chunk_index, clause, text FROM kec_chunks WHERE collection = ? ORDER BY page, chunk_index, id",
+      )
+      .all(collection) as Omit<StoredChunkRow, "embedding">[];
 
     return rows.map((row) => ({
       id: row.id,
@@ -155,39 +310,21 @@ export class SqliteVectorStore implements VectorStore {
     }));
   }
 
-  async saveIndexMetadata(metadata: KecIndexMetadata): Promise<void> {
-    this.database
-      .prepare(`
-        INSERT INTO index_metadata (
-          id,
-          embedding_provider,
-          embedding_model,
-          dimensions,
-          indexed_at
-        )
-        VALUES ('kec', ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
-          embedding_provider = excluded.embedding_provider,
-          embedding_model = excluded.embedding_model,
-          dimensions = excluded.dimensions,
-          indexed_at = excluded.indexed_at;
-      `)
-      .run(
-        metadata.embeddingProvider,
-        metadata.embeddingModel,
-        metadata.dimensions,
-        metadata.indexedAt,
-      );
+  async saveIndexMetadata(
+    collection: KnowledgeCollection,
+    metadata: KecIndexMetadata,
+  ): Promise<void> {
+    this.saveIndexMetadataInTransaction(collection, metadata);
   }
 
-  async getIndexMetadata(): Promise<KecIndexMetadata | null> {
+  async getIndexMetadata(collection: KnowledgeCollection): Promise<KecIndexMetadata | null> {
     const row = this.database
       .prepare(`
         SELECT id, embedding_provider, embedding_model, dimensions, indexed_at
         FROM index_metadata
-        WHERE id = 'kec'
+        WHERE id = ?
       `)
-      .get() as StoredMetadataRow | undefined;
+      .get(collection) as StoredMetadataRow | undefined;
 
     if (!row) {
       return null;
@@ -199,5 +336,9 @@ export class SqliteVectorStore implements VectorStore {
       dimensions: row.dimensions,
       indexedAt: row.indexed_at,
     };
+  }
+
+  async close(): Promise<void> {
+    this.database.close();
   }
 }

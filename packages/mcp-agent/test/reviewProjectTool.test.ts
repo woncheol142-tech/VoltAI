@@ -184,6 +184,45 @@ describe("review_project MCP tool", () => {
     );
   });
 
+  it("local ports reuse one vector store across multiple searchKec calls", async () => {
+    const root = createTempProject();
+    const vectorStore = {
+      getIndexMetadata: vi.fn().mockResolvedValue({
+        embeddingProvider: "test",
+        embeddingModel: "reuse",
+        dimensions: 2,
+        indexedAt: "2026-01-01T00:00:00.000Z",
+      }),
+      search: vi.fn().mockResolvedValue([]),
+      upsert: vi.fn(),
+      replaceSource: vi.fn(),
+      deleteBySourcePath: vi.fn(),
+      listChunks: vi.fn(),
+      saveIndexMetadata: vi.fn(),
+      close: vi.fn(),
+    };
+    const vectorStoreFactory = vi.fn(() => vectorStore);
+    const embeddingProvider = {
+      getMetadata: () => ({ provider: "test", model: "reuse" }),
+      embed: vi.fn().mockResolvedValue([0, 1]),
+    };
+    const ports = (
+      createLocalReviewPorts as unknown as (
+        projectPath: string,
+        deps: {
+          embeddingProvider: typeof embeddingProvider;
+          vectorStoreFactory: () => typeof vectorStore;
+        },
+      ) => ReturnType<typeof createLocalReviewPorts>
+    )(root, { embeddingProvider, vectorStoreFactory });
+
+    await ports.searchKec("케이블 규격");
+    await ports.searchKec("접지 기준");
+
+    expect(vectorStoreFactory).toHaveBeenCalledTimes(1);
+    expect(vectorStore.search).toHaveBeenCalledTimes(2);
+  });
+
   it("runs without OpenAI API", async () => {
     const root = createTempProject();
     const originalApiKey = process.env.OPENAI_API_KEY;

@@ -51,7 +51,7 @@ packages/
 | --- | --- | --- |
 | `list_project_files` | `@voltai/mcp-project-files` | Lists `.pdf`, `.xlsx`, `.xls`, `.dwg`, `.dxf` under `PROJECT_ROOT`. |
 | `read_pdf` | `@voltai/mcp-project-files` | Extracts text from PDF text layers without OCR. |
-| `read_excel` | `@voltai/mcp-project-files` | Lists workbook sheets or returns rows for a selected sheet. |
+| `read_excel` | `@voltai/mcp-project-files` | Lists `.xlsx` workbook sheets or returns rows for a selected sheet using ExcelJS. Legacy `.xls` input is explicitly unsupported. |
 | `index_kec` | `@voltai/mcp-kec` | Indexes KEC PDFs into the local SQLite knowledge base. |
 | `search_kec` | `@voltai/mcp-kec` | Searches indexed KEC chunks and returns clause/page/text/similarity. |
 | `review_project` | `@voltai/mcp-agent` | Runs the engineering review agent and returns a markdown report. |
@@ -161,7 +161,7 @@ pnpm build
 Current v0.2 status:
 
 - Test Files: 18 passed
-- Tests: 107 passed
+- Tests: 117 passed
 
 ## CI
 

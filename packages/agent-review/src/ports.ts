@@ -68,4 +68,5 @@ export type ReviewProjectPorts = {
   readExcel: (relativePath: string) => Promise<ExcelReadResult>;
   searchKec: (question: string) => Promise<KecSearchResult[]>;
   llm: ReviewLlm;
+  close?: () => Promise<void> | void;
 };

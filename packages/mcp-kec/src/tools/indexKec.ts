@@ -8,7 +8,9 @@ import { createEmbeddingProviderFromEnv, type EmbeddingProvider } from "../knowl
 import { readPdfPages } from "../knowledge/pdfPages.js";
 import { assertProjectRoot, resolveKecPdfPath } from "../knowledge/projectPath.js";
 import { SqliteVectorStore } from "../knowledge/sqliteVectorStore.js";
-import type { VectorStore } from "../knowledge/vectorStore.js";
+import type { KnowledgeCollection, VectorStore } from "../knowledge/vectorStore.js";
+
+const kecCollection: KnowledgeCollection = "kec";
 
 export type IndexKecInput = {
   relativePath: string;
@@ -89,9 +91,7 @@ export async function indexKec(
     })),
   );
 
-  await deps.vectorStore.upsert(embeddedChunks);
-
-  await deps.vectorStore.saveIndexMetadata({
+  await deps.vectorStore.replaceSource(kecCollection, relativePath, embeddedChunks, {
     embeddingProvider: deps.embeddingProvider.getMetadata().provider,
     embeddingModel: deps.embeddingProvider.getMetadata().model,
     dimensions: embeddedChunks[0].embedding.length,
@@ -115,12 +115,20 @@ export function createIndexKecTool(deps: IndexKecToolDependencies = {}): VoltAiT
     },
     handler: async (input) => {
       const root = assertProjectRoot(process.env.PROJECT_ROOT);
-      const result = await indexKec(root, input, {
-        embeddingProvider: deps.embeddingProvider ?? createEmbeddingProviderFromEnv(),
-        vectorStore: deps.vectorStore ?? createDefaultVectorStore(root),
-      });
+      const vectorStore = deps.vectorStore ?? createDefaultVectorStore(root);
 
-      return JSON.stringify(result);
+      try {
+        const result = await indexKec(root, input, {
+          embeddingProvider: deps.embeddingProvider ?? createEmbeddingProviderFromEnv(),
+          vectorStore,
+        });
+
+        return JSON.stringify(result);
+      } finally {
+        if (!deps.vectorStore) {
+          await vectorStore.close();
+        }
+      }
     },
   };
 }
