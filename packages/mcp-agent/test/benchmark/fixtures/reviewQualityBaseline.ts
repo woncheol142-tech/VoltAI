@@ -29,7 +29,7 @@ export const reviewQualityBaseline: ReviewBenchmarkResult = {
     matched: 1,
     hitRate: 1,
     missing: [],
-    unexpected: ["KEC 999.1"],
+    unexpected: [],
     wrongLocations: [],
   },
   coverage: {
@@ -39,12 +39,12 @@ export const reviewQualityBaseline: ReviewBenchmarkResult = {
     unexpected: [],
   },
   forbiddenFindings: [],
-  forbiddenCitations: ["KEC 999.1"],
+  forbiddenCitations: [],
   sections: {
     required: 7,
     matched: 7,
     completeness: 1,
     missing: [],
   },
-  passed: false,
+  passed: true,
 };

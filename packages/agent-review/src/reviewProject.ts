@@ -9,6 +9,7 @@ import type {
 } from "./ports.js";
 import { extractDesignItems } from "./designItems.js";
 import { analyzeDesignItemRelations } from "./designRelations.js";
+import { selectKecResultsForReview } from "./kecCitationSelection.js";
 
 export type ReviewProjectInput = {
   projectPath: string;
@@ -65,6 +66,10 @@ function buildKecQuestion(pdfs: PdfReadResult[], excels: ExcelReadResult[]): str
   const source = `${pdfText}\n${excelText}`.trim();
 
   return source.length > 0 ? source.slice(0, 500) : "전기 설계 검토 관련 KEC 조항";
+}
+
+function buildItemKecSelectionContext(name: string, evidence: { excerpt: string }[]): string {
+  return [name, ...evidence.map((item) => item.excerpt)].join("\n");
 }
 
 function resolveReviewIngestionPolicy(input: ReviewProjectInput): ReviewIngestionPolicy {
@@ -182,9 +187,14 @@ export async function reviewProject(
     }
 
     let kecResults: KecSearchResult[] = [];
+    const projectKecQuestion = buildKecQuestion(pdfs, excels);
 
     try {
-      kecResults = await ports.searchKec(buildKecQuestion(pdfs, excels));
+      const rawKecResults = await ports.searchKec(projectKecQuestion);
+      kecResults = selectKecResultsForReview({
+        contextText: projectKecQuestion,
+        results: rawKecResults,
+      });
     } catch (error) {
       findings.push({
         severity: "warning",
@@ -206,7 +216,11 @@ export async function reviewProject(
       let itemKecResults: KecSearchResult[] = [];
 
       try {
-        itemKecResults = (await ports.searchKec(`${item.name} KEC 기준`)) ?? [];
+        const rawItemKecResults = (await ports.searchKec(`${item.name} KEC 기준`)) ?? [];
+        itemKecResults = selectKecResultsForReview({
+          contextText: buildItemKecSelectionContext(item.name, item.evidence),
+          results: rawItemKecResults,
+        });
       } catch (error) {
         itemFindings.push({
           severity: "warning",

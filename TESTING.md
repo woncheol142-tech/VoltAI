@@ -31,9 +31,9 @@ Current deterministic benchmark baseline:
 
 - Design items: precision `1.0`, recall `1.0`
 - Relations: precision `1.0`, recall `1.0`
-- Citations: hit rate `1.0`; unexpected/forbidden `KEC 999.1` is recorded
+- Citations: hit rate `1.0` with no unexpected or forbidden citation
 - Coverage: `2/2` matched with no missing or unexpected finding
 - Required report sections: `7/7`
-- Overall strict `passed`: `false`, intentionally reflecting the distractor citation baseline
+- Overall strict `passed`: `true`
 
 GLM provider smoke paths, such as an optional `smoke:glm` command, are separate from the E2E suite. They are explicitly invoked against a configured GLM environment, may contact Z.AI, and must never run as part of the normal test suite.
