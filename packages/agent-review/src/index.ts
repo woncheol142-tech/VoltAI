@@ -1,4 +1,10 @@
-export { MockReviewLlm, buildMarkdownReport } from "./report.js";
+export {
+  MockReviewLlm,
+  buildMarkdownReport,
+  coverageFindingToReviewFinding,
+  formatCitation,
+  toKecCitation,
+} from "./report.js";
 export { analyzeDesignItemRelations } from "./designRelations.js";
 export { extractDesignItems } from "./designItems.js";
 export type { DesignItemRelationFinding } from "./designRelations.js";
@@ -7,8 +13,14 @@ export type { DesignItemCandidate, DesignItemCorpus, DesignItemName } from "./de
 export type { ReviewIngestionPolicy, ReviewProjectInput } from "./reviewProject.js";
 export type {
   ExcelReadResult,
+  CadEvidence,
+  Citation,
+  CoverageFinding,
   DesignItemReview,
+  ExcelEvidence,
+  KecCitation,
   KecSearchResult,
+  PdfEvidence,
   PdfReadResult,
   ProjectFile,
   ReviewFinding,
@@ -16,4 +28,5 @@ export type {
   ReviewProjectPorts,
   ReviewPromptInput,
   StructuredEvidence,
+  UnknownEvidence,
 } from "./ports.js";

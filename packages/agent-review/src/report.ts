@@ -1,4 +1,11 @@
-import type { ReviewPromptInput, StructuredEvidence } from "./ports.js";
+import type {
+  Citation,
+  CoverageFinding,
+  KecCitation,
+  KecSearchResult,
+  ReviewFinding,
+  ReviewPromptInput,
+} from "./ports.js";
 
 function bulletList(items: string[], fallback: string): string {
   if (items.length === 0) {
@@ -22,30 +29,51 @@ function summarizeExcel(input: ReviewPromptInput): string[] {
 }
 
 function summarizeKec(input: ReviewPromptInput): string[] {
-  return input.kecResults.map((result) => {
-    const clause = result.clause ?? "Unknown clause";
-    return `${clause} p.${result.page}: ${result.text}`;
-  });
+  return input.kecResults.map((result) => formatCitation(toKecCitation(result)));
 }
 
-function formatEvidence(evidence: StructuredEvidence): string {
-  if (evidence.sourceType === "excel") {
+export function toKecCitation(result: KecSearchResult): KecCitation {
+  const label = result.clause ?? "Unknown clause";
+
+  return {
+    id: `kec:${result.sourcePath}:p${result.page}:${label}`,
+    sourceType: "kec",
+    sourcePath: result.sourcePath,
+    page: result.page,
+    label,
+    excerpt: result.text,
+  };
+}
+
+export function coverageFindingToReviewFinding(finding: CoverageFinding): ReviewFinding {
+  return {
+    severity: finding.severity,
+    message: finding.message,
+  };
+}
+
+export function formatCitation(citation: Citation): string {
+  if (citation.sourceType === "excel") {
     const location = [
-      evidence.sheetName,
-      evidence.rowIndex !== undefined ? `row ${evidence.rowIndex}` : undefined,
+      citation.sheetName,
+      `row ${citation.rowIndex}`,
     ]
       .filter((part) => part !== undefined)
       .join(" ");
     const suffix = location ? ` [${location}]` : "";
 
-    return `${evidence.sourcePath}${suffix}: ${evidence.excerpt}`;
+    return `${citation.sourcePath}${suffix}: ${citation.excerpt}`;
   }
 
-  if (evidence.sourceType === "pdf" && evidence.page !== undefined) {
-    return `${evidence.sourcePath} p.${evidence.page}: ${evidence.excerpt}`;
+  if (citation.sourceType === "pdf") {
+    return `${citation.sourcePath} p.${citation.page}: ${citation.excerpt}`;
   }
 
-  return `${evidence.sourcePath}: ${evidence.excerpt}`;
+  if (citation.sourceType === "kec") {
+    return `${citation.label} p.${citation.page}: ${citation.excerpt}`;
+  }
+
+  return `${citation.sourcePath}: ${citation.excerpt}`;
 }
 
 function summarizeItemReviews(input: ReviewPromptInput): string[] {
@@ -57,7 +85,7 @@ function summarizeItemReviews(input: ReviewPromptInput): string[] {
     const kecResults =
       item.kecResults.length > 0
         ? item.kecResults
-            .map((result) => `${result.clause ?? "Unknown clause"} p.${result.page}: ${result.text}`)
+            .map((result) => formatCitation(toKecCitation(result)))
             .join("\n  - ")
         : "검색된 KEC 조항이 없습니다.";
     const findings =
@@ -69,7 +97,7 @@ function summarizeItemReviews(input: ReviewPromptInput): string[] {
       `## ${item.name}`,
       "",
       "- 발견 근거",
-      `  - ${item.evidence.map(formatEvidence).join("\n  - ")}`,
+      `  - ${item.evidence.map(formatCitation).join("\n  - ")}`,
       "- 관련 KEC 검색 결과",
       `  - ${kecResults}`,
       "- 확인 필요사항",

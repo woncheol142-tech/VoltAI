@@ -33,17 +33,57 @@ export type KecSearchResult = {
   sourcePath: string;
 };
 
-export type StructuredEvidence = {
-  sourceType: "pdf" | "excel" | "cad" | "unknown";
+export type EvidenceBase = {
+  id: string;
   sourcePath: string;
-  page?: number;
-  sheetName?: string;
-  rowIndex?: number;
   excerpt: string;
 };
 
+export type PdfEvidence = EvidenceBase & {
+  sourceType: "pdf";
+  page: number;
+};
+
+export type ExcelEvidence = EvidenceBase & {
+  sourceType: "excel";
+  sheetName?: string;
+  rowIndex: number;
+};
+
+export type CadEvidence = EvidenceBase & {
+  sourceType: "cad";
+};
+
+export type UnknownEvidence = EvidenceBase & {
+  sourceType: "unknown";
+};
+
+export type StructuredEvidence =
+  | PdfEvidence
+  | ExcelEvidence
+  | CadEvidence
+  | UnknownEvidence;
+
+export type KecCitation = EvidenceBase & {
+  sourceType: "kec";
+  page: number;
+  label: string;
+};
+
+export type Citation = StructuredEvidence | KecCitation;
+
 export type ReviewFinding = {
   severity: "info" | "warning";
+  message: string;
+};
+
+export type CoverageFinding = {
+  id: string;
+  severity: "info" | "warning";
+  file: string;
+  reviewed?: number;
+  total?: number;
+  reason: "pdf-truncated" | "sheet-selection" | "row-limit" | "read-error" | "kec-search";
   message: string;
 };
 

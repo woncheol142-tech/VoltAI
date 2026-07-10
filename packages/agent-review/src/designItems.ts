@@ -54,12 +54,17 @@ function createExcerpt(text: string, keyword: string): string {
 }
 
 function evidenceKey(evidence: StructuredEvidence): string {
+  const location =
+    evidence.sourceType === "pdf"
+      ? `p${evidence.page}`
+      : evidence.sourceType === "excel"
+        ? `${evidence.sheetName ?? ""}:r${evidence.rowIndex}`
+        : "";
+
   return [
     evidence.sourceType,
     evidence.sourcePath,
-    evidence.page ?? "",
-    evidence.sheetName ?? "",
-    evidence.rowIndex ?? "",
+    location,
     evidence.excerpt,
   ].join(":");
 }
@@ -73,7 +78,8 @@ function splitEvidenceText(text: string): string[] {
 
 function collectPdfEvidence(pdf: PdfReadResult): StructuredEvidence[] {
   return pdf.pages.flatMap((page) =>
-    splitEvidenceText(page.text).map((line) => ({
+    splitEvidenceText(page.text).map((line, index) => ({
+      id: `pdf:${pdf.relativePath}:p${page.page}:${index + 1}`,
       sourceType: "pdf" as const,
       sourcePath: pdf.relativePath,
       page: page.page,
@@ -86,6 +92,7 @@ function collectCorpusEvidence(corpus: DesignItemCorpus): StructuredEvidence[] {
   const pdfLines = corpus.pdfs.flatMap(collectPdfEvidence);
   const excelLines = corpus.excels.flatMap((excel) =>
     (excel.rows ?? []).flatMap((row, index) => {
+      const rowIndex = index + 1;
       const excerpt = row
         .filter((value) => value !== null && value !== undefined)
         .join(" ")
@@ -95,15 +102,19 @@ function collectCorpusEvidence(corpus: DesignItemCorpus): StructuredEvidence[] {
         return [];
       }
 
-      return [
-        {
-          sourceType: "excel" as const,
-          sourcePath: excel.relativePath,
-          sheetName: excel.sheetName,
-          rowIndex: index + 1,
-          excerpt,
-        },
-      ];
+      const evidence: StructuredEvidence = {
+        id: `excel:${excel.relativePath}:${excel.sheetName ?? ""}:r${rowIndex}`,
+        sourceType: "excel",
+        sourcePath: excel.relativePath,
+        rowIndex,
+        excerpt,
+      };
+
+      if (excel.sheetName !== undefined) {
+        evidence.sheetName = excel.sheetName;
+      }
+
+      return [evidence];
     }),
   );
 

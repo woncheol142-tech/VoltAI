@@ -8,6 +8,7 @@ function items(names: DesignItemCandidate["name"][]): DesignItemCandidate[] {
     name,
     evidence: [
       {
+        id: `unknown:${name}`,
         sourceType: "unknown",
         sourcePath: "unknown",
         excerpt: `${name} evidence`,
@@ -37,8 +38,10 @@ describe("analyzeDesignItemRelations", () => {
         name: "케이블",
         evidence: [
           {
+            id: "pdf:docs/design.pdf:p1:1",
             sourceType: "pdf",
             sourcePath: "docs/design.pdf",
+            page: 1,
             excerpt: "케이블 포설과 전압강하 계산을 함께 검토한다.",
           },
         ],
@@ -47,8 +50,10 @@ describe("analyzeDesignItemRelations", () => {
         name: "전압강하",
         evidence: [
           {
+            id: "pdf:docs/design.pdf:p1:1",
             sourceType: "pdf",
             sourcePath: "docs/design.pdf",
+            page: 1,
             excerpt: "케이블 포설과 전압강하 계산을 함께 검토한다.",
           },
         ],
@@ -67,6 +72,7 @@ describe("analyzeDesignItemRelations", () => {
         name: "차단기",
         evidence: [
           {
+            id: "excel:estimate/load.xlsx:Load:r4",
             sourceType: "excel",
             sourcePath: "estimate/load.xlsx",
             sheetName: "Load",
@@ -79,6 +85,7 @@ describe("analyzeDesignItemRelations", () => {
         name: "부하",
         evidence: [
           {
+            id: "excel:estimate/load.xlsx:Load:r4",
             sourceType: "excel",
             sourcePath: "estimate/load.xlsx",
             sheetName: "Load",
@@ -101,6 +108,7 @@ describe("analyzeDesignItemRelations", () => {
         name: "차단기",
         evidence: [
           {
+            id: "excel:estimate/load.xlsx:Load:r7",
             sourceType: "excel",
             sourcePath: "estimate/load.xlsx",
             sheetName: "Load",
@@ -113,6 +121,7 @@ describe("analyzeDesignItemRelations", () => {
         name: "부하",
         evidence: [
           {
+            id: "excel:estimate/load.xlsx:Load:r7",
             sourceType: "excel",
             sourcePath: "estimate/load.xlsx",
             sheetName: "Load",
@@ -135,6 +144,7 @@ describe("analyzeDesignItemRelations", () => {
         name: "차단기",
         evidence: [
           {
+            id: "excel:estimate/load.xlsx:Panel A:r7",
             sourceType: "excel",
             sourcePath: "estimate/load.xlsx",
             sheetName: "Panel A",
@@ -147,6 +157,7 @@ describe("analyzeDesignItemRelations", () => {
         name: "부하",
         evidence: [
           {
+            id: "excel:estimate/load.xlsx:Panel B:r7",
             sourceType: "excel",
             sourcePath: "estimate/load.xlsx",
             sheetName: "Panel B",

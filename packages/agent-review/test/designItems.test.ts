@@ -18,12 +18,14 @@ describe("extractDesignItems", () => {
 
     expect(items.map((item) => item.name)).toEqual(["케이블", "접지"]);
     expect(items[0].evidence[0]).toEqual({
+      id: "pdf:docs/design.pdf:p3:1",
       sourceType: "pdf",
       sourcePath: "docs/design.pdf",
       page: 3,
       excerpt: "케이블 포설 계획과 접지 저항 기준을 확인한다.",
     });
     expect(items[1].evidence[0]).toEqual({
+      id: "pdf:docs/design.pdf:p3:1",
       sourceType: "pdf",
       sourcePath: "docs/design.pdf",
       page: 3,
@@ -49,12 +51,14 @@ describe("extractDesignItems", () => {
 
     expect(items.map((item) => item.name)).toEqual(["케이블", "접지"]);
     expect(items[0].evidence[0]).toEqual({
+      id: "pdf:docs/design.pdf:p1:1",
       sourceType: "pdf",
       sourcePath: "docs/design.pdf",
       page: 1,
       excerpt: "케이블 포설 계획을 확인한다.",
     });
     expect(items[1].evidence[0]).toEqual({
+      id: "pdf:docs/design.pdf:p2:1",
       sourceType: "pdf",
       sourcePath: "docs/design.pdf",
       page: 2,
@@ -81,6 +85,7 @@ describe("extractDesignItems", () => {
 
     expect(items.map((item) => item.name)).toEqual(["차단기", "분전반"]);
     expect(items[0].evidence[0]).toEqual({
+      id: "excel:estimate/summary.xlsx:Summary:r2",
       sourceType: "excel",
       sourcePath: "estimate/summary.xlsx",
       sheetName: "Summary",
@@ -88,6 +93,7 @@ describe("extractDesignItems", () => {
       excerpt: "MCCB Main breaker",
     });
     expect(items[1].evidence[0]).toEqual({
+      id: "excel:estimate/summary.xlsx:Summary:r3",
       sourceType: "excel",
       sourcePath: "estimate/summary.xlsx",
       sheetName: "Summary",
@@ -181,6 +187,7 @@ describe("extractDesignItems", () => {
     });
 
     expect(items[0].evidence[0]).toEqual({
+      id: "excel:estimate/summary.xlsx::r1",
       sourceType: "excel",
       sourcePath: "estimate/summary.xlsx",
       rowIndex: 1,
