@@ -27,6 +27,10 @@ export type SearchKecToolDependencies = {
   vectorStore?: VectorStore;
 };
 
+export type SearchKecToolResult = {
+  results: KecSearchResult[];
+};
+
 function assertSearchKecInput(input: unknown): { question: string; topK: number } {
   if (!input || typeof input !== "object") {
     throw new Error("query is required");
@@ -75,7 +79,7 @@ export async function searchKec(
   return deps.vectorStore.search(kecCollection, embedding, topK);
 }
 
-export function createSearchKecTool(deps: SearchKecToolDependencies = {}): VoltAiTool {
+export function createSearchKecTool(deps: SearchKecToolDependencies = {}): VoltAiTool<SearchKecToolResult> {
   return {
     name: "search_kec",
     description: "Search indexed KEC chunks from the local SQLite knowledge base.",

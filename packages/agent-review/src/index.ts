@@ -2,9 +2,12 @@ export {
   MockReviewLlm,
   buildMarkdownReport,
   coverageFindingToReviewFinding,
+  createReviewReport,
   formatCitation,
+  serializeMarkdownReport,
   toKecCitation,
 } from "./report.js";
+export type { ReviewReport, ReviewReportItem } from "./report.js";
 export { analyzeDesignItemRelations } from "./designRelations.js";
 export { extractDesignItems } from "./designItems.js";
 export type { DesignItemRelationFinding } from "./designRelations.js";

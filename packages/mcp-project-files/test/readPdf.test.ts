@@ -276,6 +276,7 @@ describe("readPdf", () => {
         relativePath: "docs/spec.pdf",
         pageCount: 1,
       });
+      expect(typeof result).not.toBe("string");
       expect(result.text).toContain("Tool PDF Text");
     } finally {
       if (originalProjectRoot === undefined) {

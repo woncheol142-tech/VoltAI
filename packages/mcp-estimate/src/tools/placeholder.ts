@@ -6,7 +6,7 @@ export function createPlaceholderMessage(): string {
   return "mcp-estimate placeholder tool is ready.";
 }
 
-export const placeholderTool: VoltAiTool = {
+export const placeholderTool: VoltAiTool<string> = {
   name: placeholderToolName,
   description: "Placeholder estimate tool.",
   inputSchema: {},

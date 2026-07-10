@@ -69,7 +69,7 @@ export function listProjectFiles(projectRoot: string | undefined): ProjectFile[]
   return results.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 
-export function createListProjectFilesTool(): VoltAiTool {
+export function createListProjectFilesTool(): VoltAiTool<ProjectFile[]> {
   return {
     name: "list_project_files",
     description: "List PDF, Excel, DWG, and DXF files under PROJECT_ROOT.",

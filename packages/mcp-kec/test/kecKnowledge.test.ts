@@ -400,7 +400,11 @@ describe("KEC knowledge base", () => {
 
       expect(indexTool.name).toBe("index_kec");
       expect(searchTool.name).toBe("search_kec");
+      expect(typeof indexResult).not.toBe("string");
+      expect(typeof searchResult).not.toBe("string");
       expect(indexResult.indexedChunks).toBe(1);
+      expect(searchResult).toHaveProperty("results");
+      expect(Array.isArray(searchResult.results)).toBe(true);
       expect(searchResult.results[0]).toMatchObject({
         clause: "KEC 212.3",
         page: 1,

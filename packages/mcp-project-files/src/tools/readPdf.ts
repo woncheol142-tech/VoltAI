@@ -170,7 +170,7 @@ export async function readPdf(
   };
 }
 
-export function createReadPdfTool(): VoltAiTool {
+export function createReadPdfTool(): VoltAiTool<ReadPdfResult> {
   return {
     name: "read_pdf",
     description: "Read text from a PDF under PROJECT_ROOT.",

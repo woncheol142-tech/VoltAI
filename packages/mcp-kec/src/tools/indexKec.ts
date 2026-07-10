@@ -248,7 +248,7 @@ export async function indexKec(
   };
 }
 
-export function createIndexKecTool(deps: IndexKecToolDependencies = {}): VoltAiTool {
+export function createIndexKecTool(deps: IndexKecToolDependencies = {}): VoltAiTool<IndexKecResult> {
   return {
     name: "index_kec",
     description: "Index a KEC PDF into the local SQLite knowledge base.",

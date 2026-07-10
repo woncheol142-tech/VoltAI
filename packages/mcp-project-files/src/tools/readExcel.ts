@@ -150,7 +150,7 @@ export async function readExcel(
   };
 }
 
-export function createReadExcelTool(): VoltAiTool {
+export function createReadExcelTool(): VoltAiTool<ReadExcelResult> {
   return {
     name: "read_excel",
     description: "Read workbook sheets and sheet rows from an Excel file under PROJECT_ROOT.",

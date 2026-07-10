@@ -204,6 +204,7 @@ describe("readExcel", () => {
         sheets: ["Summary", "Notes"],
         sheetName: "Summary",
       });
+      expect(typeof result).not.toBe("string");
       expect(result.rows).toEqual([["Item", "Qty", "Unit"]]);
     } finally {
       if (originalProjectRoot === undefined) {

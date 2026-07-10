@@ -119,4 +119,30 @@ describe("listProjectFiles", () => {
       }
     }
   });
+
+  it("creates a list_project_files tool that returns a typed ProjectFile array", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/spec.pdf");
+    const tool = createListProjectFilesTool();
+    const originalProjectRoot = process.env.PROJECT_ROOT;
+    process.env.PROJECT_ROOT = root;
+
+    try {
+      const result = await tool.handler();
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(typeof result).not.toBe("string");
+      expect(result[0]).toMatchObject({
+        name: "spec.pdf",
+        relativePath: "docs/spec.pdf",
+        extension: ".pdf",
+      });
+    } finally {
+      if (originalProjectRoot === undefined) {
+        delete process.env.PROJECT_ROOT;
+      } else {
+        process.env.PROJECT_ROOT = originalProjectRoot;
+      }
+    }
+  });
 });

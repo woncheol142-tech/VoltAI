@@ -94,7 +94,7 @@ function resolveReviewProjectPath(projectRoot: string, requestedPath: string | u
   return realPath;
 }
 
-export function createReviewProjectTool(options: ReviewProjectToolOptions = {}): VoltAiTool {
+export function createReviewProjectTool(options: ReviewProjectToolOptions = {}): VoltAiTool<string> {
   return {
     name: "review_project",
     description: "Generate an engineering design review report for a project folder.",
