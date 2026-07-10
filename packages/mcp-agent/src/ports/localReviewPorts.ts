@@ -1,4 +1,8 @@
-import { MockReviewLlm, type ReviewProjectPorts } from "@voltai/agent-review";
+import {
+  createReviewLlmFromEnv,
+  type ReviewLlm,
+  type ReviewProjectPorts,
+} from "@voltai/agent-review";
 import {
   createEmbeddingProviderFromEnv,
   type EmbeddingProvider,
@@ -16,6 +20,7 @@ function createKecDbPath(projectPath: string): string {
 export type LocalReviewPortsDependencies = {
   embeddingProvider?: EmbeddingProvider;
   vectorStoreFactory?: () => VectorStore;
+  llm?: ReviewLlm;
 };
 
 export function createLocalReviewPorts(
@@ -44,7 +49,7 @@ export function createLocalReviewPorts(
           vectorStore,
         },
       ),
-    llm: new MockReviewLlm(),
+    llm: deps.llm ?? createReviewLlmFromEnv(),
     close: async () => {
       await vectorStore.close();
     },

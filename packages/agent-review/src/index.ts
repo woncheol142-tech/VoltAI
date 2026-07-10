@@ -10,6 +10,19 @@ export {
 export type { ReviewReport, ReviewReportItem } from "./report.js";
 export { analyzeDesignItemRelations } from "./designRelations.js";
 export { extractDesignItems } from "./designItems.js";
+export {
+  createReviewLlmFromEnv,
+  createReviewLlmProviderFromEnv,
+  MarkdownReviewPromptBuilder,
+  RealReviewLlm,
+  UnsupportedReviewLlmProvider,
+} from "./llm.js";
+export type {
+  ReviewLlmProvider,
+  ReviewLlmProviderName,
+  ReviewPrompt,
+  ReviewPromptBuilder,
+} from "./llm.js";
 export type { DesignItemRelationFinding } from "./designRelations.js";
 export { defaultReviewIngestionPolicy, reviewProject } from "./reviewProject.js";
 export type { DesignItemCandidate, DesignItemCorpus, DesignItemName } from "./designItems.js";

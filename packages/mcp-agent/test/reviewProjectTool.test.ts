@@ -186,6 +186,26 @@ describe("review_project MCP tool", () => {
     );
   });
 
+  it("local ports use the mock review LLM by default", async () => {
+    const root = createTempProject();
+    const ports = createLocalReviewPorts(root);
+
+    const output = await ports.llm.generateReview({
+      projectPath: root,
+      files: [],
+      pdfs: [],
+      excels: [],
+      kecResults: [],
+      itemReviews: [],
+      findings: [],
+    });
+
+    expect(output).toContain("# 프로젝트 개요");
+    expect(output).toContain("# 검토 의견");
+
+    await ports.close?.();
+  });
+
   it("local ports forward readPdf and readExcel options to project file readers", async () => {
     const root = createTempProject();
     writeProjectFile(root, "docs/panel.pdf", createTextPdf("Panel cable design"));
