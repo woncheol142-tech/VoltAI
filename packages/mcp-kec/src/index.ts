@@ -5,9 +5,20 @@ import { placeholderTool } from "./tools/placeholder.js";
 import { createSearchKecTool } from "./tools/searchKec.js";
 
 export { createEmbeddingProviderFromEnv } from "./knowledge/embedding.js";
+export {
+  kecChunkToKnowledgeChunk,
+  kecEmbeddedChunkToKnowledgeEmbeddedChunk,
+  kecIndexMetadataToKnowledgeIndexMetadata,
+  kecSearchResultToKnowledgeSearchResult,
+  knowledgeChunkToKecChunk,
+  knowledgeEmbeddedChunkToKecEmbeddedChunk,
+  knowledgeIndexMetadataToKecIndexMetadata,
+  knowledgeSearchResultToKecSearchResult,
+} from "./knowledge/kecKnowledgeAdapter.js";
 export { SqliteVectorStore } from "./knowledge/sqliteVectorStore.js";
 export { searchKec } from "./tools/searchKec.js";
 export type { EmbeddingProvider } from "./knowledge/embedding.js";
+export type { KecKnowledgeMetadata } from "./knowledge/kecKnowledgeAdapter.js";
 export type { KecSearchResult } from "./knowledge/vectorStore.js";
 export type { VectorStore } from "./knowledge/vectorStore.js";
 

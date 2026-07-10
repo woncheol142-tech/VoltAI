@@ -34,7 +34,13 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.0)
 
-  packages/agent-review: {}
+  packages/agent-review:
+    dependencies:
+      '@voltai/knowledge-core':
+        specifier: workspace:*
+        version: link:../knowledge-core
+
+  packages/knowledge-core: {}
 
   packages/mcp-agent:
     dependencies:
@@ -110,6 +116,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@3.25.76)
+      '@voltai/knowledge-core':
+        specifier: workspace:*
+        version: link:../knowledge-core
       '@voltai/mcp-core':
         specifier: workspace:*
         version: link:../mcp-core

@@ -9,6 +9,10 @@ export {
 } from "./report.js";
 export type { ReviewReport, ReviewReportItem } from "./report.js";
 export { analyzeDesignItemRelations } from "./designRelations.js";
+export {
+  kecCitationToKnowledgeCitation,
+  knowledgeCitationToKecCitation,
+} from "./kecCitationAdapter.js";
 export { extractDesignItems } from "./designItems.js";
 export {
   createReviewLlmFromEnv,
@@ -32,6 +36,7 @@ export type {
   ReviewPromptBuilder,
 } from "./llm.js";
 export type { DesignItemRelationFinding } from "./designRelations.js";
+export type { KecCitationMetadata } from "./kecCitationAdapter.js";
 export { defaultReviewIngestionPolicy, reviewProject } from "./reviewProject.js";
 export type { DesignItemCandidate, DesignItemCorpus, DesignItemName } from "./designItems.js";
 export type { ReviewIngestionPolicy, ReviewProjectInput } from "./reviewProject.js";
