@@ -74,6 +74,6 @@ export function createListProjectFilesTool(): VoltAiTool {
     name: "list_project_files",
     description: "List PDF, Excel, DWG, and DXF files under PROJECT_ROOT.",
     inputSchema: {},
-    handler: async () => JSON.stringify(listProjectFiles(process.env.PROJECT_ROOT)),
+    handler: async () => listProjectFiles(process.env.PROJECT_ROOT),
   };
 }

@@ -14,6 +14,18 @@ export type ConnectableMcpServer = {
   connect: (transport: StdioServerTransport) => Promise<void>;
 };
 
+function serializeToolResult<TResult>(tool: VoltAiTool<TResult>, result: TResult): string {
+  if (tool.serializeResult) {
+    return tool.serializeResult(result);
+  }
+
+  if (typeof result === "string") {
+    return result;
+  }
+
+  return JSON.stringify(result);
+}
+
 export function createVoltAiMcpServer(config: VoltAiMcpServerConfig): McpServer {
   const server = new McpServer({
     name: config.name,
@@ -23,7 +35,8 @@ export function createVoltAiMcpServer(config: VoltAiMcpServerConfig): McpServer 
   for (const tool of config.tools) {
     server.tool(tool.name, tool.description, tool.inputSchema, async (input) => {
       try {
-        const text = await tool.handler(input);
+        const result = await tool.handler(input);
+        const text = serializeToolResult(tool, result);
         return {
           content: [{ type: "text" as const, text }],
         };

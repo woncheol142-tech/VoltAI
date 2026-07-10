@@ -83,6 +83,7 @@ describe("readExcel", () => {
       ["Cable", 10, "m"],
       ["Panel", null, "ea"],
     ]);
+    expect(result.totalRows).toBe(3);
   });
 
   it("limits returned rows with maxRows", async () => {
@@ -99,6 +100,7 @@ describe("readExcel", () => {
       ["Item", "Qty", "Unit"],
       ["Cable", 10, "m"],
     ]);
+    expect(result.totalRows).toBe(3);
   });
 
   it("rejects absolute paths", async () => {
@@ -190,12 +192,11 @@ describe("readExcel", () => {
 
     try {
       const tool = createReadExcelTool();
-      const json = await tool.handler({
+      const result = await tool.handler({
         relativePath: "estimate/input.xlsx",
         sheetName: "Summary",
         maxRows: 1,
       });
-      const result = JSON.parse(json);
 
       expect(tool.name).toBe("read_excel");
       expect(result).toMatchObject({

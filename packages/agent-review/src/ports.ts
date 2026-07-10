@@ -14,6 +14,7 @@ export type PdfReadResult = {
     page: number;
     text: string;
   }>;
+  truncated?: boolean;
 };
 
 export type ExcelReadResult = {
@@ -21,6 +22,7 @@ export type ExcelReadResult = {
   sheets: string[];
   sheetName?: string;
   rows?: unknown[][];
+  totalRows?: number;
 };
 
 export type KecSearchResult = {

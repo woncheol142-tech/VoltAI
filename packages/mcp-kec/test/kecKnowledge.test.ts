@@ -395,10 +395,8 @@ describe("KEC knowledge base", () => {
       const indexTool = createIndexKecTool({ embeddingProvider });
       const searchTool = createSearchKecTool({ embeddingProvider });
 
-      const indexResult = JSON.parse(await indexTool.handler({ relativePath: "kec/kec.pdf" }));
-      const searchResult = JSON.parse(
-        await searchTool.handler({ question: "차단기 보호", topK: 5 }),
-      );
+      const indexResult = await indexTool.handler({ relativePath: "kec/kec.pdf" });
+      const searchResult = await searchTool.handler({ question: "차단기 보호", topK: 5 });
 
       expect(indexTool.name).toBe("index_kec");
       expect(searchTool.name).toBe("search_kec");

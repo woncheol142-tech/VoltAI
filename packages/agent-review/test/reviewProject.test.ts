@@ -260,6 +260,7 @@ describe("reviewProject", () => {
           sheets: ["Summary"],
           sheetName: "Summary",
           rows,
+          totalRows: 51,
         }),
     });
 
@@ -270,12 +271,38 @@ describe("reviewProject", () => {
     );
   });
 
+  it("does not report an Excel row limit warning when totalRows equals reviewed rows", async () => {
+    const rows = Array.from({ length: 50 }, (_, index) => [`Cable row ${index + 1}`]);
+    const ports = createPorts({
+      readExcel: vi
+        .fn()
+        .mockResolvedValueOnce({
+          relativePath: "estimate/estimate.xlsx",
+          sheets: ["Summary"],
+        })
+        .mockResolvedValueOnce({
+          relativePath: "estimate/estimate.xlsx",
+          sheets: ["Summary"],
+          sheetName: "Summary",
+          rows,
+          totalRows: 50,
+        }),
+    });
+
+    const report = await reviewProject({ projectPath: "/project" }, ports);
+
+    expect(report).not.toContain(
+      "warning: estimate/estimate.xlsx [Summary] was limited to 50 rows",
+    );
+  });
+
   it("passes PDF maxCharsPerFile policy to readPdf and reports coverage warning", async () => {
     const readPdf = vi.fn().mockResolvedValue({
       relativePath: "docs/panel.pdf",
       pageCount: 2,
       text: "Panel cable design.",
       pages: [{ page: 1, text: "Panel cable design." }],
+      truncated: true,
     });
     const ports = createPorts({ readPdf });
 
@@ -305,6 +332,36 @@ describe("reviewProject", () => {
     expect(report).toContain("# 잠재 위험");
     expect(report).toContain("# 확인 필요사항");
     expect(report).toContain("# 검토 의견");
+  });
+
+  it("does not report a PDF coverage warning when maxChars does not truncate the PDF", async () => {
+    const readPdf = vi.fn().mockResolvedValue({
+      relativePath: "docs/panel.pdf",
+      pageCount: 2,
+      text: "Panel cable design.",
+      pages: [{ page: 1, text: "Panel cable design." }],
+      truncated: false,
+    });
+    const ports = createPorts({ readPdf });
+
+    const report = await reviewProject(
+      {
+        projectPath: "/project",
+        ingestionPolicy: {
+          excel: {
+            sheetSelection: "first",
+            maxRowsPerSheet: 50,
+          },
+          pdf: {
+            maxCharsPerFile: 20,
+          },
+          coverageWarnings: true,
+        },
+      },
+      ports,
+    );
+
+    expect(report).not.toContain("warning: docs/panel.pdf was limited to 20 characters");
   });
 
   it("searches KEC for each discovered design item and renders item reviews", async () => {

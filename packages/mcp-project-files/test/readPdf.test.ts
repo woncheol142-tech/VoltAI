@@ -151,6 +151,31 @@ describe("readPdf", () => {
     expect(result.text).toBe("1234");
   });
 
+  it("marks PDF text as truncated when maxChars cuts off available text", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/long.pdf", createTextPdf("1234567890"));
+
+    const result = await readPdf(root, {
+      relativePath: "docs/long.pdf",
+      maxChars: 4,
+    });
+
+    expect(result.truncated).toBe(true);
+  });
+
+  it("does not mark PDF text as truncated when maxChars covers all text", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/short.pdf", createTextPdf("12345"));
+
+    const result = await readPdf(root, {
+      relativePath: "docs/short.pdf",
+      maxChars: 10,
+    });
+
+    expect(result.text).toBe("12345");
+    expect(result.truncated).toBe(false);
+  });
+
   it("keeps page-level text consistent with maxChars truncation", async () => {
     const root = createTempProject();
     writeProjectFile(root, "docs/long.pdf", createMultiPageTextPdf(["12345", "67890"]));
@@ -244,8 +269,7 @@ describe("readPdf", () => {
 
     try {
       const tool = createReadPdfTool();
-      const json = await tool.handler({ relativePath: "docs/spec.pdf" });
-      const result = JSON.parse(json);
+      const result = await tool.handler({ relativePath: "docs/spec.pdf" });
 
       expect(tool.name).toBe("read_pdf");
       expect(result).toMatchObject({

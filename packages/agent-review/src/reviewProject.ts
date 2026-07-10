@@ -98,7 +98,7 @@ async function readPdfWithPolicy(
       : { maxChars: policy.pdf.maxCharsPerFile };
   const pdf = await ports.readPdf(file.relativePath, options);
 
-  if (policy.pdf.maxCharsPerFile !== undefined) {
+  if (policy.pdf.maxCharsPerFile !== undefined && pdf.truncated === true) {
     addCoverageWarning(
       findings,
       policy,
@@ -135,7 +135,7 @@ async function readExcelWithPolicy(
     maxRows: policy.excel.maxRowsPerSheet,
   });
 
-  if ((excel.rows?.length ?? 0) === policy.excel.maxRowsPerSheet) {
+  if (excel.totalRows !== undefined && excel.totalRows > (excel.rows?.length ?? 0)) {
     addCoverageWarning(
       findings,
       policy,

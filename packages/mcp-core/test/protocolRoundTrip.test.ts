@@ -25,7 +25,7 @@ describe("mcp-core protocol round-trip", () => {
       inputSchema: {
         relativePath: z.string().min(1),
       },
-      handler: (input) => JSON.stringify(input),
+      handler: (input) => input,
     };
     const client = await connectInMemory(
       createVoltAiMcpServer({
@@ -44,6 +44,83 @@ describe("mcp-core protocol round-trip", () => {
       {
         type: "text",
         text: JSON.stringify({ relativePath: "docs/panel.pdf" }),
+      },
+    ]);
+  });
+
+  it("serializes object results as JSON text at the MCP boundary", async () => {
+    const objectTool: VoltAiTool<{ ok: boolean; count: number }> = {
+      name: "object_result",
+      description: "Return an object.",
+      inputSchema: {},
+      handler: () => ({ ok: true, count: 2 }),
+    };
+    const client = await connectInMemory(
+      createVoltAiMcpServer({
+        name: "mcp-core-object-result",
+        version: "0.1.0",
+        tools: [objectTool],
+      }),
+    );
+
+    const result = await client.callTool({ name: "object_result", arguments: {} });
+
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: JSON.stringify({ ok: true, count: 2 }),
+      },
+    ]);
+    expect(JSON.parse(result.content[0].text)).toEqual({ ok: true, count: 2 });
+  });
+
+  it("passes string results through unchanged at the MCP boundary", async () => {
+    const textTool: VoltAiTool<string> = {
+      name: "text_result",
+      description: "Return text.",
+      inputSchema: {},
+      handler: () => "# 프로젝트 개요",
+    };
+    const client = await connectInMemory(
+      createVoltAiMcpServer({
+        name: "mcp-core-text-result",
+        version: "0.1.0",
+        tools: [textTool],
+      }),
+    );
+
+    const result = await client.callTool({ name: "text_result", arguments: {} });
+
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: "# 프로젝트 개요",
+      },
+    ]);
+  });
+
+  it("uses a custom serializer when a tool provides one", async () => {
+    const customTool: VoltAiTool<{ value: number }> = {
+      name: "custom_result",
+      description: "Return custom text.",
+      inputSchema: {},
+      handler: () => ({ value: 7 }),
+      serializeResult: (result) => `value=${result.value}`,
+    };
+    const client = await connectInMemory(
+      createVoltAiMcpServer({
+        name: "mcp-core-custom-result",
+        version: "0.1.0",
+        tools: [customTool],
+      }),
+    );
+
+    const result = await client.callTool({ name: "custom_result", arguments: {} });
+
+    expect(result.content).toEqual([
+      {
+        type: "text",
+        text: "value=7",
       },
     ]);
   });

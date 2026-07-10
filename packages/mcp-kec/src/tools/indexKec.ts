@@ -270,7 +270,7 @@ export function createIndexKecTool(deps: IndexKecToolDependencies = {}): VoltAiT
           vectorStore,
         });
 
-        return JSON.stringify(result);
+        return result;
       } finally {
         if (!deps.vectorStore) {
           await vectorStore.close();

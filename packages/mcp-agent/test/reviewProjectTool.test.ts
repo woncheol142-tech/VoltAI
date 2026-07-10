@@ -90,6 +90,7 @@ describe("review_project MCP tool", () => {
         }),
       );
       expect(report).toContain("# 프로젝트 개요");
+      expect(typeof report).toBe("string");
     } finally {
       if (originalProjectRoot === undefined) {
         delete process.env.PROJECT_ROOT;

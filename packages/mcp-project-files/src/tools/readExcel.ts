@@ -21,6 +21,7 @@ export type ReadExcelResult = {
   sheets: string[];
   sheetName?: string;
   rows?: unknown[][];
+  totalRows?: number;
 };
 
 function assertReadExcelInput(input: unknown): ReadExcelInput {
@@ -66,7 +67,7 @@ function readSheetRows(
   workbook: ExcelJS.Workbook,
   sheetName: string,
   maxRows?: number,
-): unknown[][] {
+): { rows: unknown[][]; totalRows: number } {
   const sheet = workbook.getWorksheet(sheetName);
 
   if (!sheet) {
@@ -74,12 +75,9 @@ function readSheetRows(
   }
 
   const rows: unknown[][] = [];
+  let totalRows = 0;
 
   sheet.eachRow((row) => {
-    if (maxRows !== undefined && rows.length >= maxRows) {
-      return;
-    }
-
     const values = Array.isArray(row.values) ? row.values.slice(1) : [];
     let lastValueIndex = -1;
 
@@ -90,6 +88,12 @@ function readSheetRows(
     }
 
     if (lastValueIndex < 0) {
+      return;
+    }
+
+    totalRows += 1;
+
+    if (maxRows !== undefined && rows.length >= maxRows) {
       return;
     }
 
@@ -112,7 +116,7 @@ function readSheetRows(
     rows.push(normalizedValues);
   });
 
-  return rows;
+  return { rows, totalRows };
 }
 
 export async function readExcel(
@@ -136,10 +140,13 @@ export async function readExcel(
     return result;
   }
 
+  const sheetRows = readSheetRows(workbook, sheetName, maxRows);
+
   return {
     ...result,
     sheetName,
-    rows: readSheetRows(workbook, sheetName, maxRows),
+    rows: sheetRows.rows,
+    totalRows: sheetRows.totalRows,
   };
 }
 
@@ -152,6 +159,6 @@ export function createReadExcelTool(): VoltAiTool {
       sheetName: z.string().optional(),
       maxRows: z.number().int().positive().optional(),
     },
-    handler: async (input) => JSON.stringify(await readExcel(process.env.PROJECT_ROOT, input)),
+    handler: async (input) => readExcel(process.env.PROJECT_ROOT, input),
   };
 }

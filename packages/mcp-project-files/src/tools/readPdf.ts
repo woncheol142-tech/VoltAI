@@ -24,6 +24,7 @@ export type ReadPdfResult = {
     page: number;
     text: string;
   }>;
+  truncated: boolean;
 };
 
 function assertReadPdfInput(input: unknown): ReadPdfInput {
@@ -114,11 +115,13 @@ export async function readPdf(
   });
   const document = await loadingTask.promise;
   let text = "";
+  let truncated = false;
   const pages: ReadPdfResult["pages"] = [];
 
   try {
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       if (maxChars !== undefined && text.length >= maxChars) {
+        truncated = true;
         break;
       }
 
@@ -132,6 +135,10 @@ export async function readPdf(
 
       if (pageText.length > 0) {
         const includedPageText = truncatePageTextForAggregate(text, pageText, maxChars).trim();
+
+        if (includedPageText.length < pageText.length) {
+          truncated = true;
+        }
 
         if (includedPageText.length > 0) {
           pages.push({
@@ -159,6 +166,7 @@ export async function readPdf(
     pageCount: document.numPages,
     text: normalizedText,
     pages,
+    truncated,
   };
 }
 
@@ -170,6 +178,6 @@ export function createReadPdfTool(): VoltAiTool {
       relativePath: z.string().min(1),
       maxChars: z.number().int().positive().optional(),
     },
-    handler: async (input) => JSON.stringify(await readPdf(process.env.PROJECT_ROOT, input)),
+    handler: async (input) => readPdf(process.env.PROJECT_ROOT, input),
   };
 }

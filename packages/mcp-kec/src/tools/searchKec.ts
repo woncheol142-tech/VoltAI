@@ -93,7 +93,7 @@ export function createSearchKecTool(deps: SearchKecToolDependencies = {}): VoltA
           vectorStore,
         });
 
-        return JSON.stringify({ results });
+        return { results };
       } finally {
         if (!deps.vectorStore) {
           await vectorStore.close();
