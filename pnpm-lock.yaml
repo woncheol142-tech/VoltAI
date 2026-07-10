@@ -57,6 +57,9 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
+      exceljs:
+        specifier: ^4.4.0
+        version: 4.4.0
       tsx:
         specifier: ^4.19.2
         version: 4.23.0
