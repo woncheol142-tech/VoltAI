@@ -3,13 +3,14 @@ import { describe, expect, it } from "vitest";
 import { extractDesignItems } from "../src/designItems.js";
 
 describe("extractDesignItems", () => {
-  it("extracts cable and grounding items from PDF text", () => {
+  it("extracts cable and grounding items from PDF pages", () => {
     const items = extractDesignItems({
       pdfs: [
         {
           relativePath: "docs/design.pdf",
           pageCount: 3,
           text: "케이블 포설 계획과 접지 저항 기준을 확인한다.",
+          pages: [{ page: 3, text: "케이블 포설 계획과 접지 저항 기준을 확인한다." }],
         },
       ],
       excels: [],
@@ -19,14 +20,15 @@ describe("extractDesignItems", () => {
     expect(items[0].evidence[0]).toEqual({
       sourceType: "pdf",
       sourcePath: "docs/design.pdf",
-      excerpt: "docs/design.pdf: 케이블 포설 계획과 접지 저항 기준을 확인한다.",
+      page: 3,
+      excerpt: "케이블 포설 계획과 접지 저항 기준을 확인한다.",
     });
     expect(items[1].evidence[0]).toEqual({
       sourceType: "pdf",
       sourcePath: "docs/design.pdf",
-      excerpt: "docs/design.pdf: 케이블 포설 계획과 접지 저항 기준을 확인한다.",
+      page: 3,
+      excerpt: "케이블 포설 계획과 접지 저항 기준을 확인한다.",
     });
-    expect(items[0].evidence[0]).not.toHaveProperty("page");
   });
 
   it("extracts PDF evidence with page provenance when page text is available", () => {
@@ -101,6 +103,12 @@ describe("extractDesignItems", () => {
           relativePath: "docs/mixed.pdf",
           pageCount: 1,
           text: "cable and 전선 sizing, ELB breaker coordination, panel schedule",
+          pages: [
+            {
+              page: 1,
+              text: "cable and 전선 sizing, ELB breaker coordination, panel schedule",
+            },
+          ],
         },
       ],
       excels: [],
@@ -116,6 +124,7 @@ describe("extractDesignItems", () => {
           relativePath: "docs/design.pdf",
           pageCount: 1,
           text: "케이블 포설 계획을 확인한다.\n케이블 포설 계획을 확인한다.",
+          pages: [{ page: 1, text: "케이블 포설 계획을 확인한다.\n케이블 포설 계획을 확인한다." }],
         },
       ],
       excels: [],
@@ -137,6 +146,17 @@ describe("extractDesignItems", () => {
             "케이블 C 포설 계획을 확인한다.",
             "케이블 D 포설 계획을 확인한다.",
           ].join("\n"),
+          pages: [
+            {
+              page: 1,
+              text: [
+                "케이블 A 포설 계획을 확인한다.",
+                "케이블 B 포설 계획을 확인한다.",
+                "케이블 C 포설 계획을 확인한다.",
+                "케이블 D 포설 계획을 확인한다.",
+              ].join("\n"),
+            },
+          ],
         },
       ],
       excels: [],
@@ -144,7 +164,7 @@ describe("extractDesignItems", () => {
 
     expect(items[0].evidence).toHaveLength(3);
     expect(items[0].evidence.map((evidence) => evidence.excerpt)).not.toContain(
-      "docs/design.pdf: 케이블 D 포설 계획을 확인한다.",
+      "케이블 D 포설 계획을 확인한다.",
     );
   });
 

@@ -72,22 +72,14 @@ function splitEvidenceText(text: string): string[] {
 }
 
 function collectPdfEvidence(pdf: PdfReadResult): StructuredEvidence[] {
-  if (pdf.pages && pdf.pages.length > 0) {
-    return pdf.pages.flatMap((page) =>
-      splitEvidenceText(page.text).map((line) => ({
-        sourceType: "pdf" as const,
-        sourcePath: pdf.relativePath,
-        page: page.page,
-        excerpt: line,
-      })),
-    );
-  }
-
-  return splitEvidenceText(pdf.text).map((line) => ({
-    sourceType: "pdf" as const,
-    sourcePath: pdf.relativePath,
-    excerpt: `${pdf.relativePath}: ${line}`,
-  }));
+  return pdf.pages.flatMap((page) =>
+    splitEvidenceText(page.text).map((line) => ({
+      sourceType: "pdf" as const,
+      sourcePath: pdf.relativePath,
+      page: page.page,
+      excerpt: line,
+    })),
+  );
 }
 
 function collectCorpusEvidence(corpus: DesignItemCorpus): StructuredEvidence[] {

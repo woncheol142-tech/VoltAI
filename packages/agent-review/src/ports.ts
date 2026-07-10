@@ -10,7 +10,7 @@ export type PdfReadResult = {
   relativePath: string;
   pageCount: number;
   text: string;
-  pages?: Array<{
+  pages: Array<{
     page: number;
     text: string;
   }>;

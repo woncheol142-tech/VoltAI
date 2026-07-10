@@ -28,6 +28,8 @@ function createPorts(overrides: Partial<ReviewProjectPorts> = {}): ReviewProject
       relativePath: "docs/panel.pdf",
       pageCount: 2,
       text: "Main panel cable sizing and grounding design.",
+      pages: [{ page: 1, text: "Main panel cable sizing and grounding design." }],
+      truncated: false,
     }),
     readExcel: vi.fn().mockResolvedValue({
       relativePath: "estimate/estimate.xlsx",
@@ -78,6 +80,8 @@ describe("reviewProject", () => {
           relativePath: "docs/panel.pdf",
           pageCount: 2,
           text: "Panel cable design.",
+          pages: [{ page: 1, text: "Panel cable design." }],
+          truncated: false,
         };
       }),
       readExcel: vi.fn().mockImplementation(async () => {
@@ -409,6 +413,7 @@ describe("reviewProject", () => {
         pageCount: 2,
         text: "케이블 포설 및 접지 계획을 검토한다.",
         pages: [{ page: 1, text: "케이블 포설 및 접지 계획을 검토한다." }],
+        truncated: false,
       }),
       readExcel: vi.fn().mockResolvedValue({
         relativePath: "estimate/estimate.xlsx",
@@ -442,6 +447,8 @@ describe("reviewProject", () => {
         relativePath: "docs/panel.pdf",
         pageCount: 2,
         text: "케이블 포설 계획을 검토한다.",
+        pages: [{ page: 1, text: "케이블 포설 계획을 검토한다." }],
+        truncated: false,
       }),
       readExcel: vi.fn().mockResolvedValue({
         relativePath: "estimate/estimate.xlsx",
@@ -464,6 +471,7 @@ describe("reviewProject", () => {
         pageCount: 3,
         text: "조명 부하 산정을 확인한다.",
         pages: [{ page: 3, text: "조명 부하 산정을 확인한다." }],
+        truncated: false,
       }),
       readExcel: vi.fn().mockResolvedValue({
         relativePath: "estimate.xlsx",
@@ -503,6 +511,8 @@ describe("reviewProject", () => {
         relativePath: "docs/panel.pdf",
         pageCount: 2,
         text: "케이블 포설과 전압강하 계산을 함께 검토한다.",
+        pages: [{ page: 1, text: "케이블 포설과 전압강하 계산을 함께 검토한다." }],
+        truncated: false,
       }),
       readExcel: vi.fn().mockResolvedValue({
         relativePath: "estimate/estimate.xlsx",
@@ -565,6 +575,8 @@ describe("reviewProject", () => {
         relativePath: "docs/notes.pdf",
         pageCount: 1,
         text: "General project notes only.",
+        pages: [{ page: 1, text: "General project notes only." }],
+        truncated: false,
       }),
       readExcel: vi.fn().mockResolvedValue({
         relativePath: "estimate/notes.xlsx",

@@ -45,10 +45,6 @@ function formatEvidence(evidence: StructuredEvidence): string {
     return `${evidence.sourcePath} p.${evidence.page}: ${evidence.excerpt}`;
   }
 
-  if (evidence.excerpt.startsWith(`${evidence.sourcePath}:`)) {
-    return evidence.excerpt;
-  }
-
   return `${evidence.sourcePath}: ${evidence.excerpt}`;
 }
 
