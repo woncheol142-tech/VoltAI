@@ -10,7 +10,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "vitest run --root ../.. packages/mcp-agent/test",
-    "test:e2e": "vitest run --root ../.. packages/mcp-agent/test/e2e"
+    "test:e2e": "vitest run --root ../.. packages/mcp-agent/test/e2e",
+    "test:benchmark": "vitest run --root ../.. packages/mcp-agent/test/benchmark"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
