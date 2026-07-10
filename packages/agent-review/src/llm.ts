@@ -17,10 +17,29 @@ export type ReviewPromptBuilder = {
 
 export type ReviewLlmProviderName = "ollama" | "glm" | "openai" | "openrouter";
 
+export type ReviewLlmFailureKind =
+  | "missing-api-key"
+  | "timeout"
+  | "network"
+  | "rate-limit"
+  | "server-error"
+  | "client-error"
+  | "auth-error"
+  | "malformed-response"
+  | "unsupported-provider";
+
 export type ReviewLlmProvider = {
   name: ReviewLlmProviderName;
   model?: string;
   generate: (prompt: ReviewPrompt) => Promise<string>;
+};
+
+export type ReviewLlmProviderErrorOptions = {
+  provider: ReviewLlmProviderName;
+  kind: ReviewLlmFailureKind;
+  retryable: boolean;
+  fallbackAllowed: boolean;
+  message: string;
 };
 
 type GlmEnvironment = ReviewLlmEnvironment & {
@@ -60,8 +79,25 @@ class GlmReviewError extends Error {
   constructor(
     message: string,
     readonly retryable: boolean,
+    readonly kind: ReviewLlmFailureKind,
+    readonly fallbackAllowed: boolean,
   ) {
     super(message);
+  }
+}
+
+export class ReviewLlmProviderError extends Error {
+  readonly provider: ReviewLlmProviderName;
+  readonly kind: ReviewLlmFailureKind;
+  readonly retryable: boolean;
+  readonly fallbackAllowed: boolean;
+
+  constructor(options: ReviewLlmProviderErrorOptions) {
+    super(options.message);
+    this.provider = options.provider;
+    this.kind = options.kind;
+    this.retryable = options.retryable;
+    this.fallbackAllowed = options.fallbackAllowed;
   }
 }
 
@@ -104,7 +140,13 @@ export class UnsupportedReviewLlmProvider implements ReviewLlmProvider {
 
   async generate(prompt: ReviewPrompt): Promise<string> {
     void prompt;
-    throw new Error(`Review LLM provider "${this.name}" is not implemented yet`);
+    throw new ReviewLlmProviderError({
+      provider: this.name,
+      kind: "unsupported-provider",
+      retryable: false,
+      fallbackAllowed: false,
+      message: `Review LLM provider "${this.name}" is not implemented yet`,
+    });
   }
 }
 
@@ -206,6 +248,8 @@ function parseGlmContent(body: unknown): string {
     throw new GlmReviewError(
       "GLM review response was malformed: choices[0].message.content is required",
       false,
+      "malformed-response",
+      false,
     );
   }
 
@@ -227,7 +271,13 @@ export class GlmReviewLlmProvider implements ReviewLlmProvider {
 
   async generate(prompt: ReviewPrompt): Promise<string> {
     if (!this.options.apiKey) {
-      throw new Error("ZAI_API_KEY is required when REVIEW_LLM_PROVIDER=glm");
+      throw new ReviewLlmProviderError({
+        provider: "glm",
+        kind: "missing-api-key",
+        retryable: false,
+        fallbackAllowed: false,
+        message: "ZAI_API_KEY is required when REVIEW_LLM_PROVIDER=glm",
+      });
     }
 
     let lastError: unknown;
@@ -241,16 +291,24 @@ export class GlmReviewLlmProvider implements ReviewLlmProvider {
 
         if (!normalizedError.retryable || attempt >= this.options.maxAttempts) {
           if (attempt > 1 && normalizedError.retryable) {
-            throw new Error(
-              `GLM review request failed after ${attempt} attempts: ${normalizedError.message}`,
-            );
+            throw new ReviewLlmProviderError({
+              provider: "glm",
+              kind: normalizedError.kind,
+              retryable: normalizedError.retryable,
+              fallbackAllowed: normalizedError.fallbackAllowed,
+              message: `GLM review request failed after ${attempt} attempts: ${normalizedError.message}`,
+            });
           }
 
-          throw normalizedError;
+          throw this.toProviderError(normalizedError);
         }
 
         await delay(this.options.retryDelayMs);
       }
+    }
+
+    if (lastError instanceof GlmReviewError) {
+      throw this.toProviderError(lastError);
     }
 
     throw lastError instanceof Error ? lastError : new Error("GLM review request failed");
@@ -282,6 +340,8 @@ export class GlmReviewLlmProvider implements ReviewLlmProvider {
         throw new GlmReviewError(
           formatGlmHttpError(response.status, body),
           response.status === 429 || response.status >= 500,
+          this.classifyHttpError(response.status),
+          response.status === 429 || response.status >= 500,
         );
       }
 
@@ -296,9 +356,20 @@ export class GlmReviewLlmProvider implements ReviewLlmProvider {
       return error;
     }
 
+    if (error instanceof ReviewLlmProviderError) {
+      return new GlmReviewError(
+        error.message,
+        error.retryable,
+        error.kind,
+        error.fallbackAllowed,
+      );
+    }
+
     if (isAbortError(error)) {
       return new GlmReviewError(
         `GLM review request timed out after ${this.options.timeoutMs}ms`,
+        true,
+        "timeout",
         true,
       );
     }
@@ -306,7 +377,35 @@ export class GlmReviewLlmProvider implements ReviewLlmProvider {
     return new GlmReviewError(
       error instanceof Error ? error.message : "GLM review request failed",
       true,
+      "network",
+      true,
     );
+  }
+
+  private classifyHttpError(status: number): ReviewLlmFailureKind {
+    if (status === 429) {
+      return "rate-limit";
+    }
+
+    if (status === 401 || status === 403) {
+      return "auth-error";
+    }
+
+    if (status >= 500) {
+      return "server-error";
+    }
+
+    return "client-error";
+  }
+
+  private toProviderError(error: GlmReviewError): ReviewLlmProviderError {
+    return new ReviewLlmProviderError({
+      provider: "glm",
+      kind: error.kind,
+      retryable: error.retryable,
+      fallbackAllowed: error.fallbackAllowed,
+      message: error.message,
+    });
   }
 }
 
@@ -324,9 +423,51 @@ export class RealReviewLlm implements ReviewLlm {
   }
 }
 
+export type ReviewLlmFallbackPolicy = "none" | "mock";
+
+export type FallbackReviewLlmOptions = {
+  primary: ReviewLlm;
+  fallback: ReviewLlm;
+  policy?: ReviewLlmFallbackPolicy;
+};
+
+const fallbackWarning =
+  "> ⚠️ GLM provider unavailable. This report was generated using the local mock fallback.";
+
+export class FallbackReviewLlm implements ReviewLlm {
+  private readonly primary: ReviewLlm;
+  private readonly fallback: ReviewLlm;
+  private readonly policy: ReviewLlmFallbackPolicy;
+
+  constructor(options: FallbackReviewLlmOptions) {
+    this.primary = options.primary;
+    this.fallback = options.fallback;
+    this.policy = options.policy ?? "none";
+  }
+
+  async generateReview(input: ReviewPromptInput): Promise<string> {
+    try {
+      return await this.primary.generateReview(input);
+    } catch (error) {
+      if (
+        this.policy !== "mock" ||
+        !(error instanceof ReviewLlmProviderError) ||
+        !error.fallbackAllowed
+      ) {
+        throw error;
+      }
+
+      const fallbackMarkdown = await this.fallback.generateReview(input);
+
+      return `${fallbackWarning}\n\n${fallbackMarkdown}`;
+    }
+  }
+}
+
 type ReviewLlmEnvironment = {
   REVIEW_LLM_PROVIDER?: string;
   REVIEW_LLM_MODEL?: string;
+  REVIEW_LLM_FALLBACK?: string;
 };
 
 function isReviewLlmProviderName(value: string): value is ReviewLlmProviderName {
@@ -355,13 +496,36 @@ export function createReviewLlmProviderFromEnv(
 
 export function createReviewLlmFromEnv(env: ReviewLlmEnvironment = process.env): ReviewLlm {
   const providerName = env.REVIEW_LLM_PROVIDER ?? "mock";
+  const fallbackPolicy = resolveFallbackPolicy(env.REVIEW_LLM_FALLBACK);
 
   if (providerName === "mock") {
     return new MockReviewLlm();
   }
 
-  return new RealReviewLlm(
+  const primary = new RealReviewLlm(
     new MarkdownReviewPromptBuilder(),
     createReviewLlmProviderFromEnv(env),
   );
+
+  if (providerName === "glm" && fallbackPolicy === "mock") {
+    return new FallbackReviewLlm({
+      primary,
+      fallback: new MockReviewLlm(),
+      policy: "mock",
+    });
+  }
+
+  return primary;
+}
+
+function resolveFallbackPolicy(value: string | undefined): ReviewLlmFallbackPolicy {
+  if (value === undefined || value.length === 0) {
+    return "none";
+  }
+
+  if (value === "none" || value === "mock") {
+    return value;
+  }
+
+  throw new Error(`Unsupported REVIEW_LLM_FALLBACK "${value}"`);
 }

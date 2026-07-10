@@ -7,6 +7,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run --root ../.. packages/agent-review/test"
+    "test": "vitest run --root ../.. packages/agent-review/test",
+    "smoke:glm": "tsc -p tsconfig.json && node dist/smoke/glm.js"
   }
 }

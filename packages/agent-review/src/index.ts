@@ -13,15 +13,21 @@ export { extractDesignItems } from "./designItems.js";
 export {
   createReviewLlmFromEnv,
   createReviewLlmProviderFromEnv,
+  FallbackReviewLlm,
   GlmReviewLlmProvider,
   MarkdownReviewPromptBuilder,
   RealReviewLlm,
+  ReviewLlmProviderError,
   UnsupportedReviewLlmProvider,
 } from "./llm.js";
 export type {
+  FallbackReviewLlmOptions,
   GlmReviewLlmProviderOptions,
+  ReviewLlmFailureKind,
+  ReviewLlmFallbackPolicy,
   ReviewLlmProvider,
   ReviewLlmProviderName,
+  ReviewLlmProviderErrorOptions,
   ReviewPrompt,
   ReviewPromptBuilder,
 } from "./llm.js";
