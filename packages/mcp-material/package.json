@@ -12,7 +12,11 @@
     "test": "vitest run --root ../.. packages/mcp-material/test"
   },
   "dependencies": {
+    "@voltai/knowledge-core": "workspace:*",
+    "@voltai/knowledge-material": "workspace:*",
+    "@voltai/knowledge-sqlite": "workspace:*",
     "@voltai/mcp-core": "workspace:*",
+    "@voltai/mcp-project-files": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^3.24.1"
   },

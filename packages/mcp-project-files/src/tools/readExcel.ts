@@ -24,6 +24,17 @@ export type ReadExcelResult = {
   totalRows?: number;
 };
 
+export type ExcelProvenanceRow = {
+  rowIndex: number;
+  values: unknown[];
+};
+
+export type ReadExcelSheetWithProvenanceResult = {
+  relativePath: string;
+  sheetName: string;
+  rows: ExcelProvenanceRow[];
+};
+
 function assertReadExcelInput(input: unknown): ReadExcelInput {
   if (!input || typeof input !== "object") {
     throw new Error("relativePath is required");
@@ -119,6 +130,83 @@ function readSheetRows(
   return { rows, totalRows };
 }
 
+function normalizeProvenanceCell(value: unknown): unknown {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (value === undefined) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "object") {
+    if ("error" in value && typeof value.error === "string") {
+      return value.error;
+    }
+    if ("result" in value) {
+      return normalizeProvenanceCell((value as { result?: unknown }).result ?? null);
+    }
+    if ("richText" in value && Array.isArray(value.richText)) {
+      return value.richText
+        .map((part) =>
+          typeof part === "object" && part !== null && "text" in part && typeof part.text === "string"
+            ? part.text
+            : "",
+        )
+        .join("");
+    }
+    if ("text" in value && typeof value.text === "string") {
+      return value.text;
+    }
+  }
+
+  return null;
+}
+
+function readSheetRowsWithProvenance(
+  workbook: ExcelJS.Workbook,
+  sheetName: string,
+): ExcelProvenanceRow[] {
+  const sheet = workbook.getWorksheet(sheetName);
+
+  if (!sheet) {
+    throw new Error("Sheet not found");
+  }
+
+  const rows: ExcelProvenanceRow[] = [];
+
+  sheet.eachRow((row) => {
+    const values = Array.isArray(row.values) ? row.values.slice(1) : [];
+    let lastValueIndex = -1;
+
+    for (let index = 0; index < values.length; index += 1) {
+      if (values[index] !== null && values[index] !== undefined) {
+        lastValueIndex = index;
+      }
+    }
+
+    if (lastValueIndex < 0) {
+      return;
+    }
+
+    rows.push({
+      rowIndex: row.number,
+      values: values.slice(0, lastValueIndex + 1).map(normalizeProvenanceCell),
+    });
+  });
+
+  return rows;
+}
+
 export async function readExcel(
   projectRoot: string | undefined,
   input: unknown,
@@ -147,6 +235,31 @@ export async function readExcel(
     sheetName,
     rows: sheetRows.rows,
     totalRows: sheetRows.totalRows,
+  };
+}
+
+export async function readExcelSheetWithProvenance(
+  projectRoot: string | undefined,
+  input: unknown,
+): Promise<ReadExcelSheetWithProvenanceResult> {
+  const root = assertProjectRoot(projectRoot);
+  const { relativePath, sheetName } = assertReadExcelInput(input);
+
+  assertAllowedRelativePath(relativePath);
+
+  const absolutePath = resolveProjectFile(root, relativePath, "Excel file does not exist");
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(absolutePath);
+  const selectedSheetName = sheetName ?? workbook.worksheets[0]?.name;
+
+  if (!selectedSheetName || !workbook.getWorksheet(selectedSheetName)) {
+    throw new Error("Sheet not found");
+  }
+
+  return {
+    relativePath,
+    sheetName: selectedSheetName,
+    rows: readSheetRowsWithProvenance(workbook, selectedSheetName),
   };
 }
 

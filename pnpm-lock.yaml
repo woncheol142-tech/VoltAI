@@ -48,6 +48,12 @@ importers:
 
   packages/knowledge-core: {}
 
+  packages/knowledge-material:
+    dependencies:
+      '@voltai/knowledge-core':
+        specifier: workspace:*
+        version: link:../knowledge-core
+
   packages/knowledge-sqlite:
     dependencies:
       '@voltai/knowledge-core':
@@ -174,9 +180,21 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@3.25.76)
+      '@voltai/knowledge-core':
+        specifier: workspace:*
+        version: link:../knowledge-core
+      '@voltai/knowledge-material':
+        specifier: workspace:*
+        version: link:../knowledge-material
+      '@voltai/knowledge-sqlite':
+        specifier: workspace:*
+        version: link:../knowledge-sqlite
       '@voltai/mcp-core':
         specifier: workspace:*
         version: link:../mcp-core
+      '@voltai/mcp-project-files':
+        specifier: workspace:*
+        version: link:../mcp-project-files
       zod:
         specifier: ^3.24.1
         version: 3.25.76
