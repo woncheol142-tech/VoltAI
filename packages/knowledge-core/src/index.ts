@@ -1,4 +1,9 @@
-export type { KnowledgeMetadataCodec } from "./metadataCodec.js";
+export type {
+  KnowledgeCodecs,
+  KnowledgeLocatorCodec,
+  KnowledgeMetadataCodec,
+} from "./metadataCodec.js";
+export type { KnowledgeVectorStore } from "./vectorStore.js";
 export type {
   EmbeddedKnowledgeChunk,
   JsonPrimitive,

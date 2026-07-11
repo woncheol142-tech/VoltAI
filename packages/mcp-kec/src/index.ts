@@ -9,6 +9,7 @@ export {
   kecChunkToKnowledgeChunk,
   kecEmbeddedChunkToKnowledgeEmbeddedChunk,
   kecIndexMetadataToKnowledgeIndexMetadata,
+  kecKnowledgeCodecs,
   kecSearchResultToKnowledgeSearchResult,
   knowledgeChunkToKecChunk,
   knowledgeEmbeddedChunkToKecEmbeddedChunk,

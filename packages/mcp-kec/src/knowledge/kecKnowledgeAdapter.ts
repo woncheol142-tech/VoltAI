@@ -1,7 +1,10 @@
 import type {
   EmbeddedKnowledgeChunk,
   KnowledgeChunk,
+  KnowledgeCodecs,
   KnowledgeIndexMetadata,
+  KnowledgeLocator,
+  KnowledgeMetadata,
   KnowledgeSearchResult,
   PageLocator,
 } from "@voltai/knowledge-core";
@@ -18,6 +21,48 @@ export type KecKnowledgeMetadata = {
 };
 
 const kecCollection = "kec";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function decodeKecMetadata(value: unknown): KecKnowledgeMetadata {
+  if (!isRecord(value)) {
+    throw new Error("KEC knowledge metadata is invalid");
+  }
+
+  const clause = value.clause;
+
+  if (clause !== null && typeof clause !== "string") {
+    throw new Error("KEC knowledge metadata is invalid");
+  }
+
+  return { clause };
+}
+
+function decodePageLocator(value: unknown): PageLocator {
+  if (
+    !isRecord(value) ||
+    value.kind !== "page" ||
+    !Number.isInteger(value.page) ||
+    Number(value.page) < 1
+  ) {
+    throw new Error("KEC page locator is invalid");
+  }
+
+  return { kind: "page", page: Number(value.page) };
+}
+
+export const kecKnowledgeCodecs: KnowledgeCodecs<KecKnowledgeMetadata, PageLocator> = {
+  metadata: {
+    encode: (value): KnowledgeMetadata => ({ ...decodeKecMetadata(value) }),
+    decode: decodeKecMetadata,
+  },
+  locator: {
+    encode: (value): KnowledgeLocator => ({ ...decodePageLocator(value) }),
+    decode: decodePageLocator,
+  },
+};
 
 function documentId(sourcePath: string): string {
   return `${kecCollection}:${sourcePath}`;

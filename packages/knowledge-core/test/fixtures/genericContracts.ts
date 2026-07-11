@@ -1,7 +1,11 @@
 import type {
+  EmbeddedKnowledgeChunk,
   KnowledgeChunk,
+  KnowledgeCodecs,
   KnowledgeDocument,
   KnowledgeLocator,
+  KnowledgeMetadata,
+  KnowledgeVectorStore,
   PageLocator,
   SectionLocator,
   TableLocator,
@@ -85,3 +89,38 @@ void document;
 void unsupportedSchema;
 void incompletePageLocator;
 void unsupportedLocator;
+
+const companyEmbeddedChunk: EmbeddedKnowledgeChunk<CompanyMetadata, SectionLocator> = {
+  ...companyChunk,
+  embedding: [1, 0],
+};
+const companyCodecs: KnowledgeCodecs<CompanyMetadata, SectionLocator> = {
+  metadata: {
+    encode: (value): KnowledgeMetadata => ({ ...value }),
+    decode: (value): CompanyMetadata => value as CompanyMetadata,
+  },
+  locator: {
+    encode: (value): KnowledgeLocator => ({ ...value }),
+    decode: (value): SectionLocator => value as SectionLocator,
+  },
+};
+declare const vectorStore: KnowledgeVectorStore;
+
+void vectorStore.upsert("company", [companyEmbeddedChunk], companyCodecs);
+void vectorStore.replaceSource(
+  "company",
+  companyEmbeddedChunk.sourcePath,
+  [companyEmbeddedChunk],
+  {
+    embeddingProvider: "test",
+    embeddingModel: "deterministic",
+    dimensions: 2,
+    indexedAt: "2026-07-11T00:00:00.000Z",
+  },
+  companyCodecs,
+);
+void vectorStore.search("company", [1, 0], 5, companyCodecs);
+void vectorStore.listChunks("company", companyCodecs);
+
+// @ts-expect-error Generic store operations require runtime codecs.
+void vectorStore.upsert("company", [companyEmbeddedChunk]);
