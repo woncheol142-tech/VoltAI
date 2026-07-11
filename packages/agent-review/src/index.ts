@@ -14,6 +14,12 @@ export {
   knowledgeCitationToKecCitation,
 } from "./kecCitationAdapter.js";
 export { extractDesignItems } from "./designItems.js";
+export { createReviewKnowledgeQueryService } from "./reviewKnowledgeQueries.js";
+export type {
+  KnowledgeSourceWarning,
+  ReviewKnowledgeQueryResult,
+  ReviewKnowledgeQueryService,
+} from "./reviewKnowledgeQueries.js";
 export {
   createReviewLlmFromEnv,
   createReviewLlmProviderFromEnv,
@@ -59,3 +65,4 @@ export type {
   StructuredEvidence,
   UnknownEvidence,
 } from "./ports.js";
+export type { CompanyCitation, CompanySearchResult } from "@voltai/knowledge-company";

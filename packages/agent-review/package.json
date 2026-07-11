@@ -11,6 +11,7 @@
     "smoke:glm": "tsc -p tsconfig.json && node dist/smoke/glm.js"
   },
   "dependencies": {
+    "@voltai/knowledge-company": "workspace:*",
     "@voltai/knowledge-core": "workspace:*"
   }
 }

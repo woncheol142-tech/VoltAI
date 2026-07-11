@@ -16,6 +16,10 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@voltai/agent-review": "workspace:*",
+    "@voltai/knowledge-company": "workspace:*",
+    "@voltai/knowledge-core": "workspace:*",
+    "@voltai/knowledge-sqlite": "workspace:*",
+    "@voltai/mcp-company": "workspace:*",
     "@voltai/mcp-core": "workspace:*",
     "@voltai/mcp-kec": "workspace:*",
     "@voltai/mcp-project-files": "workspace:*",

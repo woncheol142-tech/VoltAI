@@ -36,6 +36,9 @@ importers:
 
   packages/agent-review:
     dependencies:
+      '@voltai/knowledge-company':
+        specifier: workspace:*
+        version: link:../knowledge-company
       '@voltai/knowledge-core':
         specifier: workspace:*
         version: link:../knowledge-core
@@ -68,6 +71,18 @@ importers:
       '@voltai/agent-review':
         specifier: workspace:*
         version: link:../agent-review
+      '@voltai/knowledge-company':
+        specifier: workspace:*
+        version: link:../knowledge-company
+      '@voltai/knowledge-core':
+        specifier: workspace:*
+        version: link:../knowledge-core
+      '@voltai/knowledge-sqlite':
+        specifier: workspace:*
+        version: link:../knowledge-sqlite
+      '@voltai/mcp-company':
+        specifier: workspace:*
+        version: link:../mcp-company
       '@voltai/mcp-core':
         specifier: workspace:*
         version: link:../mcp-core

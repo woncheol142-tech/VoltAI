@@ -1,3 +1,5 @@
+import type { CompanyCitation, CompanySearchResult } from "@voltai/knowledge-company";
+
 export type ProjectFile = {
   name: string;
   relativePath: string;
@@ -70,7 +72,7 @@ export type KecCitation = EvidenceBase & {
   label: string;
 };
 
-export type Citation = StructuredEvidence | KecCitation;
+export type Citation = StructuredEvidence | KecCitation | CompanyCitation;
 
 export type ReviewFinding = {
   severity: "info" | "warning";
@@ -91,6 +93,7 @@ export type DesignItemReview = {
   name: string;
   evidence: StructuredEvidence[];
   kecResults: KecSearchResult[];
+  companyResults?: CompanySearchResult[];
   findings: ReviewFinding[];
 };
 
@@ -100,6 +103,7 @@ export type ReviewPromptInput = {
   pdfs: PdfReadResult[];
   excels: ExcelReadResult[];
   kecResults: KecSearchResult[];
+  companyResults?: CompanySearchResult[];
   itemReviews: DesignItemReview[];
   findings: ReviewFinding[];
 };
@@ -116,6 +120,7 @@ export type ReviewProjectPorts = {
     options?: { sheetName?: string; maxRows?: number },
   ) => Promise<ExcelReadResult>;
   searchKec: (question: string) => Promise<KecSearchResult[]>;
+  searchCompany?: (question: string) => Promise<CompanySearchResult[]>;
   llm: ReviewLlm;
   close?: () => Promise<void> | void;
 };

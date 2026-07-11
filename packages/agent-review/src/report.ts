@@ -1,3 +1,9 @@
+import {
+  companySearchResultToCompanyCitation,
+  type CompanyCitation,
+  type CompanySearchResult,
+} from "@voltai/knowledge-company";
+
 import type {
   Citation,
   CoverageFinding,
@@ -13,6 +19,7 @@ export type ReviewReportItem = {
   name: string;
   evidence: StructuredEvidence[];
   kecCitations: KecCitation[];
+  companyCitations: CompanyCitation[];
   findings: ReviewFinding[];
 };
 
@@ -23,6 +30,7 @@ export type ReviewReport = {
   };
   summary: string[];
   kecCitations: KecCitation[];
+  companyCitations: CompanyCitation[];
   itemReviews: ReviewReportItem[];
   risks: string[];
   findings: ReviewFinding[];
@@ -152,6 +160,12 @@ export function formatCitation(citation: Citation): string {
     return `${citation.label} p.${citation.page}: ${citation.excerpt}`;
   }
 
+  if (citation.sourceType === "company") {
+    const section = citation.section === null ? "" : ` [${citation.section}]`;
+
+    return `${citation.standardId} ${citation.title}${section} ${citation.sourcePath} p.${citation.page}: ${citation.excerpt}`;
+  }
+
   return `${citation.sourcePath}: ${citation.excerpt}`;
 }
 
@@ -165,6 +179,10 @@ function summarizeReportItemReviews(report: ReviewReport): string[] {
       item.kecCitations.length > 0
         ? item.kecCitations.map(formatCitation).join("\n  - ")
         : "검색된 KEC 조항이 없습니다.";
+    const companyResults =
+      item.companyCitations.length > 0
+        ? item.companyCitations.map(formatCitation).join("\n  - ")
+        : "";
     const findings =
       item.findings.length > 0
         ? item.findings.map((finding) => `${finding.severity}: ${finding.message}`).join("\n  - ")
@@ -177,10 +195,27 @@ function summarizeReportItemReviews(report: ReviewReport): string[] {
       `  - ${item.evidence.map(formatCitation).join("\n  - ")}`,
       "- 관련 KEC 검색 결과",
       `  - ${kecResults}`,
+      ...(item.companyCitations.length > 0
+        ? ["- 관련 사내 표준 검색 결과", `  - ${companyResults}`]
+        : []),
       "- 확인 필요사항",
       `  - ${findings}`,
     ].join("\n");
   });
+}
+
+function createCompanyCitations(results: CompanySearchResult[] | undefined): CompanyCitation[] {
+  const citations = new Map<string, CompanyCitation>();
+
+  for (const result of results ?? []) {
+    const citation = companySearchResultToCompanyCitation(result);
+
+    if (!citations.has(citation.id)) {
+      citations.set(citation.id, citation);
+    }
+  }
+
+  return Array.from(citations.values()).sort((left, right) => left.id.localeCompare(right.id));
 }
 
 function createReportItem(item: DesignItemReview): ReviewReportItem {
@@ -188,12 +223,14 @@ function createReportItem(item: DesignItemReview): ReviewReportItem {
     name: item.name,
     evidence: item.evidence,
     kecCitations: item.kecResults.map(toKecCitation),
+    companyCitations: createCompanyCitations(item.companyResults),
     findings: item.findings,
   };
 }
 
 export function createReviewReport(input: ReviewPromptInput): ReviewReport {
   const kecCitations = input.kecResults.map(toKecCitation);
+  const companyCitations = createCompanyCitations(input.companyResults);
 
   return {
     project: {
@@ -202,6 +239,7 @@ export function createReviewReport(input: ReviewPromptInput): ReviewReport {
     },
     summary: [...summarizePdf(input), ...summarizeExcel(input)],
     kecCitations,
+    companyCitations,
     itemReviews: input.itemReviews.map(createReportItem),
     risks:
       kecCitations.length > 0
@@ -210,12 +248,24 @@ export function createReviewReport(input: ReviewPromptInput): ReviewReport {
     findings: input.findings,
     coverage: createCoverageFindings(input.findings),
     relations: input.itemReviews.flatMap((item) => item.findings),
-    closingComments: ["본 보고서는 수집된 프로젝트 파일과 KEC 검색 결과를 기반으로 생성되었습니다."],
+    closingComments:
+      companyCitations.length > 0
+        ? ["본 보고서는 수집된 프로젝트 파일과 KEC 및 사내 표준 검색 결과를 기반으로 생성되었습니다."]
+        : ["본 보고서는 수집된 프로젝트 파일과 KEC 검색 결과를 기반으로 생성되었습니다."],
   };
 }
 
 export function serializeMarkdownReport(report: ReviewReport): string {
   const findings = report.findings.map((finding) => `${finding.severity}: ${finding.message}`);
+  const companySection =
+    report.companyCitations.length > 0
+      ? [
+          "# 관련 사내 표준",
+          "",
+          bulletList(report.companyCitations.map(formatCitation), "검색된 사내 표준이 없습니다."),
+          "",
+        ]
+      : [];
 
   return [
     "# 프로젝트 개요",
@@ -231,6 +281,7 @@ export function serializeMarkdownReport(report: ReviewReport): string {
     "",
     bulletList(report.kecCitations.map(formatCitation), "검색된 KEC 조항이 없습니다."),
     "",
+    ...companySection,
     "# 항목별 검토",
     "",
     summarizeReportItemReviews(report).join("\n\n"),

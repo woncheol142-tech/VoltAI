@@ -108,6 +108,10 @@ export class MarkdownReviewPromptBuilder implements ReviewPromptBuilder {
       report.kecCitations.length > 0
         ? report.kecCitations.map(formatCitation).join("\n")
         : "No KEC citations.";
+    const companyCitations =
+      report.companyCitations.length > 0
+        ? report.companyCitations.map(formatCitation).join("\n")
+        : undefined;
     const findings =
       report.findings.length > 0
         ? report.findings.map((finding) => `${finding.severity}: ${finding.message}`).join("\n")
@@ -125,6 +129,9 @@ export class MarkdownReviewPromptBuilder implements ReviewPromptBuilder {
         "KEC citations:",
         citations,
         "",
+        ...(companyCitations === undefined
+          ? []
+          : ["Company standard citations:", companyCitations, ""]),
         "Findings:",
         findings,
       ].join("\n"),

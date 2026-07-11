@@ -7,9 +7,10 @@ import type {
   ReviewFinding,
   ReviewProjectPorts,
 } from "./ports.js";
+import type { CompanySearchResult } from "@voltai/knowledge-company";
 import { extractDesignItems } from "./designItems.js";
 import { analyzeDesignItemRelations } from "./designRelations.js";
-import { selectKecResultsForReview } from "./kecCitationSelection.js";
+import { createReviewKnowledgeQueryService } from "./reviewKnowledgeQueries.js";
 
 export type ReviewProjectInput = {
   projectPath: string;
@@ -66,10 +67,6 @@ function buildKecQuestion(pdfs: PdfReadResult[], excels: ExcelReadResult[]): str
   const source = `${pdfText}\n${excelText}`.trim();
 
   return source.length > 0 ? source.slice(0, 500) : "전기 설계 검토 관련 KEC 조항";
-}
-
-function buildItemKecSelectionContext(name: string, evidence: { excerpt: string }[]): string {
-  return [name, ...evidence.map((item) => item.excerpt)].join("\n");
 }
 
 function resolveReviewIngestionPolicy(input: ReviewProjectInput): ReviewIngestionPolicy {
@@ -163,6 +160,7 @@ export async function reviewProject(
     const pdfs: PdfReadResult[] = [];
     const excels: ExcelReadResult[] = [];
     const findings: ReviewFinding[] = [];
+    const knowledgeQueries = createReviewKnowledgeQueryService(ports);
 
     for (const file of files.filter(isPdf)) {
       try {
@@ -187,14 +185,19 @@ export async function reviewProject(
     }
 
     let kecResults: KecSearchResult[] = [];
+    let companyResults: CompanySearchResult[] = [];
     const projectKecQuestion = buildKecQuestion(pdfs, excels);
 
     try {
-      const rawKecResults = await ports.searchKec(projectKecQuestion);
-      kecResults = selectKecResultsForReview({
-        contextText: projectKecQuestion,
-        results: rawKecResults,
+      const knowledgeResults = await knowledgeQueries.searchProject({
+        context: projectKecQuestion,
       });
+      kecResults = knowledgeResults.kecResults;
+      companyResults = knowledgeResults.companyResults;
+      findings.push(...knowledgeResults.warnings.map((warning) => ({
+        severity: warning.severity,
+        message: warning.message,
+      })));
     } catch (error) {
       findings.push({
         severity: "warning",
@@ -214,13 +217,19 @@ export async function reviewProject(
           message: `${finding.message} (severity: ${finding.severity}, confidence: ${finding.confidence}, proximity: ${finding.proximity})`,
         }));
       let itemKecResults: KecSearchResult[] = [];
+      let itemCompanyResults: CompanySearchResult[] = [];
 
       try {
-        const rawItemKecResults = (await ports.searchKec(`${item.name} KEC 기준`)) ?? [];
-        itemKecResults = selectKecResultsForReview({
-          contextText: buildItemKecSelectionContext(item.name, item.evidence),
-          results: rawItemKecResults,
+        const knowledgeResults = await knowledgeQueries.searchItem({
+          name: item.name,
+          evidence: item.evidence,
         });
+        itemKecResults = knowledgeResults.kecResults;
+        itemCompanyResults = knowledgeResults.companyResults;
+        itemFindings.push(...knowledgeResults.warnings.map((warning) => ({
+          severity: warning.severity,
+          message: warning.message,
+        })));
       } catch (error) {
         itemFindings.push({
           severity: "warning",
@@ -232,6 +241,7 @@ export async function reviewProject(
         name: item.name,
         evidence: item.evidence,
         kecResults: itemKecResults,
+        companyResults: itemCompanyResults,
         findings: itemFindings,
       });
     }
@@ -242,6 +252,7 @@ export async function reviewProject(
       pdfs,
       excels,
       kecResults,
+      companyResults,
       itemReviews,
       findings,
     });
