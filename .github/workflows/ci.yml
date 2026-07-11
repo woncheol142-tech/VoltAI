@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Remove stale build output
+        run: rm -rf packages/*/dist
+
       - name: Test
         run: pnpm test
 

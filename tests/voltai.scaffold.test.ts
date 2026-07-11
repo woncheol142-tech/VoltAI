@@ -103,8 +103,8 @@ describe("VoltAI monorepo scaffold", () => {
       expect(readme).toContain(phrase);
     }
 
-    expect(readme).toContain("Test Files: 18 passed");
-    expect(readme).toContain("Tests: 123 passed");
+    expect(readme).toContain("Test Files: 77 passed");
+    expect(readme).toContain("Tests: 442 passed");
     expect(readme).toContain("MIT License");
     expect(changelog).toContain("Runtime Safety Fix");
     expect(changelog).toContain("MIT License");

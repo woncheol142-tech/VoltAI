@@ -184,7 +184,11 @@ export class OllamaEmbeddingProvider implements EmbeddingProvider {
 }
 
 export function createEmbeddingProviderFromEnv(): EmbeddingProvider {
-  const provider = process.env.KEC_EMBED_PROVIDER ?? "placeholder";
+  const provider = process.env.KEC_EMBED_PROVIDER;
+
+  if (provider === undefined || provider.length === 0) {
+    throw new Error("KEC_EMBED_PROVIDER is required; set it to placeholder or ollama");
+  }
 
   if (provider === "placeholder") {
     return new LocalPlaceholderEmbeddingProvider();

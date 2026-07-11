@@ -1,5 +1,6 @@
 import type { CompanySearchResult } from "@voltai/knowledge-company";
 
+import { selectCompanyResultsForPlaceholderReview } from "./companyCitationSelection.js";
 import { selectKecResultsForReview } from "./kecCitationSelection.js";
 import type { KecSearchResult, ReviewProjectPorts, StructuredEvidence } from "./ports.js";
 
@@ -49,6 +50,7 @@ async function searchCompany(
   search: ReviewProjectPorts["searchCompany"],
   query: string,
   scope: "project" | "item",
+  provider: string | undefined,
   itemName?: string,
 ): Promise<Pick<ReviewKnowledgeQueryResult, "companyResults" | "warnings">> {
   if (!search) {
@@ -56,8 +58,16 @@ async function searchCompany(
   }
 
   try {
+    const rawResults = [...((await search(query)) ?? [])];
+
     return {
-      companyResults: [...((await search(query)) ?? [])],
+      companyResults:
+        provider === "placeholder"
+          ? selectCompanyResultsForPlaceholderReview({
+              contextText: query,
+              results: rawResults,
+            })
+          : rawResults,
       warnings: [],
     };
   } catch {
@@ -69,12 +79,20 @@ async function searchCompany(
 }
 
 export function createReviewKnowledgeQueryService(
-  ports: Pick<ReviewProjectPorts, "searchKec" | "searchCompany">,
+  ports: Pick<
+    ReviewProjectPorts,
+    "searchKec" | "searchCompany" | "companySearchProvider"
+  >,
 ): ReviewKnowledgeQueryService {
   return {
     async searchProject({ context }): Promise<ReviewKnowledgeQueryResult> {
       const rawKecResults = await ports.searchKec(context);
-      const company = await searchCompany(ports.searchCompany, context, "project");
+      const company = await searchCompany(
+        ports.searchCompany,
+        context,
+        "project",
+        ports.companySearchProvider,
+      );
 
       return {
         kecResults: selectKecResultsForReview({
@@ -91,6 +109,7 @@ export function createReviewKnowledgeQueryService(
         ports.searchCompany,
         buildCompanyItemQuery(name, evidence),
         "item",
+        ports.companySearchProvider,
         name,
       );
 

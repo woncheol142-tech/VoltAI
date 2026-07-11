@@ -1,12 +1,12 @@
 # VoltAI
 
-VoltAI is an early electric-design AI platform built as a pnpm TypeScript monorepo. It now has three layers:
+VoltAI is an early electric-design AI platform built as a pnpm TypeScript monorepo. It has three layers:
 
 - MCP Layer: tools for project files, PDF, Excel, KEC, and agent entrypoints.
-- Knowledge Layer: local KEC indexing/search with SQLite and replaceable local embeddings.
-- Agent Layer: engineering review orchestration that produces a markdown design review report.
+- Knowledge Layer: generic typed knowledge models, SQLite storage, and KEC, Company, and Material domains.
+- Agent Layer: engineering review orchestration using KEC and Company Knowledge to produce a markdown report.
 
-OpenAI API dependencies are intentionally not used in v0.2. LLM behavior is mocked while the workflow, evidence pipeline, and MCP runtime safety stabilize.
+Mock review remains the default. GLM can be selected explicitly and has timeout, retry, safe-failure, optional marked fallback, and a separate provider smoke command.
 
 ## Architecture
 
@@ -18,16 +18,19 @@ Agent Layer
   - mcp-agent
 
 Knowledge Layer
-  - KEC SQLite knowledge base
-  - local placeholder embedding
-  - Ollama nomic-embed-text adapter
+  - knowledge-core generic types and codecs
+  - knowledge-sqlite generic SQLite store
+  - knowledge-company Company standards
+  - knowledge-material material catalogs
+  - KEC compatibility layer and Ollama embedding adapter
 
 MCP Layer
   - mcp-core
   - mcp-project-files
   - mcp-kec
-  - mcp-cad
+  - mcp-company
   - mcp-material
+  - mcp-cad
   - mcp-estimate
 ```
 
@@ -37,11 +40,16 @@ MCP Layer
 packages/
   mcp-core              Shared MCP factory, stdio runner, tool type, error mapping.
   mcp-project-files     Project file listing plus PDF and Excel readers.
+  knowledge-core        Generic knowledge documents, chunks, citations, codecs, and store contracts.
+  knowledge-sqlite      Generic SQLite knowledge store and compatibility migration.
+  knowledge-company     Company Knowledge indexing, search, metadata, and citation adapters.
+  knowledge-material    Material Knowledge workbook mapping, indexing, search, and citations.
   mcp-kec               KEC indexing/search, chunking, embeddings, SQLite store.
+  mcp-company           index_company and search_company MCP tools.
+  mcp-material          index_material and search_material MCP tools.
   mcp-agent             MCP wrapper exposing review_project.
-  agent-review          Pure Agent Layer engineering review workflow.
+  agent-review          Typed review workflow using KEC and Company Knowledge.
   mcp-cad               Scaffold placeholder package.
-  mcp-material          Scaffold placeholder package.
   mcp-estimate          Scaffold placeholder package.
 ```
 
@@ -54,6 +62,10 @@ packages/
 | `read_excel` | `@voltai/mcp-project-files` | Lists `.xlsx` workbook sheets or returns rows for a selected sheet using ExcelJS. Legacy `.xls` input is explicitly unsupported. |
 | `index_kec` | `@voltai/mcp-kec` | Indexes KEC PDFs into the local SQLite knowledge base. |
 | `search_kec` | `@voltai/mcp-kec` | Searches indexed KEC chunks and returns clause/page/text/similarity. |
+| `index_company` | `@voltai/mcp-company` | Indexes a Company standard PDF. |
+| `search_company` | `@voltai/mcp-company` | Searches indexed Company standards. |
+| `index_material` | `@voltai/mcp-material` | Indexes one selected material workbook sheet without deleting other sheets. |
+| `search_material` | `@voltai/mcp-material` | Searches indexed material catalog rows. |
 | `review_project` | `@voltai/mcp-agent` | Runs the engineering review agent and returns a markdown report. |
 
 ## review_project Flow
@@ -66,8 +78,9 @@ A[Project Folder]
 -->D[read_excel]
 -->E[extractDesignItems]
 -->F[search_kec]
--->G[review_project]
--->H[Markdown Report]
+-->G[search_company]
+-->H[review_project]
+-->I[Markdown Report]
 ```
 
 The review agent:
@@ -75,7 +88,7 @@ The review agent:
 - finds project files,
 - reads available PDFs and Excel workbooks,
 - extracts design item candidates such as cable, breaker, panel, grounding, load, and voltage drop,
-- searches KEC per discovered item,
+- searches KEC and Company Knowledge per discovered item,
 - adds relationship-based findings such as cable plus voltage drop or breaker plus load,
 - emits a markdown report with required engineering review sections.
 
@@ -107,12 +120,15 @@ Important environment variables:
 ```bash
 PROJECT_ROOT=./project
 KEC_DB_PATH=./.voltai/kec.sqlite
-KEC_EMBED_PROVIDER=placeholder
+KNOWLEDGE_DB_PATH=./.voltai/knowledge.sqlite
+KEC_EMBED_PROVIDER=ollama
+COMPANY_EMBED_PROVIDER=placeholder
+MATERIAL_EMBED_PROVIDER=placeholder
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_EMBED_MODEL=nomic-embed-text
 ```
 
-Set `KEC_EMBED_PROVIDER=ollama` only when Ollama and the embedding model are available.
+KEC_EMBED_PROVIDER is required; choose `ollama` for pilot data or explicitly choose `placeholder` for deterministic local development. The placeholder is intended for offline tests and does not represent production retrieval quality. Company and Material providers are also fail-closed and currently accept explicit `placeholder` only.
 `MCP_TRANSPORT`, `LOG_LEVEL`, and `NODE_ENV` are not required by the current runtime and are intentionally omitted from the default environment template.
 
 ## Run
@@ -120,14 +136,15 @@ Set `KEC_EMBED_PROVIDER=ollama` only when Ollama and the embedding model are ava
 ```bash
 pnpm --filter @voltai/mcp-project-files dev
 pnpm --filter @voltai/mcp-kec dev
+pnpm --filter @voltai/mcp-company dev
+pnpm --filter @voltai/mcp-material dev
 pnpm --filter @voltai/mcp-agent dev
 ```
 
-Scaffold packages can also run:
+Remaining scaffold packages can also run:
 
 ```bash
 pnpm --filter @voltai/mcp-cad dev
-pnpm --filter @voltai/mcp-material dev
 pnpm --filter @voltai/mcp-estimate dev
 ```
 
@@ -158,10 +175,18 @@ pnpm test
 pnpm build
 ```
 
-Current v0.2 status:
+Current pre-pilot status:
 
-- Test Files: 18 passed
-- Tests: 123 passed
+- Test Files: 77 passed
+- Tests: 442 passed
+
+Provider-only GLM connectivity is opt-in:
+
+```bash
+npx pnpm@9.15.4 --filter @voltai/agent-review smoke:glm
+```
+
+The normal suite never calls GLM or another paid provider.
 
 ## CI
 

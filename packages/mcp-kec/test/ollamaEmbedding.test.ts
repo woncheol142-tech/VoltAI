@@ -226,11 +226,8 @@ describe("OllamaEmbeddingProvider", () => {
     }
   });
 
-  it("creates placeholder or ollama providers from environment without OpenAI API", () => {
+  it("creates explicitly selected placeholder or ollama providers without OpenAI API", () => {
     delete process.env.OPENAI_API_KEY;
-
-    delete process.env.KEC_EMBED_PROVIDER;
-    expect(createEmbeddingProviderFromEnv()).toBeInstanceOf(LocalPlaceholderEmbeddingProvider);
 
     process.env.KEC_EMBED_PROVIDER = "placeholder";
     expect(createEmbeddingProviderFromEnv()).toBeInstanceOf(LocalPlaceholderEmbeddingProvider);

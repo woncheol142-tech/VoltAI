@@ -6,6 +6,10 @@ Run the full offline suite from the repository root:
 npx pnpm@9.15.4 test
 ```
 
+## Clean checkout contract
+
+A Clean checkout must pass `install -> lint -> test -> build`. Tests must pass before build and must never use build before test as a workaround. Vitest aliases every imported workspace package to `src/index.ts`, making normal test execution dist-independent. CI removes stale `packages/*/dist` output before running tests.
+
 Run the project-level E2E suite directly:
 
 ```bash
@@ -25,6 +29,14 @@ npx pnpm@9.15.4 --filter @voltai/mcp-agent test:benchmark
 | Benchmark | Typed `ReviewReport` semantic quality, provenance, citations, coverage, and structured diagnostics. | Offline with deterministic Mock LLM and embeddings. |
 | Provider smoke | Explicit provider connectivity check only. | May contact the configured provider. |
 
+Pre-pilot regression coverage includes:
+
+- Material multi-sheet preservation and sheet-scoped re-indexing.
+- Company placeholder selection without changing raw `search_company` results.
+- KEC provider fail-closed behavior with explicit offline placeholder selection.
+- Real-provider item evidence and citation prompt coverage.
+- Workspace source resolution without stale `dist` artifacts.
+
 The E2E and benchmark suites create temporary PDF/XLSX/KEC/SQLite data and remove their project roots after completion. They use deterministic embedding and `MockReviewLlm`; no API key is required.
 
 Current deterministic benchmark baseline:
@@ -37,3 +49,5 @@ Current deterministic benchmark baseline:
 - Overall strict `passed`: `true`
 
 GLM provider smoke paths, such as an optional `smoke:glm` command, are separate from the E2E suite. They are explicitly invoked against a configured GLM environment, may contact Z.AI, and must never run as part of the normal test suite.
+
+Current full-suite result: `77` test files and `442` tests.

@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createLocalReviewPorts } from "../src/ports/localReviewPorts.js";
 
@@ -14,6 +14,10 @@ function createTempProject(): string {
 }
 
 describe("createLocalReviewPorts Company Knowledge wiring", () => {
+  beforeEach(() => {
+    vi.stubEnv("KEC_EMBED_PROVIDER", "placeholder");
+  });
+
   afterEach(() => {
     for (const root of tempRoots.splice(0)) {
       rmSync(root, { recursive: true, force: true });

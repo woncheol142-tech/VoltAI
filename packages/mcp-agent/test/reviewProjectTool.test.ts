@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createServer } from "../src/index.js";
 import { createLocalReviewPorts } from "../src/ports/localReviewPorts.js";
@@ -58,12 +58,17 @@ function createTextPdf(text: string): string {
 }
 
 describe("review_project MCP tool", () => {
+  beforeEach(() => {
+    vi.stubEnv("KEC_EMBED_PROVIDER", "placeholder");
+  });
+
   afterEach(() => {
     for (const root of tempRoots.splice(0)) {
       rmSync(root, { recursive: true, force: true });
     }
 
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it("has the review_project tool name", () => {

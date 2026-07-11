@@ -39,7 +39,8 @@ export type IndexMaterialKnowledgeResult = {
 export type IndexMaterialKnowledgeDependencies = {
   readMaterialSheet: (sourcePath: string, sheetName?: string) => Promise<MaterialSheet>;
   embeddingProvider: KnowledgeEmbeddingProvider;
-  vectorStore: Pick<KnowledgeVectorStore, "replaceSource">;
+  vectorStore: Pick<KnowledgeVectorStore, "replaceSource"> &
+    Partial<Pick<KnowledgeVectorStore, "deleteBySourcePath">>;
 };
 
 export type SearchMaterialKnowledgeInput = {
@@ -104,6 +105,31 @@ function assertSearchInput(input: unknown): { query: string; topK: number } {
   return { query: candidate.query, topK: candidate.topK ?? 5 };
 }
 
+const materialSheetSourcePrefix = "material-sheet:v1:";
+
+function createMaterialSheetSourceKey(sourcePath: string, sheetName: string): string {
+  return `${materialSheetSourcePrefix}${encodeURIComponent(sourcePath)}:${encodeURIComponent(sheetName)}`;
+}
+
+function restoreMaterialSourcePath(sourcePath: string): string {
+  if (!sourcePath.startsWith(materialSheetSourcePrefix)) {
+    return sourcePath;
+  }
+
+  const encoded = sourcePath.slice(materialSheetSourcePrefix.length);
+  const separator = encoded.indexOf(":");
+
+  if (separator < 0) {
+    return sourcePath;
+  }
+
+  try {
+    return decodeURIComponent(encoded.slice(0, separator));
+  } catch {
+    return sourcePath;
+  }
+}
+
 export async function indexMaterialKnowledge(
   input: unknown,
   deps: IndexMaterialKnowledgeDependencies,
@@ -113,6 +139,10 @@ export async function indexMaterialKnowledge(
   const rows = mapMaterialRows(sheet, indexInput);
   const document = createMaterialKnowledgeDocument(indexInput, sheet, rows);
   const chunks = createMaterialChunks(document);
+  const scopedSourcePath = createMaterialSheetSourceKey(
+    document.sourcePath,
+    document.content.sheetName,
+  );
 
   if (chunks.length === 0) {
     throw new Error("Excel sheet contains no indexable material rows");
@@ -122,13 +152,14 @@ export async function indexMaterialKnowledge(
   for (const chunk of chunks) {
     embeddedChunks.push({
       ...chunk,
+      sourcePath: scopedSourcePath,
       embedding: await deps.embeddingProvider.embed(chunk.text),
     });
   }
 
   await deps.vectorStore.replaceSource(
     materialsCollection,
-    document.sourcePath,
+    scopedSourcePath,
     embeddedChunks,
     {
       embeddingProvider: deps.embeddingProvider.getMetadata().provider,
@@ -138,6 +169,8 @@ export async function indexMaterialKnowledge(
     },
     materialKnowledgeCodecs,
   );
+
+  await deps.vectorStore.deleteBySourcePath?.(materialsCollection, document.sourcePath);
 
   return {
     sourcePath: document.sourcePath,
@@ -174,7 +207,7 @@ export async function searchMaterialKnowledge(
 
   return results.map((result) => ({
     chunkId: result.chunkId,
-    sourcePath: result.sourcePath,
+    sourcePath: restoreMaterialSourcePath(result.sourcePath),
     sheetName: result.locator.table,
     rowIndex: result.locator.rowIndex as number,
     catalogId: result.metadata.catalogId,

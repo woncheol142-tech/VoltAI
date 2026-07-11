@@ -117,6 +117,9 @@ export function createLocalReviewPorts(
             ),
         }
       : {}),
+    ...(companyEmbeddingProvider === undefined
+      ? {}
+      : { companySearchProvider: companyEmbeddingProvider.getMetadata().provider }),
     llm: deps.llm ?? createReviewLlmFromEnv(),
     close: async () => {
       if (closed) {

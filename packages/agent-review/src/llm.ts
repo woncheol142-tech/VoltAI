@@ -15,6 +15,14 @@ export type ReviewPromptBuilder = {
   buildPrompt: (report: ReviewReport) => ReviewPrompt;
 };
 
+export type MarkdownReviewPromptBuilderOptions = {
+  includeItemReviews?: boolean;
+  maxItems?: number;
+  maxEvidencePerItem?: number;
+  maxCitationsPerItem?: number;
+  maxFindingsPerItem?: number;
+};
+
 export type ReviewLlmProviderName = "ollama" | "glm" | "openai" | "openrouter";
 
 export type ReviewLlmFailureKind =
@@ -101,7 +109,91 @@ export class ReviewLlmProviderError extends Error {
   }
 }
 
+const defaultMaxPromptItems = 8;
+const defaultMaxPromptEvidencePerItem = 3;
+const defaultMaxPromptCitationsPerItem = 5;
+const defaultMaxPromptFindingsPerItem = 5;
+
+function uniqueBy<T>(values: T[], key: (value: T) => string): T[] {
+  const unique = new Map<string, T>();
+
+  for (const value of values) {
+    const valueKey = key(value);
+
+    if (!unique.has(valueKey)) {
+      unique.set(valueKey, value);
+    }
+  }
+
+  return Array.from(unique.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([, value]) => value);
+}
+
+function promptList(values: string[]): string[] {
+  return values.length > 0 ? values.map((value) => `- ${value}`) : ["- None."];
+}
+
 export class MarkdownReviewPromptBuilder implements ReviewPromptBuilder {
+  private readonly includeItemReviews: boolean;
+  private readonly maxItems: number;
+  private readonly maxEvidencePerItem: number;
+  private readonly maxCitationsPerItem: number;
+  private readonly maxFindingsPerItem: number;
+
+  constructor(options: MarkdownReviewPromptBuilderOptions = {}) {
+    this.includeItemReviews = options.includeItemReviews ?? false;
+    this.maxItems = options.maxItems ?? defaultMaxPromptItems;
+    this.maxEvidencePerItem =
+      options.maxEvidencePerItem ?? defaultMaxPromptEvidencePerItem;
+    this.maxCitationsPerItem =
+      options.maxCitationsPerItem ?? defaultMaxPromptCitationsPerItem;
+    this.maxFindingsPerItem =
+      options.maxFindingsPerItem ?? defaultMaxPromptFindingsPerItem;
+  }
+
+  private buildItemReviewBlock(report: ReviewReport): string[] {
+    if (!this.includeItemReviews || report.itemReviews.length === 0) {
+      return [];
+    }
+
+    const items = report.itemReviews.slice(0, this.maxItems).flatMap((item) => {
+      const evidence = uniqueBy(item.evidence, (value) => value.id)
+        .slice(0, this.maxEvidencePerItem)
+        .map(formatCitation);
+      const kecCitations = uniqueBy(item.kecCitations, (value) => value.id)
+        .slice(0, this.maxCitationsPerItem)
+        .map(
+          (citation) =>
+            `${citation.label} ${citation.sourcePath} p.${citation.page}: ${citation.excerpt}`,
+        );
+      const companyCitations = uniqueBy(item.companyCitations, (value) => value.id)
+        .slice(0, this.maxCitationsPerItem)
+        .map(formatCitation);
+      const findings = uniqueBy(
+        item.findings,
+        (value) => `${value.severity}:${value.message}`,
+      )
+        .slice(0, this.maxFindingsPerItem)
+        .map((finding) => `${finding.severity}: ${finding.message}`);
+
+      return [
+        `Item: ${item.name}`,
+        "Evidence:",
+        ...promptList(evidence),
+        "Item KEC citations:",
+        ...promptList(kecCitations),
+        "Item Company citations:",
+        ...promptList(companyCitations),
+        "Item findings:",
+        ...promptList(findings),
+        "",
+      ];
+    });
+
+    return ["Item reviews:", ...items];
+  }
+
   buildPrompt(report: ReviewReport): ReviewPrompt {
     const summary = report.summary.length > 0 ? report.summary.join("\n") : "No project summary.";
     const citations =
@@ -132,6 +224,7 @@ export class MarkdownReviewPromptBuilder implements ReviewPromptBuilder {
         ...(companyCitations === undefined
           ? []
           : ["Company standard citations:", companyCitations, ""]),
+        ...this.buildItemReviewBlock(report),
         "Findings:",
         findings,
       ].join("\n"),
@@ -510,7 +603,7 @@ export function createReviewLlmFromEnv(env: ReviewLlmEnvironment = process.env):
   }
 
   const primary = new RealReviewLlm(
-    new MarkdownReviewPromptBuilder(),
+    new MarkdownReviewPromptBuilder({ includeItemReviews: true }),
     createReviewLlmProviderFromEnv(env),
   );
 
