@@ -3,6 +3,7 @@ import type {
   KnowledgeChunk,
   KnowledgeCodecs,
   KnowledgeDocument,
+  KnowledgeEmbeddingProvider,
   KnowledgeLocator,
   KnowledgeMetadata,
   KnowledgeVectorStore,
@@ -55,7 +56,10 @@ const kecChunk: KnowledgeChunk<KecMetadata, PageLocator> = {
   text: "Cable sizing requirement.",
 };
 
-const document: KnowledgeDocument<KecMetadata, { pages: Array<{ page: number; text: string }> }> = {
+const document: KnowledgeDocument<
+  KecMetadata,
+  { pages: Array<{ page: number; text: string }> }
+> = {
   schemaVersion: 1,
   collection: "kec",
   id: "kec:knowledge/kec.pdf",
@@ -79,8 +83,12 @@ const unsupportedSchema: KnowledgeDocument<KecMetadata, string> = {
 // @ts-expect-error PageLocator requires a page number.
 const incompletePageLocator: PageLocator = { kind: "page" };
 
-// @ts-expect-error KnowledgeLocator rejects unknown locator discriminants.
-const unsupportedLocator: KnowledgeLocator = { kind: "coordinates", x: 1, y: 2 };
+const unsupportedLocator: KnowledgeLocator = {
+  // @ts-expect-error KnowledgeLocator rejects unknown locator discriminants.
+  kind: "coordinates",
+  x: 1,
+  y: 2,
+};
 
 void companyChunk;
 void materialChunk;
@@ -90,7 +98,10 @@ void unsupportedSchema;
 void incompletePageLocator;
 void unsupportedLocator;
 
-const companyEmbeddedChunk: EmbeddedKnowledgeChunk<CompanyMetadata, SectionLocator> = {
+const companyEmbeddedChunk: EmbeddedKnowledgeChunk<
+  CompanyMetadata,
+  SectionLocator
+> = {
   ...companyChunk,
   embedding: [1, 0],
 };
@@ -124,3 +135,10 @@ void vectorStore.listChunks("company", companyCodecs);
 
 // @ts-expect-error Generic store operations require runtime codecs.
 void vectorStore.upsert("company", [companyEmbeddedChunk]);
+
+const embeddingProvider: KnowledgeEmbeddingProvider = {
+  embed: async (text: string) => [text.length],
+  getMetadata: () => ({ provider: "test", model: "deterministic" }),
+};
+
+void embeddingProvider;

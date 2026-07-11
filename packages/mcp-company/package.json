@@ -1,0 +1,20 @@
+{
+  "name": "@voltai/mcp-company",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --root ../.. packages/mcp-company/test"
+  },
+  "dependencies": {
+    "@voltai/knowledge-company": "workspace:*",
+    "@voltai/knowledge-core": "workspace:*",
+    "@voltai/knowledge-sqlite": "workspace:*",
+    "@voltai/mcp-core": "workspace:*",
+    "@voltai/mcp-project-files": "workspace:*",
+    "zod": "^3.25.76"
+  }
+}

@@ -40,6 +40,12 @@ importers:
         specifier: workspace:*
         version: link:../knowledge-core
 
+  packages/knowledge-company:
+    dependencies:
+      '@voltai/knowledge-core':
+        specifier: workspace:*
+        version: link:../knowledge-core
+
   packages/knowledge-core: {}
 
   packages/knowledge-sqlite:
@@ -91,6 +97,27 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.0
+
+  packages/mcp-company:
+    dependencies:
+      '@voltai/knowledge-company':
+        specifier: workspace:*
+        version: link:../knowledge-company
+      '@voltai/knowledge-core':
+        specifier: workspace:*
+        version: link:../knowledge-core
+      '@voltai/knowledge-sqlite':
+        specifier: workspace:*
+        version: link:../knowledge-sqlite
+      '@voltai/mcp-core':
+        specifier: workspace:*
+        version: link:../mcp-core
+      '@voltai/mcp-project-files':
+        specifier: workspace:*
+        version: link:../mcp-project-files
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
 
   packages/mcp-core:
     dependencies:
