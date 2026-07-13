@@ -23,6 +23,7 @@ export type ReadPdfResult = {
   pages: Array<{
     page: number;
     text: string;
+    charCount: number;
   }>;
   truncated: boolean;
 };
@@ -59,35 +60,6 @@ function assertAllowedRelativePath(relativePath: string): void {
   }
 }
 
-function appendWithLimit(current: string, addition: string, maxChars?: number): string {
-  const next = current.length === 0 ? addition : `${current}\n${addition}`;
-
-  if (maxChars === undefined) {
-    return next;
-  }
-
-  return next.slice(0, maxChars);
-}
-
-function truncatePageTextForAggregate(
-  current: string,
-  pageText: string,
-  maxChars?: number,
-): string {
-  if (maxChars === undefined) {
-    return pageText;
-  }
-
-  const separatorLength = current.length === 0 ? 0 : 1;
-  const remaining = maxChars - current.length - separatorLength;
-
-  if (remaining <= 0) {
-    return "";
-  }
-
-  return pageText.slice(0, remaining);
-}
-
 function hasTextString(item: unknown): item is { str: string } {
   return (
     typeof item === "object" &&
@@ -113,61 +85,81 @@ export async function readPdf(
     disableFontFace: true,
     useSystemFonts: true,
   });
-  const document = await loadingTask.promise;
-  let text = "";
-  let truncated = false;
-  const pages: ReadPdfResult["pages"] = [];
+  let document: Awaited<typeof loadingTask.promise> | undefined;
 
   try {
+    document = await loadingTask.promise;
+    let truncated = false;
+    const pages: ReadPdfResult["pages"] = [];
+    let aggregateLength = 0;
+
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-      if (maxChars !== undefined && text.length >= maxChars) {
+      const page = await document.getPage(pageNumber);
+      let pageText = "";
+
+      try {
+        const content = await page.getTextContent();
+        pageText = content.items
+          .map((item) => (hasTextString(item) ? item.str : ""))
+          .filter((textItem) => textItem.length > 0)
+          .join(" ")
+          .trim();
+      } finally {
+        page.cleanup?.();
+      }
+
+      if (pageText.length === 0) {
+        continue;
+      }
+
+      const separatorLength = pages.length === 0 ? 0 : 1;
+      const availablePageChars =
+        maxChars === undefined
+          ? pageText.length
+          : maxChars - aggregateLength - separatorLength;
+
+      if (availablePageChars <= 0) {
         truncated = true;
         break;
       }
 
-      const page = await document.getPage(pageNumber);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item) => (hasTextString(item) ? item.str : ""))
-        .filter((textItem) => textItem.length > 0)
-        .join(" ")
-        .trim();
+      const includedPageText = pageText.slice(0, availablePageChars).trim();
 
-      if (pageText.length > 0) {
-        const includedPageText = truncatePageTextForAggregate(text, pageText, maxChars).trim();
+      if (includedPageText.length > 0) {
+        pages.push({
+          page: pageNumber,
+          text: includedPageText,
+          charCount: includedPageText.length,
+        });
+        aggregateLength += separatorLength + includedPageText.length;
+      }
 
-        if (includedPageText.length < pageText.length) {
-          truncated = true;
-        }
-
-        if (includedPageText.length > 0) {
-          pages.push({
-            page: pageNumber,
-            text: includedPageText,
-          });
-        }
-
-        text = appendWithLimit(text, pageText, maxChars);
+      if (includedPageText.length < pageText.length) {
+        truncated = true;
+        break;
       }
     }
+
+    const text = pages.map((page) => page.text).join("\n");
+
+    if (text.length === 0) {
+      throw new Error("PDF text is empty or unavailable");
+    }
+
+    return {
+      relativePath,
+      pageCount: document.numPages,
+      text,
+      pages,
+      truncated,
+    };
   } finally {
-    await document.cleanup();
-    await loadingTask.destroy();
+    try {
+      await document?.cleanup();
+    } finally {
+      await loadingTask.destroy();
+    }
   }
-
-  const normalizedText = text.trim();
-
-  if (normalizedText.length === 0) {
-    throw new Error("PDF text is empty or unavailable");
-  }
-
-  return {
-    relativePath,
-    pageCount: document.numPages,
-    text: normalizedText,
-    pages,
-    truncated,
-  };
 }
 
 export function createReadPdfTool(): VoltAiTool<ReadPdfResult> {

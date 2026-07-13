@@ -1,98 +1,21 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, symlinkSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createReadPdfTool, readPdf } from "../src/tools/readPdf.js";
+import {
+  createMultiPageTextPdf,
+  createTempPdfProject,
+  createTextPdf,
+  writeProjectFile,
+} from "./helpers/pdfFixture.js";
 
 const tempRoots: string[] = [];
 
 function createTempProject(): string {
-  const root = mkdtempSync(join(tmpdir(), "voltai-read-pdf-"));
+  const root = createTempPdfProject();
   tempRoots.push(root);
   return root;
-}
-
-function writeProjectFile(root: string, relativePath: string, content: string): void {
-  const parts = relativePath.split("/");
-  const fileName = parts.pop();
-
-  if (!fileName) {
-    throw new Error("relativePath must include a file name");
-  }
-
-  mkdirSync(join(root, ...parts), { recursive: true });
-  writeFileSync(join(root, ...parts, fileName), content);
-}
-
-function createTextPdf(text: string): string {
-  const stream = `BT /F1 18 Tf 72 720 Td (${text}) Tj ET`;
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
-  ];
-
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-
-  for (const [index, object] of objects.entries()) {
-    offsets.push(pdf.length);
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  }
-
-  const xrefOffset = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-  for (const offset of offsets.slice(1)) {
-    pdf += `${offset.toString().padStart(10, "0")} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\n`;
-  pdf += `startxref\n${xrefOffset}\n%%EOF\n`;
-
-  return pdf;
-}
-
-function createMultiPageTextPdf(pageTexts: string[]): string {
-  const pageObjects = pageTexts.map((text, index) => {
-    const contentObjectNumber = 4 + pageTexts.length + index;
-
-    return `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectNumber} 0 R >>`;
-  });
-  const contentObjects = pageTexts.map((text) => {
-    const stream = `BT /F1 18 Tf 72 720 Td (${text}) Tj ET`;
-
-    return `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
-  });
-  const pageRefs = pageObjects.map((_, index) => `${4 + index} 0 R`).join(" ");
-  const objects = [
-    "<< /Type /Catalog /Pages 2 0 R >>",
-    `<< /Type /Pages /Kids [${pageRefs}] /Count ${pageTexts.length} >>`,
-    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-    ...pageObjects,
-    ...contentObjects,
-  ];
-
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-
-  for (const [index, object] of objects.entries()) {
-    offsets.push(pdf.length);
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  }
-
-  const xrefOffset = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n`;
-  pdf += "0000000000 65535 f \n";
-  for (const offset of offsets.slice(1)) {
-    pdf += `${offset.toString().padStart(10, "0")} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\n`;
-  pdf += `startxref\n${xrefOffset}\n%%EOF\n`;
-
-  return pdf;
 }
 
 function createBlankPdf(): string {
@@ -132,11 +55,13 @@ describe("readPdf", () => {
       pageCount: 2,
       text: expect.stringContaining("Page one cable note"),
       pages: [
-        { page: 1, text: "Page one cable note" },
-        { page: 2, text: "Page two grounding note" },
+        { page: 1, text: "Page one cable note", charCount: 19 },
+        { page: 2, text: "Page two grounding note", charCount: 23 },
       ],
     });
     expect(result.text).toContain("Page two grounding note");
+    expect(result.text).toBe(result.pages.map((page) => page.text).join("\n"));
+    expect(result.pages.every((page) => page.charCount === page.text.length)).toBe(true);
   });
 
   it("limits extracted text with maxChars", async () => {
@@ -187,9 +112,73 @@ describe("readPdf", () => {
 
     expect(result.text).toBe("12345\n6");
     expect(result.pages).toEqual([
-      { page: 1, text: "12345" },
-      { page: 2, text: "6" },
+      { page: 1, text: "12345", charCount: 5 },
+      { page: 2, text: "6", charCount: 1 },
     ]);
+    expect(result.text).toBe(result.pages.map((page) => page.text).join("\n"));
+  });
+
+  it("ends at the current page without a standalone separator when no next-page character fits", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/boundary.pdf", createMultiPageTextPdf(["12345", "67890"]));
+
+    const result = await readPdf(root, {
+      relativePath: "docs/boundary.pdf",
+      maxChars: 6,
+    });
+
+    expect(result.text).toBe("12345");
+    expect(result.text.endsWith("\n")).toBe(false);
+    expect(result.pages).toEqual([{ page: 1, text: "12345", charCount: 5 }]);
+    expect(result.truncated).toBe(true);
+  });
+
+  it("marks an exact page-end limit as truncated when a later page has text", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/more.pdf", createMultiPageTextPdf(["12345", "67890"]));
+
+    const result = await readPdf(root, {
+      relativePath: "docs/more.pdf",
+      maxChars: 5,
+    });
+
+    expect(result).toMatchObject({
+      text: "12345",
+      pages: [{ page: 1, text: "12345", charCount: 5 }],
+      truncated: true,
+    });
+  });
+
+  it("does not mark an exact page-end limit as truncated when later pages have no text", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/no-more.pdf", createMultiPageTextPdf(["12345", ""]));
+
+    const result = await readPdf(root, {
+      relativePath: "docs/no-more.pdf",
+      maxChars: 5,
+    });
+
+    expect(result.truncated).toBe(false);
+    expect(result).toMatchObject({
+      text: "12345",
+      pages: [{ page: 1, text: "12345", charCount: 5 }],
+    });
+  });
+
+  it("keeps text and charCount consistent for every returned page under a limit", async () => {
+    const root = createTempProject();
+    writeProjectFile(root, "docs/consistent.pdf", createMultiPageTextPdf(["abc", "def", "ghi"]));
+
+    const result = await readPdf(root, {
+      relativePath: "docs/consistent.pdf",
+      maxChars: 9,
+    });
+
+    expect(result.text.length).toBeLessThanOrEqual(9);
+    expect(result.text).toBe(result.pages.map((page) => page.text).join("\n"));
+    expect(result.pages.map((page) => page.charCount)).toEqual(
+      result.pages.map((page) => page.text.length),
+    );
   });
 
   it("rejects absolute paths", async () => {
