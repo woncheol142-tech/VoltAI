@@ -1,16 +1,30 @@
 import { createVoltAiMcpServer, isMainModule, runStdioServer } from "@voltai/mcp-core";
 
 import { createListProjectFilesTool } from "./tools/listProjectFiles.js";
+import { createIndexDrawingListTool } from "./tools/indexDrawingList.js";
 import { createReadExcelTool } from "./tools/readExcel.js";
 import { createReadPdfTool } from "./tools/readPdf.js";
 import { createRenderPdfPageTool } from "./tools/renderPdfPage.js";
 
 export { listProjectFiles } from "./tools/listProjectFiles.js";
+export {
+  createIndexDrawingListTool,
+  indexDrawingList,
+} from "./tools/indexDrawingList.js";
 export { readExcel } from "./tools/readExcel.js";
 export { readExcelSheetWithProvenance } from "./tools/readExcel.js";
 export { readPdf } from "./tools/readPdf.js";
 export { renderPdfPage } from "./tools/renderPdfPage.js";
 export type { ProjectFile } from "./tools/listProjectFiles.js";
+export type {
+  IndexDrawingListInput,
+  IndexDrawingListResult,
+} from "./tools/indexDrawingList.js";
+export type {
+  DrawingCategory,
+  DrawingIndexDocument,
+  DrawingIndexRecord,
+} from "./drawingIndex/types.js";
 export type { ReadExcelResult } from "./tools/readExcel.js";
 export type {
   ExcelProvenanceRow,
@@ -31,6 +45,7 @@ export function createServer() {
       createReadPdfTool(),
       createReadExcelTool(),
       createRenderPdfPageTool(),
+      createIndexDrawingListTool(),
     ],
   });
 }
