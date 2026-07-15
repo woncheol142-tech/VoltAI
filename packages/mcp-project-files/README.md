@@ -52,3 +52,32 @@ Without `outputName`, the tool returns the index without writing a file.
 
 This tool is a coordinate-based parser for drawing-list tables. It does not use OCR
 and does not guarantee general table recognition across arbitrary vendor layouts.
+
+## `search_drawings`
+
+Search a saved Task 40 schema v1 drawing index.
+
+```json
+{
+  "indexPath": ".volt-ai/indexes/전기-도면목록-08f2725e38fe-p002-p009.json",
+  "query": "1단지 101동 전력간선"
+}
+```
+
+Optional hard filters are applied before query matching.
+
+```json
+{
+  "indexPath": ".volt-ai/indexes/전기-도면목록-08f2725e38fe-p002-p009.json",
+  "query": "피뢰",
+  "limit": 20,
+  "filters": {
+    "complex": "2단지"
+  }
+}
+```
+
+The search is deterministic lexical search, not embedding or vector search. It uses
+AND matching by default, performs no typo correction, and expands only a small
+query-side synonym dictionary. Results include `matchedFields` and `matchReasons`
+to explain why each drawing matched.

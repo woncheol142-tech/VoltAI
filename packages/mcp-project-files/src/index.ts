@@ -5,6 +5,7 @@ import { createIndexDrawingListTool } from "./tools/indexDrawingList.js";
 import { createReadExcelTool } from "./tools/readExcel.js";
 import { createReadPdfTool } from "./tools/readPdf.js";
 import { createRenderPdfPageTool } from "./tools/renderPdfPage.js";
+import { createSearchDrawingsTool } from "./tools/searchDrawings.js";
 
 export { listProjectFiles } from "./tools/listProjectFiles.js";
 export {
@@ -15,6 +16,7 @@ export { readExcel } from "./tools/readExcel.js";
 export { readExcelSheetWithProvenance } from "./tools/readExcel.js";
 export { readPdf } from "./tools/readPdf.js";
 export { renderPdfPage } from "./tools/renderPdfPage.js";
+export { createSearchDrawingsTool, searchDrawings } from "./tools/searchDrawings.js";
 export type { ProjectFile } from "./tools/listProjectFiles.js";
 export type {
   IndexDrawingListInput,
@@ -35,6 +37,14 @@ export type {
   RenderPdfPageInput,
   RenderPdfPageResult,
 } from "./tools/renderPdfPage.js";
+export type {
+  DrawingSearchFilters,
+  DrawingSearchInput,
+  DrawingSearchMatch,
+  DrawingSearchOptions,
+  DrawingSearchResult,
+  NormalizedDrawingQuery,
+} from "./drawingSearch/types.js";
 
 export function createServer() {
   return createVoltAiMcpServer({
@@ -46,6 +56,7 @@ export function createServer() {
       createReadExcelTool(),
       createRenderPdfPageTool(),
       createIndexDrawingListTool(),
+      createSearchDrawingsTool(),
     ],
   });
 }
