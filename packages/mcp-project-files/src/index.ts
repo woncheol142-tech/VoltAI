@@ -9,6 +9,7 @@ import { createRenderPdfPageTool } from "./tools/renderPdfPage.js";
 import { createSearchDrawingsTool } from "./tools/searchDrawings.js";
 import { createExtractDrawingLayoutTool } from "./tools/extractDrawingLayout.js";
 import { createExtractDrawingPrimitivesTool } from "./tools/extractDrawingPrimitives.js";
+import { createExtractDrawingClassificationTool } from "./tools/extractDrawingClassification.js";
 
 export { listProjectFiles } from "./tools/listProjectFiles.js";
 export {
@@ -29,6 +30,10 @@ export {
   createExtractDrawingPrimitivesTool,
   extractDrawingPrimitives,
 } from "./tools/extractDrawingPrimitives.js";
+export {
+  createExtractDrawingClassificationTool,
+  extractDrawingClassification,
+} from "./tools/extractDrawingClassification.js";
 export type { ProjectFile } from "./tools/listProjectFiles.js";
 export type {
   IndexDrawingListInput,
@@ -88,6 +93,18 @@ export type {
   ExtractDrawingPrimitivesInput,
   ExtractDrawingPrimitivesResult,
 } from "./tools/extractDrawingPrimitives.js";
+export type {
+  DrawingPrimitiveClassificationDocument,
+  PrimitiveClassification,
+  PrimitiveClassificationDiagnostics,
+  PrimitiveClassificationGeometry,
+  PrimitiveClassificationKind,
+  PrimitiveClassificationStatistics,
+} from "./drawingClassification/types.js";
+export type {
+  ExtractDrawingClassificationInput,
+  ExtractDrawingClassificationResult,
+} from "./tools/extractDrawingClassification.js";
 
 export function createServer() {
   return createVoltAiMcpServer({
@@ -103,6 +120,7 @@ export function createServer() {
       createSearchDrawingsTool(),
       createExtractDrawingLayoutTool(),
       createExtractDrawingPrimitivesTool(),
+      createExtractDrawingClassificationTool(),
     ],
   });
 }

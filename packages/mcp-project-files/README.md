@@ -176,3 +176,36 @@ produce payloads larger than 10 MB. OCR and computer vision are not supported.
 The decoder depends on the internal, non-public PDF.js 6.1.200 compressed constructPath
 representation. The exact `pdfjs-dist` pin is therefore a
 compatibility boundary and must be reviewed before upgrading PDF.js.
+
+## `extract_drawing_classification`
+
+Derive deterministic structural classification from the painted paths returned by
+Task 43B-1. The primitive document and every primitive remain unchanged, and each
+primitive receives exactly one primary kind using fixed precedence.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69
+}
+```
+
+Provide `outputName` to persist compact schema v1 JSON under
+`PROJECT_ROOT/.volt-ai/classifications/`.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69,
+  "outputName": "E-154A-classification"
+}
+```
+
+`confidence` reports deterministic rule satisfaction, not a semantic probability.
+`rectangleCandidate` is only a structural four-edge candidate and does not confirm
+drawing meaning. Duplicate diagnostics identify exact command geometry duplicates;
+paint and style differences are excluded from that geometry duplicate definition.
+No primitive is deleted or deduplicated. This tool performs no semantic inference,
+no symbol recognition, no wire detection, and no circuit analysis. It does not use
+OCR, computer vision, or AI. Large pages inherit the memory and payload limits of
+painted primitive extraction.
