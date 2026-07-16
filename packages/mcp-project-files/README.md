@@ -112,3 +112,34 @@ The search is deterministic lexical search, not embedding or vector search. It u
 AND matching by default, performs no typo correction, and expands only a small
 query-side synonym dictionary. Results include `matchedFields` and `matchReasons`
 to explain why each drawing matched.
+
+## `extract_drawing_layout`
+
+Extract normalized text items and rotation-aware text lines from one PDF drawing
+page. Coordinates use a top-left origin and include both page points and normalized
+`0..1` bounding boxes. Extraction uses vector PDF.js textContent. Each valid
+raw PDF.js text item remains an item, while lines are geometry-derived data that
+support arbitrary text rotation.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69
+}
+```
+
+Provide `outputName` to persist the schema v1 layout under
+`PROJECT_ROOT/.volt-ai/layouts/`.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69,
+  "outputName": "전기-도면-layout"
+}
+```
+
+This Task 43A output contains text items and text lines only. It does not include
+blocks, regions, drawing primitives, symbols, connections, OCR, or table inference.
+A zero-text page is returned as a normal empty result, and the tool does not infer electrical
+equipment meaning from the extracted text.

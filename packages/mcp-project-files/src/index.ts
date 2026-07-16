@@ -7,6 +7,7 @@ import { createReadExcelTool } from "./tools/readExcel.js";
 import { createReadPdfTool } from "./tools/readPdf.js";
 import { createRenderPdfPageTool } from "./tools/renderPdfPage.js";
 import { createSearchDrawingsTool } from "./tools/searchDrawings.js";
+import { createExtractDrawingLayoutTool } from "./tools/extractDrawingLayout.js";
 
 export { listProjectFiles } from "./tools/listProjectFiles.js";
 export {
@@ -19,6 +20,10 @@ export { readPdf } from "./tools/readPdf.js";
 export { renderPdfPage } from "./tools/renderPdfPage.js";
 export { createMapDrawingPagesTool, mapDrawingPages } from "./tools/mapDrawingPages.js";
 export { createSearchDrawingsTool, searchDrawings } from "./tools/searchDrawings.js";
+export {
+  createExtractDrawingLayoutTool,
+  extractDrawingLayout,
+} from "./tools/extractDrawingLayout.js";
 export type { ProjectFile } from "./tools/listProjectFiles.js";
 export type {
   IndexDrawingListInput,
@@ -56,6 +61,17 @@ export type {
   DrawingSearchResult,
   NormalizedDrawingQuery,
 } from "./drawingSearch/types.js";
+export type {
+  DrawingLayoutDocument,
+  DrawingTextItem,
+  DrawingTextLine,
+  NormalizedBBox,
+  PageBBox,
+} from "./drawingLayout/types.js";
+export type {
+  ExtractDrawingLayoutInput,
+  ExtractDrawingLayoutResult,
+} from "./tools/extractDrawingLayout.js";
 
 export function createServer() {
   return createVoltAiMcpServer({
@@ -69,6 +85,7 @@ export function createServer() {
       createIndexDrawingListTool(),
       createMapDrawingPagesTool(),
       createSearchDrawingsTool(),
+      createExtractDrawingLayoutTool(),
     ],
   });
 }
