@@ -143,3 +143,36 @@ This Task 43A output contains text items and text lines only. It does not includ
 blocks, regions, drawing primitives, symbols, connections, OCR, or table inference.
 A zero-text page is returned as a normal empty result, and the tool does not infer electrical
 equipment meaning from the extracted text.
+
+## `extract_drawing_primitives`
+
+Extract painted paths from one vector PDF page while preserving paint order,
+graphics state, exact curve bounds, and off-page geometry.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69
+}
+```
+
+Provide `outputName` to persist compact schema v1 JSON under
+`PROJECT_ROOT/.volt-ai/primitives/`.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69,
+  "outputName": "E-154A-primitives"
+}
+```
+
+This tool extracts painted paths only. It performs no line classification,
+no rectangle classification, no polyline classification, no duplicate removal,
+and no symbol or connection inference. Clipping-only paths are excluded, while
+off-page geometry remains preserved without clamping. Large vector pages may
+produce payloads larger than 10 MB. OCR and computer vision are not supported.
+
+The decoder depends on the internal, non-public PDF.js 6.1.200 compressed constructPath
+representation. The exact `pdfjs-dist` pin is therefore a
+compatibility boundary and must be reviewed before upgrading PDF.js.

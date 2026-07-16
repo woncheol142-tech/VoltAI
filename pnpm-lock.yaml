@@ -233,7 +233,7 @@ importers:
         specifier: ^4.4.0
         version: 4.4.0
       pdfjs-dist:
-        specifier: ^6.1.200
+        specifier: 6.1.200
         version: 6.1.200
       zod:
         specifier: ^3.25.76

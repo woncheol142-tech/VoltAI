@@ -16,7 +16,7 @@
     "@napi-rs/canvas": "^1.0.2",
     "@voltai/mcp-core": "workspace:*",
     "exceljs": "^4.4.0",
-    "pdfjs-dist": "^6.1.200",
+    "pdfjs-dist": "6.1.200",
     "zod": "^3.25.76"
   },
   "devDependencies": {
