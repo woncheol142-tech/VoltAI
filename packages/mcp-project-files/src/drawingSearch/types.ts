@@ -16,12 +16,16 @@ export type DrawingSearchOptions = {
 
 export type DrawingSearchInput = DrawingSearchOptions & {
   indexPath: string;
+  pageMapPath?: string;
 };
 
 export type DrawingSearchMatch = Omit<DrawingIndexRecord, "rawText"> & {
   score: number;
   matchedFields: string[];
   matchReasons: string[];
+  drawingPage?: number | null;
+  pageMatchConfidence?: number | null;
+  pageMatchMethod?: "title-block-coordinate" | null;
 };
 
 export type DrawingSearchResult = {

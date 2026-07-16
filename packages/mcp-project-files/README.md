@@ -53,6 +53,27 @@ Without `outputName`, the tool returns the index without writing a file.
 This tool is a coordinate-based parser for drawing-list tables. It does not use OCR
 and does not guarantee general table recognition across arbitrary vendor layouts.
 
+## `map_drawing_pages`
+
+Map drawing numbers from a saved Task 40 index to the PDF's drawing pages by reading
+title-block coordinates.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "indexPath": ".volt-ai/indexes/전기-도면목록-08f2725e38fe-p002-p009.json",
+  "startPage": 10,
+  "endPage": 100,
+  "outputName": "전기-페이지맵"
+}
+```
+
+When the PDF is only a partial drawing set, unmatched index entries are expected.
+`coverageRatio` reports the mapped portion of the index for the scanned PDF range.
+The page map is a separate schema v1 document and does not change the Task 40 index.
+The parser is title-block and coordinate based; OCR is not supported. Duplicate page
+mappings remain ambiguous and are not reduced to an arbitrary single page in search.
+
 ## `search_drawings`
 
 Search a saved Task 40 schema v1 drawing index.
@@ -61,6 +82,16 @@ Search a saved Task 40 schema v1 drawing index.
 {
   "indexPath": ".volt-ai/indexes/전기-도면목록-08f2725e38fe-p002-p009.json",
   "query": "1단지 101동 전력간선"
+}
+```
+
+Add a saved page map to enrich results with a drawing page when exactly one mapping exists.
+
+```json
+{
+  "indexPath": ".volt-ai/indexes/전기-도면목록-08f2725e38fe-p002-p009.json",
+  "pageMapPath": ".volt-ai/page-maps/전기-페이지맵-08f2725e38fe-p010-p100.json",
+  "query": "E-401"
 }
 ```
 
