@@ -10,6 +10,7 @@ import { createSearchDrawingsTool } from "./tools/searchDrawings.js";
 import { createExtractDrawingLayoutTool } from "./tools/extractDrawingLayout.js";
 import { createExtractDrawingPrimitivesTool } from "./tools/extractDrawingPrimitives.js";
 import { createExtractDrawingClassificationTool } from "./tools/extractDrawingClassification.js";
+import { createExtractDrawingSpatialRelationsTool } from "./tools/extractDrawingSpatialRelations.js";
 
 export { listProjectFiles } from "./tools/listProjectFiles.js";
 export {
@@ -34,6 +35,40 @@ export {
   createExtractDrawingClassificationTool,
   extractDrawingClassification,
 } from "./tools/extractDrawingClassification.js";
+export {
+  createExtractDrawingSpatialRelationsTool,
+  extractDrawingSpatialRelations,
+} from "./tools/extractDrawingSpatialRelations.js";
+export { buildDrawingSpatialRelations } from "./drawingSpatial/buildDrawingSpatialRelations.js";
+export { writeDrawingSpatialRelations } from "./drawingSpatial/writeDrawingSpatialRelations.js";
+export {
+  canonicalizeElectricalCandidate,
+  runElectricalObjectRules,
+  validateElectricalCandidate,
+  validateElectricalRule,
+} from "./drawingElectricalObjects/candidate.js";
+export {
+  computeElectricalConfidence,
+  electricalObjectStatus,
+} from "./drawingElectricalObjects/confidence.js";
+export { createElectricalObjectId } from "./drawingElectricalObjects/objectIdentity.js";
+export { validateElectricalConstructionInput } from "./drawingElectricalObjects/validateElectricalConstructionInput.js";
+export { createElectricalEvidenceIndex } from "./drawingElectricalObjects/evidenceIndex.js";
+export { resolveElectricalObjectCandidates } from "./drawingElectricalObjects/resolveCandidates.js";
+export { assembleElectricalObjects } from "./drawingElectricalObjects/assembleElectricalObjects.js";
+export { buildElectricalConstructionGraph } from "./drawingElectricalObjects/constructionGraph.js";
+export {
+  validateElectricalDocument,
+  validateElectricalObjects,
+} from "./drawingElectricalObjects/validateElectricalObjects.js";
+export {
+  serializeElectricalDocument,
+  serializeElectricalObjects,
+} from "./drawingElectricalObjects/serializeElectricalObjects.js";
+export {
+  writeElectricalDocument,
+  writeElectricalObjects,
+} from "./drawingElectricalObjects/writeElectricalObjects.js";
 export type { ProjectFile } from "./tools/listProjectFiles.js";
 export type {
   IndexDrawingListInput,
@@ -105,6 +140,49 @@ export type {
   ExtractDrawingClassificationInput,
   ExtractDrawingClassificationResult,
 } from "./tools/extractDrawingClassification.js";
+export type {
+  DrawingSpatialRelationDocument,
+  SpatialRelation,
+  SpatialRelationGeometry,
+  SpatialRelationPolicy,
+  SpatialRelationStatistics,
+  SpatialRelationType,
+  SpatialTextEntityType,
+  SpatialTopology,
+} from "./drawingSpatial/types.js";
+export type {
+  ExtractDrawingSpatialRelationsInput,
+  ExtractDrawingSpatialRelationsResult,
+} from "./tools/extractDrawingSpatialRelations.js";
+export type {
+  BuildElectricalObjectsInput,
+  CandidateConflict,
+  CandidateResolution,
+  ConstructionGraph,
+  ConstructionGraphComponent,
+  ConstructionGraphEdge,
+  ConstructionGraphEdgeType,
+  DrawingElectricalObjectDocument,
+  ElectricalAttribute,
+  ElectricalConfidenceComponents,
+  ElectricalConstructionContext,
+  ElectricalObject,
+  ElectricalObjectCandidate,
+  ElectricalObjectDiagnostics,
+  ElectricalObjectLabel,
+  ElectricalObjectRule,
+  ElectricalObjectStatistics,
+  ElectricalObjectStatus,
+  ElectricalObjectType,
+} from "./drawingElectricalObjects/types.js";
+export type { ConstructionGraphEdgeInput } from "./drawingElectricalObjects/constructionGraph.js";
+export type { ElectricalEvidenceIndex } from "./drawingElectricalObjects/evidenceIndex.js";
+export type { ElectricalObjectIdentityInput } from "./drawingElectricalObjects/objectIdentity.js";
+export type {
+  ElectricalValidationIssue,
+  ElectricalValidationIssueSeverity,
+  ElectricalValidationResult,
+} from "./drawingElectricalObjects/validateElectricalObjects.js";
 
 export function createServer() {
   return createVoltAiMcpServer({
@@ -121,6 +199,7 @@ export function createServer() {
       createExtractDrawingLayoutTool(),
       createExtractDrawingPrimitivesTool(),
       createExtractDrawingClassificationTool(),
+      createExtractDrawingSpatialRelationsTool(),
     ],
   });
 }

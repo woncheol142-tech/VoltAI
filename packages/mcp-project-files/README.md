@@ -209,3 +209,38 @@ No primitive is deleted or deduplicated. This tool performs no semantic inferenc
 no symbol recognition, no wire detection, and no circuit analysis. It does not use
 OCR, computer vision, or AI. Large pages inherit the memory and payload limits of
 painted primitive extraction.
+
+## `extract_drawing_spatial_relations`
+
+Build deterministic page-space bounding box relations between Task 43A text and
+Task 43B primitive classifications for one PDF page. Text items and text lines are
+kept as independent relation entities.
+
+Each relation is expressed from the primitive to the text entity. Text items and
+text lines remain independent entities, and inverse relation rows are not duplicated.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69
+}
+```
+
+Provide `outputName` to persist compact schema v1 JSON under
+`PROJECT_ROOT/.volt-ai/spatial/`.
+
+```json
+{
+  "relativePath": "project-files/전기 결합_1_100.pdf",
+  "page": 69,
+  "outputName": "E-154A-spatial"
+}
+```
+
+The tool records geometry relations from page-bbox AABB tests. Positive topology
+relations are preserved, while disjoint candidates are limited to bounded nearest,
+aligned, and adjacent proximity. It does not compare command geometry, and AABB
+relations can include false positives for sparse or compound paths. This is not
+semantic reasoning: there is no symbol recognition, no connection or circuit
+inference, no OCR, and no AI classification. Large pages inherit the memory and
+payload limits of layout and primitive extraction.
