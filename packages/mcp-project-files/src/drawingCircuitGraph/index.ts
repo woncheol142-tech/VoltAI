@@ -19,4 +19,9 @@ export {
 } from "./validateCircuitGraphDocument.js";
 export { serializeCircuitGraphDocument } from "./serializeCircuitGraphDocument.js";
 export { writeCircuitGraphDocument } from "./writeCircuitGraphDocument.js";
+export { projectCircuitGraph } from "./projectCircuitGraph.js";
+export {
+  CircuitGraphProjectionError,
+  type CircuitGraphProjectionErrorCode,
+} from "./projectionTypes.js";
 export * from "./types.js";
