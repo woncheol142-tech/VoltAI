@@ -1,4 +1,8 @@
-import { createVoltAiMcpServer, isMainModule, runStdioServer } from "@voltai/mcp-core";
+import {
+  createVoltAiMcpServer,
+  isMainModule,
+  runStdioServer,
+} from "@voltai/mcp-core";
 
 import { createListProjectFilesTool } from "./tools/listProjectFiles.js";
 import { createIndexDrawingListTool } from "./tools/indexDrawingList.js";
@@ -11,6 +15,7 @@ import { createExtractDrawingLayoutTool } from "./tools/extractDrawingLayout.js"
 import { createExtractDrawingPrimitivesTool } from "./tools/extractDrawingPrimitives.js";
 import { createExtractDrawingClassificationTool } from "./tools/extractDrawingClassification.js";
 import { createExtractDrawingSpatialRelationsTool } from "./tools/extractDrawingSpatialRelations.js";
+import { createQueryCircuitGraphTool } from "./tools/queryCircuitGraph.js";
 
 export { listProjectFiles } from "./tools/listProjectFiles.js";
 export {
@@ -21,8 +26,14 @@ export { readExcel } from "./tools/readExcel.js";
 export { readExcelSheetWithProvenance } from "./tools/readExcel.js";
 export { readPdf } from "./tools/readPdf.js";
 export { renderPdfPage } from "./tools/renderPdfPage.js";
-export { createMapDrawingPagesTool, mapDrawingPages } from "./tools/mapDrawingPages.js";
-export { createSearchDrawingsTool, searchDrawings } from "./tools/searchDrawings.js";
+export {
+  createMapDrawingPagesTool,
+  mapDrawingPages,
+} from "./tools/mapDrawingPages.js";
+export {
+  createSearchDrawingsTool,
+  searchDrawings,
+} from "./tools/searchDrawings.js";
 export {
   createExtractDrawingLayoutTool,
   extractDrawingLayout,
@@ -200,6 +211,7 @@ export function createServer() {
       createExtractDrawingPrimitivesTool(),
       createExtractDrawingClassificationTool(),
       createExtractDrawingSpatialRelationsTool(),
+      createQueryCircuitGraphTool(),
     ],
   });
 }
