@@ -2,23 +2,23 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadMcpCompany } from "./helpers/companyMcpHarness.js";
+import {
+  createCompanyEmbeddingProviderFromEnv,
+  resolveCompanyKnowledgeDbPath,
+} from "../src/config.js";
 
 describe("mcp-company embedding and database configuration", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("fails closed when COMPANY_EMBED_PROVIDER is not configured", async () => {
-    const { createCompanyEmbeddingProviderFromEnv } = await loadMcpCompany();
-
+  it("fails closed when COMPANY_EMBED_PROVIDER is not configured", () => {
     expect(() => createCompanyEmbeddingProviderFromEnv({})).toThrow(
       /COMPANY_EMBED_PROVIDER.*required/i,
     );
   });
 
   it("creates the deterministic placeholder only when explicitly selected", async () => {
-    const { createCompanyEmbeddingProviderFromEnv } = await loadMcpCompany();
     const provider = createCompanyEmbeddingProviderFromEnv({
       COMPANY_EMBED_PROVIDER: "placeholder",
     });
@@ -32,9 +32,7 @@ describe("mcp-company embedding and database configuration", () => {
     );
   });
 
-  it("rejects unsupported embedding providers instead of silently using placeholder", async () => {
-    const { createCompanyEmbeddingProviderFromEnv } = await loadMcpCompany();
-
+  it("rejects unsupported embedding providers instead of silently using placeholder", () => {
     expect(() =>
       createCompanyEmbeddingProviderFromEnv({
         COMPANY_EMBED_PROVIDER: "ollama",
@@ -43,7 +41,6 @@ describe("mcp-company embedding and database configuration", () => {
   });
 
   it("runs explicit placeholder embedding without fetch or API keys", async () => {
-    const { createCompanyEmbeddingProviderFromEnv } = await loadMcpCompany();
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
     const provider = createCompanyEmbeddingProviderFromEnv({
@@ -56,17 +53,13 @@ describe("mcp-company embedding and database configuration", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("defaults to PROJECT_ROOT/.voltai/knowledge.sqlite", async () => {
-    const { resolveCompanyKnowledgeDbPath } = await loadMcpCompany();
-
+  it("defaults to PROJECT_ROOT/.voltai/knowledge.sqlite", () => {
     expect(resolveCompanyKnowledgeDbPath("/project", {})).toBe(
       join("/project", ".voltai", "knowledge.sqlite"),
     );
   });
 
-  it("uses KNOWLEDGE_DB_PATH override and ignores KEC_DB_PATH", async () => {
-    const { resolveCompanyKnowledgeDbPath } = await loadMcpCompany();
-
+  it("uses KNOWLEDGE_DB_PATH override and ignores KEC_DB_PATH", () => {
     expect(
       resolveCompanyKnowledgeDbPath("/project", {
         KNOWLEDGE_DB_PATH: "/tmp/company-knowledge.sqlite",
