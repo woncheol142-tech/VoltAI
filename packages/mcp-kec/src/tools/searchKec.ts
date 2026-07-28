@@ -3,12 +3,19 @@ import { join } from "node:path";
 import type { VoltAiTool } from "@voltai/mcp-core";
 import { z } from "zod";
 
-import { createEmbeddingProviderFromEnv, type EmbeddingProvider } from "../knowledge/embedding.js";
+import {
+  createEmbeddingProviderFromEnv,
+  type EmbeddingProvider,
+} from "../knowledge/embedding.js";
 import { assertProjectRoot } from "../knowledge/projectPath.js";
 import { SqliteVectorStore } from "../knowledge/sqliteVectorStore.js";
-import type { KecSearchResult, KnowledgeCollection, VectorStore } from "../knowledge/vectorStore.js";
+import type {
+  KecSearchResult,
+  KnowledgeCollection,
+  VectorStore,
+} from "../knowledge/vectorStore.js";
+import { executeKecSemanticSearch } from "../searchSemantic/semanticSearchCore.js";
 
-const metadataMismatchError = "KEC index embedding metadata mismatch. Please re-run index_kec.";
 const kecCollection: KnowledgeCollection = "kec";
 
 export type SearchKecInput = {
@@ -31,7 +38,10 @@ export type SearchKecToolResult = {
   results: KecSearchResult[];
 };
 
-function assertSearchKecInput(input: unknown): { question: string; topK: number } {
+function assertSearchKecInput(input: unknown): {
+  question: string;
+  topK: number;
+} {
   if (!input || typeof input !== "object") {
     throw new Error("query is required");
   }
@@ -44,7 +54,10 @@ function assertSearchKecInput(input: unknown): { question: string; topK: number 
     throw new Error("query is required");
   }
 
-  if (candidate.topK !== undefined && (!Number.isInteger(candidate.topK) || candidate.topK < 1)) {
+  if (
+    candidate.topK !== undefined &&
+    (!Number.isInteger(candidate.topK) || candidate.topK < 1)
+  ) {
     throw new Error("topK must be a positive integer");
   }
 
@@ -55,7 +68,9 @@ function assertSearchKecInput(input: unknown): { question: string; topK: number 
 }
 
 function createDefaultVectorStore(projectRoot: string): VectorStore {
-  return new SqliteVectorStore(process.env.KEC_DB_PATH ?? join(projectRoot, ".voltai", "kec.sqlite"));
+  return new SqliteVectorStore(
+    process.env.KEC_DB_PATH ?? join(projectRoot, ".voltai", "kec.sqlite"),
+  );
 }
 
 export async function searchKec(
@@ -63,26 +78,22 @@ export async function searchKec(
   deps: SearchKecDependencies,
 ): Promise<KecSearchResult[]> {
   const { question, topK } = assertSearchKecInput(input);
-  const embedding = await deps.embeddingProvider.embed(question);
-  const providerMetadata = deps.embeddingProvider.getMetadata();
-  const indexMetadata = await deps.vectorStore.getIndexMetadata(kecCollection);
 
-  if (
-    !indexMetadata ||
-    indexMetadata.embeddingProvider !== providerMetadata.provider ||
-    indexMetadata.embeddingModel !== providerMetadata.model ||
-    indexMetadata.dimensions !== embedding.length
-  ) {
-    throw new Error(metadataMismatchError);
-  }
-
-  return deps.vectorStore.search(kecCollection, embedding, topK);
+  return executeKecSemanticSearch(question, topK, {
+    embeddingProvider: deps.embeddingProvider,
+    getIndexMetadata: () => deps.vectorStore.getIndexMetadata(kecCollection),
+    search: (embedding, limit) =>
+      deps.vectorStore.search(kecCollection, embedding, limit),
+  });
 }
 
-export function createSearchKecTool(deps: SearchKecToolDependencies = {}): VoltAiTool<SearchKecToolResult> {
+export function createSearchKecTool(
+  deps: SearchKecToolDependencies = {},
+): VoltAiTool<SearchKecToolResult> {
   return {
     name: "search_kec",
-    description: "Search indexed KEC chunks from the local SQLite knowledge base.",
+    description:
+      "Search indexed KEC chunks from the local SQLite knowledge base.",
     inputSchema: {
       query: z.string().min(1),
       topK: z.number().int().positive().optional(),
@@ -93,7 +104,8 @@ export function createSearchKecTool(deps: SearchKecToolDependencies = {}): VoltA
 
       try {
         const results = await searchKec(input, {
-          embeddingProvider: deps.embeddingProvider ?? createEmbeddingProviderFromEnv(),
+          embeddingProvider:
+            deps.embeddingProvider ?? createEmbeddingProviderFromEnv(),
           vectorStore,
         });
 

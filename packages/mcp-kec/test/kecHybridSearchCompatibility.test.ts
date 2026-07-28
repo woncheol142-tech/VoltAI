@@ -5,10 +5,24 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, expectTypeOf, it } from "vitest";
 
+import type { EmbeddingProvider } from "../src/knowledge/embedding.js";
 import type {
   KecSearchResult,
   VectorStore,
 } from "../src/knowledge/vectorStore.js";
+import {
+  createKecHybridSearchOrchestrator,
+  type KecHybridSearchDependencies,
+  type KecHybridSearchOrchestrator,
+  type KecHybridSearchResult,
+} from "../src/searchHybrid/index.js";
+import type {
+  KecLexicalSearcher,
+  KecRankCandidate,
+  KecRankingStrategy,
+  KecSearchRequest,
+  KecSemanticSearcher,
+} from "../src/searchFoundation/index.js";
 import {
   createSearchKecTool,
   searchKec,
@@ -20,10 +34,12 @@ const testDirectory = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(testDirectory, "..");
 const workspaceRoot = join(packageRoot, "..", "..");
 const hybridRoot = join(packageRoot, "src", "searchHybrid");
+const semanticRoot = join(packageRoot, "src", "searchSemantic");
 const packageIndex = join(packageRoot, "src", "index.ts");
+const searchKecFile = join(packageRoot, "src", "tools", "searchKec.ts");
 const legacyFiles = [
   packageIndex,
-  join(packageRoot, "src", "tools", "searchKec.ts"),
+  searchKecFile,
   join(packageRoot, "src", "knowledge", "embedding.ts"),
   join(packageRoot, "src", "knowledge", "vectorStore.ts"),
   join(packageRoot, "src", "knowledge", "sqliteVectorStore.ts"),
@@ -33,6 +49,9 @@ const legacyFiles = [
   join(packageRoot, "src", "searchFoundation", "rankingStrategy.ts"),
   join(packageRoot, "src", "searchFoundation", "index.ts"),
 ];
+const headStableLegacyFiles = legacyFiles.filter(
+  (path) => path !== searchKecFile,
+);
 
 function sourceFiles(directory: string): string[] {
   if (!existsSync(directory)) {
@@ -71,6 +90,7 @@ describe("KEC hybrid search compatibility and dependency boundaries", () => {
       /\bEmbeddingProvider\b/,
       /\bVectorStore\b/,
       /\bsearchKec\b/,
+      /\bsearchSemantic\b/,
       /\bSqlite\b/i,
       /\bOpenAI\b/,
       /\bfetch\s*\(/,
@@ -102,9 +122,13 @@ describe("KEC hybrid search compatibility and dependency boundaries", () => {
     for (const path of legacyFiles) {
       expect(readFileSync(path, "utf8")).not.toContain("searchHybrid");
     }
+
+    for (const path of sourceFiles(semanticRoot)) {
+      expect(readFileSync(path, "utf8")).not.toContain("searchHybrid");
+    }
   });
 
-  it("does not change legacy runtime, Task 46, dependencies, or SQLite contracts", () => {
+  it("keeps Task 46, Task 47, dependencies, and SQLite contracts head-stable", () => {
     expect(() =>
       execFileSync(
         "git",
@@ -113,7 +137,8 @@ describe("KEC hybrid search compatibility and dependency boundaries", () => {
           "--exit-code",
           "HEAD",
           "--",
-          ...legacyFiles,
+          ...headStableLegacyFiles,
+          ...sourceFiles(hybridRoot),
           join(packageRoot, "package.json"),
           join(workspaceRoot, "package.json"),
           join(workspaceRoot, "pnpm-lock.yaml"),
@@ -124,10 +149,35 @@ describe("KEC hybrid search compatibility and dependency boundaries", () => {
   });
 
   it("keeps the legacy search API and MCP schema unchanged", () => {
+    expectTypeOf<KecHybridSearchResult>().toEqualTypeOf<
+      readonly KecRankCandidate[]
+    >();
+    expectTypeOf<KecHybridSearchDependencies>().toEqualTypeOf<{
+      readonly semanticSearcher: KecSemanticSearcher;
+      readonly lexicalSearcher: KecLexicalSearcher;
+      readonly rankingStrategy: KecRankingStrategy;
+    }>();
+    expectTypeOf<KecHybridSearchOrchestrator>().toEqualTypeOf<{
+      search(request: KecSearchRequest): Promise<readonly KecRankCandidate[]>;
+    }>();
+    expectTypeOf<typeof createKecHybridSearchOrchestrator>().toEqualTypeOf<
+      (dependencies: KecHybridSearchDependencies) => KecHybridSearchOrchestrator
+    >();
     expectTypeOf<SearchKecInput>().toEqualTypeOf<{
       question?: string;
       query?: string;
       topK?: number;
+    }>();
+    expectTypeOf<SearchKecDependencies>().toEqualTypeOf<{
+      embeddingProvider: EmbeddingProvider;
+      vectorStore: VectorStore;
+    }>();
+    expectTypeOf<KecSearchResult>().toEqualTypeOf<{
+      clause: string | null;
+      page: number;
+      text: string;
+      similarity: number;
+      sourcePath: string;
     }>();
     expectTypeOf<typeof searchKec>().toEqualTypeOf<
       (
@@ -139,6 +189,12 @@ describe("KEC hybrid search compatibility and dependency boundaries", () => {
     const tool = createSearchKecTool();
     expect(tool.name).toBe("search_kec");
     expect(Object.keys(tool.inputSchema)).toEqual(["query", "topK"]);
+    expect(tool.inputSchema.query.safeParse("cable").success).toBe(true);
+    expect(tool.inputSchema.query.safeParse("").success).toBe(false);
+    expect(tool.inputSchema.topK.safeParse(undefined).success).toBe(true);
+    expect(tool.inputSchema.topK.safeParse(1).success).toBe(true);
+    expect(tool.inputSchema.topK.safeParse(0).success).toBe(false);
+    expect(tool.inputSchema.topK.safeParse(1.5).success).toBe(false);
   });
 
   it("preserves legacy semantic search output identity", async () => {
@@ -179,6 +235,25 @@ describe("KEC hybrid search compatibility and dependency boundaries", () => {
     );
 
     expect(result).toBe(expected);
+    expect(result[0]).toBe(expected[0]);
+
+    await expect(
+      searchKec(
+        { query: "cable", topK: 3 },
+        {
+          embeddingProvider: {
+            embed: async () => [1, 0, 0],
+            getMetadata: () => ({ provider: "test", model: "fixed" }),
+          },
+          vectorStore: {
+            ...vectorStore,
+            getIndexMetadata: async () => null,
+          },
+        },
+      ),
+    ).rejects.toThrow(
+      "KEC index embedding metadata mismatch. Please re-run index_kec.",
+    );
   });
 
   it("does not introduce a separate request DTO", () => {

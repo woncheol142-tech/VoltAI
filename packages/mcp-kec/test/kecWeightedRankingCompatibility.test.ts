@@ -3,16 +3,29 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
+
+import type { EmbeddingProvider } from "../src/knowledge/embedding.js";
+import type {
+  KecSearchResult,
+  VectorStore,
+} from "../src/knowledge/vectorStore.js";
+import {
+  createSearchKecTool,
+  searchKec,
+  type SearchKecDependencies,
+  type SearchKecInput,
+} from "../src/tools/searchKec.js";
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(testDirectory, "..");
 const workspaceRoot = join(packageRoot, "..", "..");
 const rankingRoot = join(packageRoot, "src", "searchRanking");
 const packageIndex = join(packageRoot, "src", "index.ts");
-const protectedFiles = [
+const searchKecFile = join(packageRoot, "src", "tools", "searchKec.ts");
+const legacyRuntimeFiles = [
   packageIndex,
-  join(packageRoot, "src", "tools", "searchKec.ts"),
+  searchKecFile,
   join(packageRoot, "src", "knowledge", "embedding.ts"),
   join(packageRoot, "src", "knowledge", "vectorStore.ts"),
   join(packageRoot, "src", "knowledge", "sqliteVectorStore.ts"),
@@ -26,6 +39,9 @@ const protectedFiles = [
   join(packageRoot, "src", "searchHybrid", "hybridSearch.ts"),
   join(packageRoot, "src", "searchHybrid", "index.ts"),
 ];
+const headStableFiles = legacyRuntimeFiles.filter(
+  (path) => path !== searchKecFile,
+);
 
 function sourceFiles(directory: string): string[] {
   if (!existsSync(directory)) {
@@ -119,6 +135,10 @@ describe("KEC weighted ranking compatibility and dependency boundaries", () => {
   it("does not expose weightedScore or add a package-root export", () => {
     expect(readFileSync(packageIndex, "utf8")).not.toContain("searchRanking");
 
+    for (const path of legacyRuntimeFiles) {
+      expect(readFileSync(path, "utf8")).not.toContain("searchRanking");
+    }
+
     const publicSources = [
       join(rankingRoot, "types.ts"),
       join(rankingRoot, "index.ts"),
@@ -132,7 +152,40 @@ describe("KEC weighted ranking compatibility and dependency boundaries", () => {
     expect(publicSources).not.toContain("KecWeightedRankingRequest");
   });
 
-  it("does not change Task 46, Task 47, legacy runtime, or repository dependencies", () => {
+  it("preserves legacy contracts without coupling Task 48 to its runtime", async () => {
+    expectTypeOf<SearchKecInput>().toEqualTypeOf<{
+      question?: string;
+      query?: string;
+      topK?: number;
+    }>();
+    expectTypeOf<SearchKecDependencies>().toEqualTypeOf<{
+      embeddingProvider: EmbeddingProvider;
+      vectorStore: VectorStore;
+    }>();
+    expectTypeOf<KecSearchResult>().toEqualTypeOf<{
+      clause: string | null;
+      page: number;
+      text: string;
+      similarity: number;
+      sourcePath: string;
+    }>();
+    expectTypeOf<typeof searchKec>().toEqualTypeOf<
+      (
+        input: unknown,
+        dependencies: SearchKecDependencies,
+      ) => Promise<KecSearchResult[]>
+    >();
+
+    const tool = createSearchKecTool();
+    expect(tool.name).toBe("search_kec");
+    expect(Object.keys(tool.inputSchema)).toEqual(["query", "topK"]);
+    expect(tool.inputSchema.query.safeParse("cable").success).toBe(true);
+    expect(tool.inputSchema.query.safeParse("").success).toBe(false);
+    expect(tool.inputSchema.topK.safeParse(undefined).success).toBe(true);
+    expect(tool.inputSchema.topK.safeParse(1).success).toBe(true);
+    expect(tool.inputSchema.topK.safeParse(0).success).toBe(false);
+    expect(tool.inputSchema.topK.safeParse(1.5).success).toBe(false);
+
     expect(() =>
       execFileSync(
         "git",
@@ -141,7 +194,7 @@ describe("KEC weighted ranking compatibility and dependency boundaries", () => {
           "--exit-code",
           "HEAD",
           "--",
-          ...protectedFiles,
+          ...headStableFiles,
           join(packageRoot, "package.json"),
           join(workspaceRoot, "package.json"),
           join(workspaceRoot, "pnpm-lock.yaml"),
@@ -149,5 +202,55 @@ describe("KEC weighted ranking compatibility and dependency boundaries", () => {
         { cwd: workspaceRoot, stdio: "pipe" },
       ),
     ).not.toThrow();
+
+    const expectedResults: KecSearchResult[] = [
+      {
+        clause: "KEC 232.5",
+        page: 3,
+        text: "Cable sizing requirement.",
+        similarity: 0.92,
+        sourcePath: "knowledge/kec.pdf",
+      },
+    ];
+    const dependencies: SearchKecDependencies = {
+      embeddingProvider: {
+        embed: async () => [1, 0, 0],
+        getMetadata: () => ({ provider: "test", model: "fixed" }),
+      },
+      vectorStore: {
+        upsert: async () => {},
+        replaceSource: async () => {},
+        deleteBySourcePath: async () => {},
+        search: async () => expectedResults,
+        listChunks: async () => [],
+        saveIndexMetadata: async () => {},
+        getIndexMetadata: async () => ({
+          embeddingProvider: "test",
+          embeddingModel: "fixed",
+          dimensions: 3,
+          indexedAt: "2026-07-28T00:00:00.000Z",
+        }),
+        close: async () => {},
+      },
+    };
+
+    const results = await searchKec({ query: "cable", topK: 3 }, dependencies);
+    expect(results).toBe(expectedResults);
+    expect(results[0]).toBe(expectedResults[0]);
+
+    await expect(
+      searchKec(
+        { query: "cable", topK: 3 },
+        {
+          ...dependencies,
+          vectorStore: {
+            ...dependencies.vectorStore,
+            getIndexMetadata: async () => null,
+          },
+        },
+      ),
+    ).rejects.toThrow(
+      "KEC index embedding metadata mismatch. Please re-run index_kec.",
+    );
   });
 });
