@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,8 +14,11 @@ import {
 
 const testFile = fileURLToPath(import.meta.url);
 const packageRoot = join(dirname(testFile), "..");
+const workspaceRoot = join(packageRoot, "..", "..");
 const adapterRoot = join(packageRoot, "src", "searchAdapters");
 const adapterSource = join(adapterRoot, "existingSemanticSearchAdapter.ts");
+const adapterTypes = join(adapterRoot, "types.ts");
+const adapterIndex = join(adapterRoot, "index.ts");
 const packageRootSource = join(packageRoot, "src", "index.ts");
 
 function readAdapterSource(): string {
@@ -22,12 +26,44 @@ function readAdapterSource(): string {
 }
 
 describe("existing semantic search adapter architecture boundaries", () => {
-  it("requires exactly the approved three-file namespace", () => {
+  it("requires the approved four-file namespace and preserves semantic contracts", () => {
+    const types = readFileSync(adapterTypes, "utf8");
+    const index = readFileSync(adapterIndex, "utf8");
+
     expect(readdirSync(adapterRoot).sort()).toEqual([
+      "existingLexicalSearchAdapter.ts",
       "existingSemanticSearchAdapter.ts",
       "index.ts",
       "types.ts",
     ]);
+    expect(types).toMatch(
+      /export type ExistingSemanticSearchAdapterDependencies\s*=\s*KecSemanticSearchCoreDependencies<PersistedKecSemanticResult>;/u,
+    );
+    expect(types).toMatch(
+      /export type ExistingLexicalSearchAdapterDependencies\s*=\s*Readonly<\{/u,
+    );
+    expect(index).toMatch(
+      /export \{ createExistingSemanticSearcher \} from "\.\/existingSemanticSearchAdapter\.js";/u,
+    );
+    expect(index).toMatch(
+      /export \{ createExistingLexicalSearcher \} from "\.\/existingLexicalSearchAdapter\.js";/u,
+    );
+    expect(index).toMatch(
+      /export type \{[\s\S]*ExistingLexicalSearchAdapterDependencies,[\s\S]*ExistingSemanticSearchAdapterDependencies,[\s\S]*\} from "\.\/types\.js";/u,
+    );
+
+    for (const diffMode of [[], ["--cached"]]) {
+      expect(() =>
+        execFileSync(
+          "git",
+          ["diff", ...diffMode, "--exit-code", "--", adapterSource],
+          {
+            cwd: workspaceRoot,
+            stdio: "pipe",
+          },
+        ),
+      ).not.toThrow();
+    }
   });
 
   it("delegates only through the shared semantic core boundary", () => {

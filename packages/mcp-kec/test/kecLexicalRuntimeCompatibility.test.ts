@@ -10,6 +10,10 @@ const packageRoot = join(testDirectory, "..");
 const workspaceRoot = join(packageRoot, "..", "..");
 const sourceRoot = join(packageRoot, "src", "searchLexical");
 const packageIndex = join(packageRoot, "src", "index.ts");
+const adapterRoot = join(packageRoot, "src", "searchAdapters");
+const adapterTypes = join(adapterRoot, "types.ts");
+const adapterIndex = join(adapterRoot, "index.ts");
+const semanticAdapter = join(adapterRoot, "existingSemanticSearchAdapter.ts");
 
 function sourceFiles(directory: string): string[] {
   if (!existsSync(directory)) {
@@ -27,12 +31,21 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-const protectedPaths = [
+const task50aRuntimeFiles = [
+  join(sourceRoot, "types.ts"),
+  join(sourceRoot, "tokenizeKecLexicalText.ts"),
+  join(sourceRoot, "scoreKecLexicalChunk.ts"),
+  join(sourceRoot, "searchKecLexically.ts"),
+  join(sourceRoot, "index.ts"),
+];
+
+const immutableProtectedPaths = [
+  ...task50aRuntimeFiles,
   join(packageRoot, "src", "searchFoundation"),
   join(packageRoot, "src", "searchHybrid"),
   join(packageRoot, "src", "searchRanking"),
   join(packageRoot, "src", "searchSemantic"),
-  join(packageRoot, "src", "searchAdapters"),
+  semanticAdapter,
   join(packageRoot, "src", "tools", "searchKec.ts"),
   join(workspaceRoot, "packages", "knowledge-core"),
   join(workspaceRoot, "packages", "knowledge-sqlite", "src", "schema.ts"),
@@ -40,6 +53,21 @@ const protectedPaths = [
   join(workspaceRoot, "package.json"),
   join(workspaceRoot, "pnpm-lock.yaml"),
 ];
+
+function expectProtectedPathsUnchanged(): void {
+  for (const diffMode of [[], ["--cached"]]) {
+    expect(() =>
+      execFileSync(
+        "git",
+        ["diff", ...diffMode, "--exit-code", "--", ...immutableProtectedPaths],
+        {
+          cwd: workspaceRoot,
+          stdio: "pipe",
+        },
+      ),
+    ).not.toThrow();
+  }
+}
 
 describe("KEC lexical runtime compatibility and authority boundaries", () => {
   it("contains exactly the five approved namespace files", () => {
@@ -131,12 +159,36 @@ describe("KEC lexical runtime compatibility and authority boundaries", () => {
     expect(source).not.toMatch(/\bObject\.assign\s*\(/u);
   });
 
-  it("preserves Task 46 through Task 49B and all repository-level boundaries", () => {
-    expect(() =>
-      execFileSync("git", ["diff", "--exit-code", "--", ...protectedPaths], {
-        cwd: workspaceRoot,
-        stdio: "pipe",
-      }),
-    ).not.toThrow();
+  it("preserves immutable boundaries and the approved adapter extension", () => {
+    const adapterFiles = readdirSync(adapterRoot).sort();
+    const types = readFileSync(adapterTypes, "utf8");
+    const index = readFileSync(adapterIndex, "utf8");
+    const rootIndex = readFileSync(packageIndex, "utf8");
+
+    expect(adapterFiles).toEqual([
+      "existingLexicalSearchAdapter.ts",
+      "existingSemanticSearchAdapter.ts",
+      "index.ts",
+      "types.ts",
+    ]);
+    expect(types).toMatch(
+      /export type ExistingSemanticSearchAdapterDependencies\s*=\s*KecSemanticSearchCoreDependencies<PersistedKecSemanticResult>;/u,
+    );
+    expect(types).toMatch(
+      /export type ExistingLexicalSearchAdapterDependencies\s*=\s*Readonly<\{/u,
+    );
+    expect(index).toMatch(
+      /export \{ createExistingSemanticSearcher \} from "\.\/existingSemanticSearchAdapter\.js";/u,
+    );
+    expect(index).toMatch(
+      /export \{ createExistingLexicalSearcher \} from "\.\/existingLexicalSearchAdapter\.js";/u,
+    );
+    expect(index).toMatch(
+      /export type \{[\s\S]*ExistingLexicalSearchAdapterDependencies,[\s\S]*ExistingSemanticSearchAdapterDependencies,[\s\S]*\} from "\.\/types\.js";/u,
+    );
+    expect(rootIndex).not.toMatch(
+      /searchAdapters|createExistingLexicalSearcher|createExistingSemanticSearcher/u,
+    );
+    expectProtectedPathsUnchanged();
   });
 });
