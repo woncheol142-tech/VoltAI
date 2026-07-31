@@ -141,6 +141,40 @@ pnpm --filter @voltai/mcp-material dev
 pnpm --filter @voltai/mcp-agent dev
 ```
 
+### Default KEC runtime
+
+The default KEC runtime remains legacy-only. Run it with `pnpm --filter @voltai/mcp-kec dev`; it exposes exactly `kec_placeholder`, `index_kec`, and `search_kec`.
+
+### Explicit KEC hybrid runtime
+
+The hybrid runtime is opt-in and the default runtime remains unchanged and legacy-only. Start the explicit runtime in development with:
+
+```bash
+pnpm --filter @voltai/mcp-kec dev:hybrid
+```
+
+Run its built output with:
+
+```bash
+pnpm --filter @voltai/mcp-kec start:hybrid
+```
+
+Both `KEC_HYBRID_SEMANTIC_WEIGHT` and `KEC_HYBRID_LEXICAL_WEIGHT` values are required. They must be unsigned finite decimal values and non-negative, with at least one weight greater than zero. The values are not normalized automatically.
+
+```bash
+KEC_HYBRID_SEMANTIC_WEIGHT=0.7 \
+KEC_HYBRID_LEXICAL_WEIGHT=0.3 \
+pnpm --filter @voltai/mcp-kec dev:hybrid
+```
+
+Invalid configuration values fail before STDIO transport starts. The explicit runtime exposes exactly `kec_placeholder`, `index_kec`, `search_kec`, and `search_kec_hybrid`.
+
+Embedding provider selection remains controlled by the existing KEC provider configuration through `KEC_EMBED_PROVIDER`, `OLLAMA_BASE_URL`, `OLLAMA_EMBED_MODEL`, and `OLLAMA_EMBED_TIMEOUT_MS`. The `placeholder` provider is appropriate only for transport or pipeline validation. Ollama can provide real local embeddings when separately configured after installation. This task does not install Ollama, and this runtime does not validate Ollama model availability at startup. No fallback provider is selected automatically.
+
+Runtime availability does not establish retrieval quality. Placeholder semantic scores are not retrieval-quality evidence. Meaningful quality evaluation requires a representative KEC corpus and a real embedding provider. No Recall, MRR, NDCG, ranking threshold, or production-quality claim is made by this runtime.
+
+No automatic reindex occurs. The existing database and provider lifecycle remains per tool call. The runtime command supplies only ranking configuration and server composition; it does not change the search schema or output contract.
+
 Remaining scaffold packages can also run:
 
 ```bash

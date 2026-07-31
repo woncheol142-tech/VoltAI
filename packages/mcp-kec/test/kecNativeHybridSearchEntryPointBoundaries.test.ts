@@ -18,6 +18,13 @@ const packageIndex = join(sourceRoot, "index.ts");
 const knowledgeRoot = join(sourceRoot, "knowledge");
 const projectPathSource = join(knowledgeRoot, "projectPath.ts");
 const hybridToolSource = join(sourceRoot, "tools", "searchKecHybrid.ts");
+const packageManifest = join(packageRoot, "package.json");
+const workspaceReadme = join(workspaceRoot, "README.md");
+
+type PackageManifest = Readonly<Record<string, unknown>> &
+  Readonly<{
+    scripts: Readonly<Record<string, string>>;
+  }>;
 
 const protectedProduction = [
   "packages/mcp-kec/src/tools/searchKec.ts",
@@ -40,13 +47,71 @@ const protectedProduction = [
   "packages/mcp-kec/src/knowledge/vectorStore.ts",
   "packages/knowledge-core",
   "packages/knowledge-sqlite",
-  "packages/mcp-kec/package.json",
   "package.json",
   "pnpm-lock.yaml",
 ];
 
 function readSource(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
+}
+
+function readHeadFile(relativePath: string): string {
+  return execFileSync("git", ["show", `HEAD:${relativePath}`], {
+    cwd: workspaceRoot,
+    encoding: "utf8",
+  });
+}
+
+function expectOnlyTask54PackageAndReadmeAdditions(): void {
+  const currentPackage = JSON.parse(
+    readFileSync(packageManifest, "utf8"),
+  ) as PackageManifest;
+  const headPackage = JSON.parse(
+    readHeadFile("packages/mcp-kec/package.json"),
+  ) as PackageManifest;
+  const { scripts: currentScripts, ...currentPackageFields } = currentPackage;
+  const { scripts: headScripts, ...headPackageFields } = headPackage;
+
+  expect(currentPackageFields).toEqual(headPackageFields);
+  expect(currentScripts).toEqual({
+    ...headScripts,
+    "dev:hybrid": "tsx src/hybrid.ts",
+    "start:hybrid": "node dist/hybrid.js",
+  });
+  expect(currentScripts.dev).toBe("tsx src/index.ts");
+  expect(currentScripts.start).toBe("node dist/index.js");
+  expect(JSON.stringify(currentPackage)).not.toContain("KEC_HYBRID_ENABLED");
+
+  const currentReadme = readFileSync(workspaceReadme, "utf8");
+  const headReadme = readHeadFile("README.md");
+  const startMarker = "### Default KEC runtime";
+  const endMarker = "Remaining scaffold packages can also run:";
+  const sectionStart = currentReadme.indexOf(startMarker);
+  const sectionEnd = currentReadme.indexOf(endMarker, sectionStart);
+
+  expect(sectionStart).toBeGreaterThanOrEqual(0);
+  expect(sectionEnd).toBeGreaterThan(sectionStart);
+  expect(currentReadme.indexOf(startMarker, sectionStart + 1)).toBe(-1);
+
+  const task54Section = currentReadme.slice(sectionStart, sectionEnd);
+  expect(
+    currentReadme.slice(0, sectionStart) + currentReadme.slice(sectionEnd),
+  ).toBe(headReadme);
+  expect(task54Section).toContain(
+    "The default KEC runtime remains legacy-only.",
+  );
+  expect(task54Section).toContain("pnpm --filter @voltai/mcp-kec dev");
+  expect(task54Section).toContain("kec_placeholder");
+  expect(task54Section).toContain("index_kec");
+  expect(task54Section).toContain("search_kec");
+  expect(task54Section).toContain("pnpm --filter @voltai/mcp-kec dev:hybrid");
+  expect(task54Section).toContain("pnpm --filter @voltai/mcp-kec start:hybrid");
+  expect(task54Section).toContain("search_kec_hybrid");
+  expect(task54Section).toMatch(/hybrid runtime is opt-in/iu);
+  expect(task54Section).toMatch(
+    /No Recall, MRR, NDCG, ranking threshold, or production-quality claim/u,
+  );
+  expect(task54Section).not.toContain("KEC_HYBRID_ENABLED");
 }
 
 function parseEntryPoint(): ts.SourceFile {
@@ -579,9 +644,7 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
     const protectedFiles = [
       "package.json",
       "pnpm-lock.yaml",
-      "packages/mcp-kec/package.json",
       "packages/mcp-kec/tsconfig.json",
-      "README.md",
       "NEXT_STEPS.md",
       "CHANGELOG.md",
       "packages/knowledge-sqlite/src/schema.ts",
@@ -594,5 +657,7 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
         { cwd: workspaceRoot, stdio: "pipe" },
       ),
     ).not.toThrow();
+
+    expectOnlyTask54PackageAndReadmeAdditions();
   });
 });

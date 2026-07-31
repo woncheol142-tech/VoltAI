@@ -7,8 +7,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "dev:hybrid": "tsx src/hybrid.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
+    "start:hybrid": "node dist/hybrid.js",
     "test": "vitest run --root ../.. packages/mcp-kec/test"
   },
   "dependencies": {
