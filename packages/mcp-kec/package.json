@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "start:hybrid": "node dist/hybrid.js",
+    "inspect:index": "tsx src/inspectIndex.ts",
     "test": "vitest run --root ../.. packages/mcp-kec/test"
   },
   "dependencies": {

@@ -20,6 +20,8 @@ const projectPathSource = join(knowledgeRoot, "projectPath.ts");
 const hybridToolSource = join(sourceRoot, "tools", "searchKecHybrid.ts");
 const packageManifest = join(packageRoot, "package.json");
 const workspaceReadme = join(workspaceRoot, "README.md");
+const task56ReadmeStart = "<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->";
+const task56ReadmeEnd = "<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->";
 
 type PackageManifest = Readonly<Record<string, unknown>> &
   Readonly<{
@@ -62,6 +64,37 @@ function readHeadFile(relativePath: string): string {
   });
 }
 
+function expectTask56ReadmeAddition(
+  currentReadme: string,
+  headReadme: string,
+): void {
+  expect(currentReadme.split(task56ReadmeStart)).toHaveLength(2);
+  expect(currentReadme.split(task56ReadmeEnd)).toHaveLength(2);
+
+  const start = currentReadme.indexOf(task56ReadmeStart);
+  const markerEnd = currentReadme.indexOf(task56ReadmeEnd, start);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(markerEnd).toBeGreaterThan(start);
+
+  const end = markerEnd + task56ReadmeEnd.length;
+  let preservesHead = false;
+  for (let before = 0; before <= 2; before += 1) {
+    for (let after = 0; after <= 2; after += 1) {
+      const removalStart = start - before;
+      const removalEnd = end + after;
+      if (removalStart < 0 || removalEnd > currentReadme.length) continue;
+      if (!/^\n*$/u.test(currentReadme.slice(removalStart, start))) continue;
+      if (!/^\n*$/u.test(currentReadme.slice(end, removalEnd))) continue;
+
+      preservesHead ||=
+        `${currentReadme.slice(0, removalStart)}${currentReadme.slice(removalEnd)}` ===
+        headReadme;
+    }
+  }
+
+  expect(preservesHead).toBe(true);
+}
+
 function expectCurrentTask54PackageAndReadmeBaseline(): void {
   const currentPackage = JSON.parse(
     readFileSync(packageManifest, "utf8"),
@@ -77,6 +110,7 @@ function expectCurrentTask54PackageAndReadmeBaseline(): void {
     ...headScripts,
     "dev:hybrid": "tsx src/hybrid.ts",
     "start:hybrid": "node dist/hybrid.js",
+    "inspect:index": "tsx src/inspectIndex.ts",
   });
   expect(currentScripts.dev).toBe("tsx src/index.ts");
   expect(currentScripts.start).toBe("node dist/index.js");
@@ -94,7 +128,7 @@ function expectCurrentTask54PackageAndReadmeBaseline(): void {
   expect(currentReadme.indexOf(startMarker, sectionStart + 1)).toBe(-1);
 
   const task54Section = currentReadme.slice(sectionStart, sectionEnd);
-  expect(currentReadme).toBe(headReadme);
+  expectTask56ReadmeAddition(currentReadme, headReadme);
   expect(task54Section).toContain(
     "The default KEC runtime remains legacy-only.",
   );

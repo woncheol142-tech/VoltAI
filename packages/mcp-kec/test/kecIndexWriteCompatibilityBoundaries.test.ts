@@ -51,6 +51,15 @@ const compatibilitySource = join(
   "indexCompatibility.ts",
 );
 const indexToolSource = join(sourceRoot, "tools", "indexKec.ts");
+const packageManifest = join(packageRoot, "package.json");
+const workspaceReadme = join(workspaceRoot, "README.md");
+const task56ReadmeStart = "<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->";
+const task56ReadmeEnd = "<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->";
+
+type PackageManifest = Readonly<Record<string, unknown>> &
+  Readonly<{
+    scripts: Readonly<Record<string, string>>;
+  }>;
 
 function readSource(path: string): string {
   return readFileSync(path, "utf8");
@@ -61,6 +70,57 @@ function readHeadFile(relativePath: string): string {
     cwd: workspaceRoot,
     encoding: "utf8",
   });
+}
+
+function expectTask56ReadmeAddition(
+  currentReadme: string,
+  headReadme: string,
+): void {
+  expect(currentReadme.split(task56ReadmeStart)).toHaveLength(2);
+  expect(currentReadme.split(task56ReadmeEnd)).toHaveLength(2);
+
+  const start = currentReadme.indexOf(task56ReadmeStart);
+  const markerEnd = currentReadme.indexOf(task56ReadmeEnd, start);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(markerEnd).toBeGreaterThan(start);
+
+  const end = markerEnd + task56ReadmeEnd.length;
+  let preservesHead = false;
+  for (let before = 0; before <= 2; before += 1) {
+    for (let after = 0; after <= 2; after += 1) {
+      const removalStart = start - before;
+      const removalEnd = end + after;
+      if (removalStart < 0 || removalEnd > currentReadme.length) continue;
+      if (!/^\n*$/u.test(currentReadme.slice(removalStart, start))) continue;
+      if (!/^\n*$/u.test(currentReadme.slice(end, removalEnd))) continue;
+
+      preservesHead ||=
+        `${currentReadme.slice(0, removalStart)}${currentReadme.slice(removalEnd)}` ===
+        headReadme;
+    }
+  }
+
+  expect(preservesHead).toBe(true);
+}
+
+function expectTask56PackageAddition(): void {
+  const currentPackage = JSON.parse(
+    readSource(packageManifest),
+  ) as PackageManifest;
+  const headPackage = JSON.parse(
+    readHeadFile("packages/mcp-kec/package.json"),
+  ) as PackageManifest;
+
+  expect(currentPackage).toEqual({
+    ...headPackage,
+    scripts: {
+      ...headPackage.scripts,
+      "inspect:index": "tsx src/inspectIndex.ts",
+    },
+  });
+  expect(currentPackage.scripts["inspect:index"]).toBe(
+    "tsx src/inspectIndex.ts",
+  );
 }
 
 describe("KEC index write compatibility architecture boundaries", () => {
@@ -77,7 +137,7 @@ describe("KEC index write compatibility architecture boundaries", () => {
     );
   });
 
-  it("keeps package, runtime, environment, chunking, search, and storage boundaries unchanged", () => {
+  it("keeps package, README, runtime, environment, chunking, search, and storage boundaries protected", () => {
     for (const relativePath of [
       "packages/mcp-kec/package.json",
       "packages/mcp-kec/src/index.ts",
@@ -93,6 +153,18 @@ describe("KEC index write compatibility architecture boundaries", () => {
       "README.md",
       ".env.example",
     ]) {
+      if (relativePath === "packages/mcp-kec/package.json") {
+        expectTask56PackageAddition();
+        continue;
+      }
+      if (relativePath === "README.md") {
+        expectTask56ReadmeAddition(
+          readSource(workspaceReadme),
+          readHeadFile("README.md"),
+        );
+        continue;
+      }
+
       expect(readSource(join(workspaceRoot, relativePath))).toBe(
         readHeadFile(relativePath),
       );

@@ -236,3 +236,24 @@ pnpm build
 ## License
 
 VoltAI is released under the MIT License. See `LICENSE` for details.
+
+<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->
+
+### Read-only KEC index diagnostics
+
+Run the short-lived diagnostic command with:
+
+```bash
+pnpm --filter @voltai/mcp-kec inspect:index
+```
+
+This is not an MCP server. It does not perform indexing or search, does not contact an embedding provider, and introduces no new environment variables.
+
+`KEC_DB_PATH` has precedence when it is set. A relative KEC_DB_PATH value resolves from the current working directory. When it is absent, the command uses `PROJECT_ROOT/.voltai/kec.sqlite`.
+
+Successful inspection emits one JSON line and exits with code 0 for `MISSING_DATABASE`, `UNINITIALIZED_DATABASE`, `EMPTY_INDEX`, `READY`, and `INCONSISTENT`. An `INCONSISTENT` result exits successfully because the inspection completed. A failure uses exit code 1. Inspecting a missing database does not create files or directories.
+
+Source paths are represented only by a hashed sourceId. Provider/model metadata is collection-level and cannot prove per-chunk provider/model provenance.
+
+These diagnostics are not retrieval-quality evidence and do not validate Ollama health. The command does not repair, migrate, delete, rebuild, or reindex data. It also does not check whether source files still exist.
+<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->
