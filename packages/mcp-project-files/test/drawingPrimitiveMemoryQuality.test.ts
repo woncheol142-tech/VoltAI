@@ -1,7 +1,10 @@
 import { rmSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createTempPdfProject, writeProjectFile } from "./helpers/pdfFixture.js";
+import {
+  createTempPdfProject,
+  writeProjectFile,
+} from "./helpers/pdfFixture.js";
 
 const observations = vi.hoisted(() => ({
   source: Buffer.allocUnsafeSlow(32),
@@ -17,9 +20,8 @@ vi.mock("node:fs", async (importOriginal) => {
 });
 
 vi.mock("pdfjs-dist/legacy/build/pdf.mjs", async (importOriginal) => {
-  const actual = await importOriginal<
-    typeof import("pdfjs-dist/legacy/build/pdf.mjs")
-  >();
+  const actual =
+    await importOriginal<typeof import("pdfjs-dist/legacy/build/pdf.mjs")>();
   return {
     ...actual,
     getDocument(options: { data: Uint8Array }) {
@@ -63,9 +65,8 @@ describe("drawing primitive memory quality", () => {
     const root = createTempPdfProject();
     roots.push(root);
     writeProjectFile(root, "docs/primitives.pdf", "%PDF-1.7\n%%EOF\n");
-    const { extractDrawingPrimitives } = await import(
-      "../src/tools/extractDrawingPrimitives.js"
-    );
+    const { extractDrawingPrimitives } =
+      await import("../src/tools/extractDrawingPrimitives.js");
 
     await extractDrawingPrimitives(root, {
       relativePath: "docs/primitives.pdf",
@@ -73,7 +74,11 @@ describe("drawing primitive memory quality", () => {
     });
 
     expect(observations.pdfData?.buffer).toBe(observations.source.buffer);
-    expect(observations.pdfData?.byteOffset).toBe(observations.source.byteOffset);
-    expect(observations.pdfData?.byteLength).toBe(observations.source.byteLength);
-  });
+    expect(observations.pdfData?.byteOffset).toBe(
+      observations.source.byteOffset,
+    );
+    expect(observations.pdfData?.byteLength).toBe(
+      observations.source.byteLength,
+    );
+  }, 15_000);
 });

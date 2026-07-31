@@ -1,16 +1,24 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, extname, join } from "node:path";
+import { dirname, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const testFile = fileURLToPath(import.meta.url);
 const packageRoot = join(dirname(testFile), "..");
 const workspaceRoot = join(packageRoot, "..", "..");
+const packagesRoot = join(workspaceRoot, "packages");
 const sourceRoot = join(packageRoot, "src");
 const integrationRoot = join(sourceRoot, "searchIntegration");
 const integrationSource = join(integrationRoot, "existingKecHybridSearch.ts");
+const entryPointSource = join(
+  sourceRoot,
+  "searchEntryPoints",
+  "searchKecHybrid.ts",
+);
+const hybridToolSource = join(sourceRoot, "tools", "searchKecHybrid.ts");
 const packageIndex = join(sourceRoot, "index.ts");
 const legacySearch = join(sourceRoot, "tools", "searchKec.ts");
 
@@ -36,7 +44,84 @@ function readIntegrationSource(): string {
   return readFileSync(integrationSource, "utf8");
 }
 
+function parseSource(path: string): ts.SourceFile {
+  return ts.createSourceFile(
+    path,
+    readFileSync(path, "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+}
+
+function importsNamedFromNamespace(
+  path: string,
+  namespace: string,
+  exportedName: string,
+): boolean {
+  return parseSource(path)
+    .statements.filter(ts.isImportDeclaration)
+    .some((declaration) => {
+      if (
+        !ts.isStringLiteral(declaration.moduleSpecifier) ||
+        !declaration.moduleSpecifier.text.split("/").includes(namespace)
+      ) {
+        return false;
+      }
+
+      const bindings = declaration.importClause?.namedBindings;
+
+      return (
+        bindings !== undefined &&
+        ts.isNamedImports(bindings) &&
+        bindings.elements.some(
+          (element) =>
+            (element.propertyName?.text ?? element.name.text) === exportedName,
+        )
+      );
+    });
+}
+
+function packageRootExportNames(): string[] {
+  const names: string[] = [];
+
+  for (const statement of parseSource(packageIndex).statements) {
+    if (
+      ts.isExportDeclaration(statement) &&
+      statement.exportClause &&
+      ts.isNamedExports(statement.exportClause)
+    ) {
+      names.push(
+        ...statement.exportClause.elements.map((element) => element.name.text),
+      );
+      continue;
+    }
+
+    const modifiers = ts.canHaveModifiers(statement)
+      ? ts.getModifiers(statement)
+      : undefined;
+    const isExported = modifiers?.some(
+      (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+    );
+
+    if (
+      isExported &&
+      (ts.isFunctionDeclaration(statement) ||
+        ts.isClassDeclaration(statement) ||
+        ts.isInterfaceDeclaration(statement) ||
+        ts.isTypeAliasDeclaration(statement) ||
+        ts.isEnumDeclaration(statement)) &&
+      statement.name
+    ) {
+      names.push(statement.name.text);
+    }
+  }
+
+  return names.sort();
+}
+
 const protectedProductionPaths = [
+  integrationRoot,
   join(sourceRoot, "searchFoundation"),
   join(sourceRoot, "searchHybrid"),
   join(sourceRoot, "searchRanking"),
@@ -44,7 +129,6 @@ const protectedProductionPaths = [
   join(sourceRoot, "searchLexical"),
   join(sourceRoot, "searchAdapters"),
   legacySearch,
-  packageIndex,
   join(workspaceRoot, "packages", "knowledge-core"),
   join(workspaceRoot, "packages", "knowledge-sqlite"),
   join(packageRoot, "package.json"),
@@ -201,7 +285,7 @@ describe("KEC hybrid search integration architecture boundaries", () => {
     );
   });
 
-  it("keeps every existing production and workspace boundary HEAD-stable", () => {
+  it("keeps Task 51 stable while allowing only the approved forward integration", () => {
     expect(() =>
       execFileSync(
         "git",
@@ -223,6 +307,85 @@ describe("KEC hybrid search integration architecture boundaries", () => {
         { cwd: workspaceRoot, stdio: "pipe" },
       ),
     ).not.toThrow();
+
+    const factoryConsumers = readdirSync(packagesRoot)
+      .flatMap((packageName) =>
+        sourceFiles(join(packagesRoot, packageName, "src")),
+      )
+      .filter((path) =>
+        importsNamedFromNamespace(
+          path,
+          "searchIntegration",
+          "createExistingKecHybridSearch",
+        ),
+      )
+      .map((path) => relative(workspaceRoot, path))
+      .sort();
+
+    expect(factoryConsumers).toEqual([
+      "packages/mcp-kec/src/searchEntryPoints/searchKecHybrid.ts",
+    ]);
+    expect(
+      importsNamedFromNamespace(
+        hybridToolSource,
+        "searchEntryPoints",
+        "searchKecHybrid",
+      ),
+    ).toBe(true);
+    expect(
+      importsNamedFromNamespace(
+        hybridToolSource,
+        "searchIntegration",
+        "createExistingKecHybridSearch",
+      ),
+    ).toBe(false);
+    expect(
+      importsNamedFromNamespace(
+        entryPointSource,
+        "searchIntegration",
+        "createExistingKecHybridSearch",
+      ),
+    ).toBe(true);
+
+    const packageExports = packageRootExportNames();
+    expect(packageExports).not.toEqual(
+      expect.arrayContaining([
+        "ExistingKecHybridSearchDependencies",
+        "KecHybridSearchResult",
+        "KecWeightedRankingOptions",
+        "SearchKecHybridInput",
+        "SearchKecHybridToolDependencies",
+        "SearchKecHybridToolResult",
+        "createExistingKecHybridSearch",
+        "createSearchKecHybridTool",
+        "searchKecHybrid",
+      ]),
+    );
+
+    const legacySource = readFileSync(legacySearch, "utf8");
+    expect(legacySource).not.toMatch(
+      /searchIntegration|searchEntryPoints|searchKecHybrid|KecHybridSearchResult|\.signals\b/,
+    );
+
+    const agentSource = [
+      ...sourceFiles(join(packagesRoot, "mcp-agent", "src")),
+      ...sourceFiles(join(packagesRoot, "agent-review", "src")),
+    ]
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
+    expect(agentSource).not.toMatch(
+      /createExistingKecHybridSearch|searchKecHybrid|KecHybridSearchResult|\.signals\b/,
+    );
+
+    const packageSource = readFileSync(packageIndex, "utf8");
+    expect(packageSource).toMatch(/if\s*\(options\?\.hybridSearch\)/);
+    expect(packageSource).toContain(
+      "tools.push(createSearchKecHybridTool(options.hybridSearch))",
+    );
+    expect(packageSource).toMatch(
+      /export async function main\(\): Promise<void> \{\s*await runStdioServer\(createServer\(\)\);/,
+    );
+    expect(packageSource).not.toMatch(/semanticWeight\s*:|lexicalWeight\s*:/);
   });
 
   it("contains no generated, binary, schema, config, or dependency artifact", () => {

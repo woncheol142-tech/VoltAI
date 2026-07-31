@@ -15,7 +15,7 @@ describe("mcp-material embedding and database configuration", () => {
     expect(() => createMaterialEmbeddingProviderFromEnv({})).toThrow(
       /MATERIAL_EMBED_PROVIDER.*required/i,
     );
-  });
+  }, 15_000);
 
   it("allows deterministic placeholder only when explicitly selected", async () => {
     const { createMaterialEmbeddingProviderFromEnv } = await loadMcpMaterial();

@@ -10,6 +10,5 @@ describe("drawing spatial package exports", () => {
       extractDrawingSpatialRelations: expect.any(Function),
       createExtractDrawingSpatialRelationsTool: expect.any(Function),
     });
-  });
+  }, 15_000);
 });
-

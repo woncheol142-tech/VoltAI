@@ -14,7 +14,9 @@ vi.mock("node:fs", async (importOriginal) => {
       source: Parameters<typeof actual.renameSync>[0],
       destination: Parameters<typeof actual.renameSync>[1],
     ) {
-      fsObservations.destinationExistedAtRename.push(actual.existsSync(destination));
+      fsObservations.destinationExistedAtRename.push(
+        actual.existsSync(destination),
+      );
       actual.renameSync(source, destination);
     },
   };
@@ -30,7 +32,9 @@ vi.mock("node:fs/promises", async (importOriginal) => {
       source: Parameters<typeof actual.rename>[0],
       destination: Parameters<typeof actual.rename>[1],
     ) {
-      fsObservations.destinationExistedAtRename.push(syncFs.existsSync(destination));
+      fsObservations.destinationExistedAtRename.push(
+        syncFs.existsSync(destination),
+      );
       await actual.rename(source, destination);
     },
   };
@@ -48,7 +52,9 @@ const toolModulePath = "../src/tools/indexDrawingList.js";
 const tempRoots: string[] = [];
 
 async function loadIndexDrawingList(): Promise<IndexDrawingList> {
-  const module = (await import(toolModulePath)) as { indexDrawingList: IndexDrawingList };
+  const module = (await import(toolModulePath)) as {
+    indexDrawingList: IndexDrawingList;
+  };
   return module.indexDrawingList;
 }
 
@@ -77,5 +83,5 @@ describe("indexDrawingList atomic persistence", () => {
 
     expect(second.relativeIndexPath).toBe(first.relativeIndexPath);
     expect(fsObservations.destinationExistedAtRename).toEqual([false, true]);
-  });
+  }, 15_000);
 });

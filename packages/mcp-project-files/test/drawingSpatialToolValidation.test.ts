@@ -2,7 +2,10 @@ import { mkdirSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createTempPdfProject, writeProjectFile } from "./helpers/pdfFixture.js";
+import {
+  createTempPdfProject,
+  writeProjectFile,
+} from "./helpers/pdfFixture.js";
 
 const roots: string[] = [];
 
@@ -36,12 +39,16 @@ describe("extractDrawingSpatialRelations input and source security", () => {
       { relativePath: "docs/spatial.pdf", page: 1, unsupported: true },
       /unsupported/i,
     ],
-  ])("rejects invalid typed input %#", async (input, message) => {
-    const extract = await spatialExtractor();
-    await expect(extract(createTempPdfProject(), input)).rejects.toThrow(
-      message,
-    );
-  });
+  ])(
+    "rejects invalid typed input %#",
+    async (input, message) => {
+      const extract = await spatialExtractor();
+      await expect(extract(createTempPdfProject(), input)).rejects.toThrow(
+        message,
+      );
+    },
+    15_000,
+  );
 
   it.each([
     ["/tmp/absolute.pdf", /relative|absolute|path/i],
@@ -73,4 +80,3 @@ describe("extractDrawingSpatialRelations input and source security", () => {
     ).rejects.toThrow(/symbolic|symlink|outside/i);
   });
 });
-

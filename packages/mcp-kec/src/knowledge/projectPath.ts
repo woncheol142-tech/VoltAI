@@ -21,13 +21,21 @@ export function assertProjectRoot(projectRoot: string | undefined): string {
   return realpathSync(projectRoot);
 }
 
-function isWithinProjectRoot(projectRoot: string, absolutePath: string): boolean {
-  const rootPrefix = projectRoot.endsWith(sep) ? projectRoot : `${projectRoot}${sep}`;
+function isWithinProjectRoot(
+  projectRoot: string,
+  absolutePath: string,
+): boolean {
+  const rootPrefix = projectRoot.endsWith(sep)
+    ? projectRoot
+    : `${projectRoot}${sep}`;
 
   return absolutePath === projectRoot || absolutePath.startsWith(rootPrefix);
 }
 
-export function resolveKecPdfPath(projectRoot: string, relativePath: string): string {
+export function resolveKecPdfPath(
+  projectRoot: string,
+  relativePath: string,
+): string {
   if (isAbsolute(relativePath)) {
     throw new Error("relativePath must be relative");
   }
