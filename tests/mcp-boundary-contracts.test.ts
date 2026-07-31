@@ -109,8 +109,35 @@ describe("typed MCP boundary contracts", () => {
     expect(
       readSource("packages/mcp-project-files/src/tools/listProjectFiles.ts"),
     ).toContain("createListProjectFilesTool(): VoltAiTool<ProjectFile[]>");
-    expect(readSource("packages/mcp-kec/src/tools/indexKec.ts")).toContain(
-      "createIndexKecTool(deps: IndexKecToolDependencies = {}): VoltAiTool<IndexKecResult>",
+    const indexKecSource = parseSource(
+      "packages/mcp-kec/src/tools/indexKec.ts",
+    );
+    const indexDependencies = exportedTypeAlias(
+      indexKecSource,
+      "IndexKecToolDependencies",
+    );
+    const indexToolFactory = exportedFunction(
+      indexKecSource,
+      "createIndexKecTool",
+    );
+
+    expect(compactText(indexDependencies.type, indexKecSource)).toBe(
+      "{embeddingProvider?:EmbeddingProvider;vectorStore?:VectorStore;}",
+    );
+    expect(indexToolFactory.parameters).toHaveLength(1);
+    expect(
+      compactText(indexToolFactory.parameters[0]!.name, indexKecSource),
+    ).toBe("deps");
+    expect(
+      compactText(indexToolFactory.parameters[0]!.type!, indexKecSource),
+    ).toBe("IndexKecToolDependencies");
+    expect(indexToolFactory.parameters[0]!.questionToken).toBeUndefined();
+    expect(indexToolFactory.parameters[0]!.dotDotDotToken).toBeUndefined();
+    expect(
+      compactText(indexToolFactory.parameters[0]!.initializer!, indexKecSource),
+    ).toBe("{}");
+    expect(compactText(indexToolFactory.type!, indexKecSource)).toBe(
+      "VoltAiTool<IndexKecResult>",
     );
 
     const searchKecSource = parseSource(

@@ -62,7 +62,7 @@ function readHeadFile(relativePath: string): string {
   });
 }
 
-function expectOnlyTask54PackageAndReadmeAdditions(): void {
+function expectCurrentTask54PackageAndReadmeBaseline(): void {
   const currentPackage = JSON.parse(
     readFileSync(packageManifest, "utf8"),
   ) as PackageManifest;
@@ -94,9 +94,7 @@ function expectOnlyTask54PackageAndReadmeAdditions(): void {
   expect(currentReadme.indexOf(startMarker, sectionStart + 1)).toBe(-1);
 
   const task54Section = currentReadme.slice(sectionStart, sectionEnd);
-  expect(
-    currentReadme.slice(0, sectionStart) + currentReadme.slice(sectionEnd),
-  ).toBe(headReadme);
+  expect(currentReadme).toBe(headReadme);
   expect(task54Section).toContain(
     "The default KEC runtime remains legacy-only.",
   );
@@ -461,6 +459,7 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
     expect(readdirSync(knowledgeRoot).sort()).toEqual([
       "chunk.ts",
       "embedding.ts",
+      "indexCompatibility.ts",
       "kecKnowledgeAdapter.ts",
       "pdfPages.ts",
       "projectPath.ts",
@@ -658,6 +657,6 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
       ),
     ).not.toThrow();
 
-    expectOnlyTask54PackageAndReadmeAdditions();
+    expectCurrentTask54PackageAndReadmeBaseline();
   });
 });
