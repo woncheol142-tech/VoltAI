@@ -55,6 +55,8 @@ const packageManifest = join(packageRoot, "package.json");
 const workspaceReadme = join(workspaceRoot, "README.md");
 const task56ReadmeStart = "<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->";
 const task56ReadmeEnd = "<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->";
+const task57ReadmeStart = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_START -->";
+const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 
 type PackageManifest = Readonly<Record<string, unknown>> &
   Readonly<{
@@ -72,7 +74,7 @@ function readHeadFile(relativePath: string): string {
   });
 }
 
-function expectTask56ReadmeAddition(
+function expectFutureTask57ReadmeAddition(
   currentReadme: string,
   headReadme: string,
 ): void {
@@ -84,26 +86,35 @@ function expectTask56ReadmeAddition(
   expect(start).toBeGreaterThanOrEqual(0);
   expect(markerEnd).toBeGreaterThan(start);
 
-  const end = markerEnd + task56ReadmeEnd.length;
-  let preservesHead = false;
+  expect(currentReadme.split(task57ReadmeStart)).toHaveLength(2);
+  expect(currentReadme.split(task57ReadmeEnd)).toHaveLength(2);
+  const task57Start = currentReadme.indexOf(task57ReadmeStart);
+  const task57MarkerEnd = currentReadme.indexOf(task57ReadmeEnd, task57Start);
+  expect(task57Start).toBeGreaterThanOrEqual(0);
+  expect(task57MarkerEnd).toBeGreaterThan(task57Start);
+
+  const task57End = task57MarkerEnd + task57ReadmeEnd.length;
+  let reconstructsHead = false;
   for (let before = 0; before <= 2; before += 1) {
     for (let after = 0; after <= 2; after += 1) {
-      const removalStart = start - before;
-      const removalEnd = end + after;
+      const removalStart = task57Start - before;
+      const removalEnd = task57End + after;
       if (removalStart < 0 || removalEnd > currentReadme.length) continue;
-      if (!/^\n*$/u.test(currentReadme.slice(removalStart, start))) continue;
-      if (!/^\n*$/u.test(currentReadme.slice(end, removalEnd))) continue;
-
-      preservesHead ||=
+      if (!/^\n*$/u.test(currentReadme.slice(removalStart, task57Start))) {
+        continue;
+      }
+      if (!/^\n*$/u.test(currentReadme.slice(task57End, removalEnd))) {
+        continue;
+      }
+      reconstructsHead ||=
         `${currentReadme.slice(0, removalStart)}${currentReadme.slice(removalEnd)}` ===
         headReadme;
     }
   }
-
-  expect(preservesHead).toBe(true);
+  expect(reconstructsHead).toBe(true);
 }
 
-function expectTask56PackageAddition(): void {
+function expectFutureSmokePackageAddition(): void {
   const currentPackage = JSON.parse(
     readSource(packageManifest),
   ) as PackageManifest;
@@ -116,10 +127,14 @@ function expectTask56PackageAddition(): void {
     scripts: {
       ...headPackage.scripts,
       "inspect:index": "tsx src/inspectIndex.ts",
+      "smoke:ollama": "tsx src/smokeOllamaEmbedding.ts",
     },
   });
   expect(currentPackage.scripts["inspect:index"]).toBe(
     "tsx src/inspectIndex.ts",
+  );
+  expect(currentPackage.scripts["smoke:ollama"]).toBe(
+    "tsx src/smokeOllamaEmbedding.ts",
   );
 }
 
@@ -154,11 +169,11 @@ describe("KEC index write compatibility architecture boundaries", () => {
       ".env.example",
     ]) {
       if (relativePath === "packages/mcp-kec/package.json") {
-        expectTask56PackageAddition();
+        expectFutureSmokePackageAddition();
         continue;
       }
       if (relativePath === "README.md") {
-        expectTask56ReadmeAddition(
+        expectFutureTask57ReadmeAddition(
           readSource(workspaceReadme),
           readHeadFile("README.md"),
         );

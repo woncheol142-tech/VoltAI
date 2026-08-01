@@ -257,3 +257,25 @@ Source paths are represented only by a hashed sourceId. Provider/model metadata 
 
 These diagnostics are not retrieval-quality evidence and do not validate Ollama health. The command does not repair, migrate, delete, rebuild, or reindex data. It also does not check whether source files still exist.
 <!-- TASK 56 KEC INDEX DIAGNOSTICS END -->
+
+<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_START -->
+
+### Ollama embedding smoke validation
+
+Run the short-lived command with:
+
+```bash
+pnpm --filter @voltai/mcp-kec smoke:ollama
+```
+
+This command is not an MCP server and does not start an MCP server. It sends at most one request, performs no retries, and uses the Ollama `/api/embeddings` endpoint with the fixed, non-PII probe text `volt-ai-ollama-embedding-smoke-v1`.
+
+The command reads only the existing `KEC_EMBED_PROVIDER`, `OLLAMA_BASE_URL`, `OLLAMA_EMBED_MODEL`, and `OLLAMA_EMBED_TIMEOUT_MS` settings. It requires `KEC_EMBED_PROVIDER=ollama`. The other settings default to `http://localhost:11434`, `nomic-embed-text`, and `30000 ms`, respectively. Invalid configured values fail instead of silently using a default or fallback.
+
+Success prints one redacted JSON line containing only `schemaVersion`, status `READY`, provider `ollama`, and `observedDimension`, then exits with code 0. The command does not print endpoint, model, vector, response body, or error details. Failures exit with code 1 and report exactly one of `INVALID_CONFIGURATION`, `ENDPOINT_UNAVAILABLE`, `REQUEST_TIMEOUT`, `REQUEST_REJECTED`, `INVALID_RESPONSE`, or `INTERNAL_ERROR`.
+
+The smoke command does not access SQLite, read or write an index, perform indexing or search, access project files, start MCP, pull or install a model, or repair or reindex data. Task 55 owns index write compatibility, and Task 56 owns existing index diagnostics.
+
+Ollama server-side model loading, cache, and pull behavior are outside VoltAI guarantees. `/api/embeddings` support depends on the installed Ollama version and configuration. `READY` means only that a usable vector response was received; there is no retrieval-quality guarantee and no index-compatibility guarantee.
+
+<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->

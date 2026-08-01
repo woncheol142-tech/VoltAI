@@ -17,6 +17,8 @@ const dockerComposePath = join(workspaceRoot, "docker-compose.yml");
 const cliSourcePath = join(packageRoot, "src", "inspectIndex.ts");
 const sectionStart = "<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->";
 const sectionEnd = "<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->";
+const task57SectionStart = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_START -->";
+const task57SectionEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 const command = "pnpm --filter @voltai/mcp-kec inspect:index";
 
 type PackageJson = Readonly<{
@@ -48,25 +50,29 @@ function taskSection(readme: string): string {
   return readme.slice(start, end + sectionEnd.length);
 }
 
-function preservesBaselineOutsideSection(
+function reconstructsHeadAfterTask57(
   readme: string,
   baseline: string,
 ): boolean {
-  const start = readme.indexOf(sectionStart);
-  const markerEnd = readme.indexOf(sectionEnd);
-  if (start < 0 || markerEnd < start) return false;
+  if (
+    readme.split(task57SectionStart).length !== 2 ||
+    readme.split(task57SectionEnd).length !== 2
+  ) {
+    return false;
+  }
 
-  const end = markerEnd + sectionEnd.length;
+  const start = readme.indexOf(task57SectionStart);
+  const markerEnd = readme.indexOf(task57SectionEnd, start);
+  if (start < 0 || markerEnd <= start) return false;
+
+  const end = markerEnd + task57SectionEnd.length;
   for (let before = 0; before <= 2; before += 1) {
     for (let after = 0; after <= 2; after += 1) {
       const removalStart = start - before;
       const removalEnd = end + after;
       if (removalStart < 0 || removalEnd > readme.length) continue;
-      const removedPrefix = readme.slice(removalStart, start);
-      const removedSuffix = readme.slice(end, removalEnd);
-      if (!/^\n*$/u.test(removedPrefix) || !/^\n*$/u.test(removedSuffix)) {
-        continue;
-      }
+      if (!/^\n*$/u.test(readme.slice(removalStart, start))) continue;
+      if (!/^\n*$/u.test(readme.slice(end, removalEnd))) continue;
       if (
         `${readme.slice(0, removalStart)}${readme.slice(removalEnd)}` ===
         baseline
@@ -75,12 +81,11 @@ function preservesBaselineOutsideSection(
       }
     }
   }
-
   return false;
 }
 
 describe("KEC index diagnostics package script contract", () => {
-  it("adds exactly the approved source command to the package manifest", () => {
+  it("allows exactly the future smoke command in the package manifest", () => {
     const current = readPackage(packageJsonPath);
     const baseline = JSON.parse(
       readHeadFile("packages/mcp-kec/package.json"),
@@ -91,6 +96,7 @@ describe("KEC index diagnostics package script contract", () => {
       scripts: {
         ...baseline.scripts,
         "inspect:index": "tsx src/inspectIndex.ts",
+        "smoke:ollama": "tsx src/smokeOllamaEmbedding.ts",
       },
     });
     expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
@@ -113,6 +119,8 @@ describe("KEC index diagnostics package script contract", () => {
       "poststart",
       "preinspect:index",
       "postinspect:index",
+      "presmoke:ollama",
+      "postsmoke:ollama",
     ]) {
       expect(current.scripts).not.toHaveProperty(lifecycle);
     }
@@ -120,6 +128,9 @@ describe("KEC index diagnostics package script contract", () => {
     expect(current.devDependencies).toEqual(baseline.devDependencies);
     expect(current.scripts["inspect:index"] ?? "").not.toMatch(
       /KEC_DB_PATH|PROJECT_ROOT|OLLAMA|--|&&|\|/u,
+    );
+    expect(current.scripts["smoke:ollama"]).toBe(
+      "tsx src/smokeOllamaEmbedding.ts",
     );
   });
 
@@ -133,17 +144,20 @@ describe("KEC index diagnostics package script contract", () => {
     expect(readPackage(rootPackageJsonPath).scripts).not.toHaveProperty(
       "inspect:index",
     );
+    expect(readPackage(rootPackageJsonPath).scripts).not.toHaveProperty(
+      "smoke:ollama",
+    );
   });
 });
 
 describe("KEC index diagnostics README contract", () => {
-  it("adds one clearly delimited Task 56 section and preserves all baseline bytes", () => {
+  it("preserves Task 56 while allowing exactly one future Task 57 section", () => {
     const readme = readText(readmePath);
     const baseline = readHeadFile("README.md");
 
     expect(readme.match(new RegExp(sectionStart, "gu")) ?? []).toHaveLength(1);
     expect(readme.match(new RegExp(sectionEnd, "gu")) ?? []).toHaveLength(1);
-    expect(preservesBaselineOutsideSection(readme, baseline)).toBe(true);
+    expect(reconstructsHeadAfterTask57(readme, baseline)).toBe(true);
     expect(taskSection(readme).match(/^#{1,6}\s+/gmu) ?? []).toHaveLength(1);
   });
 
