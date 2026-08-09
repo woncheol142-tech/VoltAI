@@ -5,6 +5,11 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import {
+  removeTask58PackageScript,
+  removeTask58ReadmeSection,
+} from "./helpers/kecBatchIndexFixture.js";
+
 const testFile = fileURLToPath(import.meta.url);
 const packageRoot = join(dirname(testFile), "..");
 const workspaceRoot = join(packageRoot, "..", "..");
@@ -19,6 +24,10 @@ const sectionStart = "<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->";
 const sectionEnd = "<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->";
 const task57SectionStart = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_START -->";
 const task57SectionEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
+const task58SectionStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
+const task58SectionEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
+const task58ScriptName = "index:batch";
+const task58ScriptValue = "tsx src/indexKecBatch.ts";
 const command = "pnpm --filter @voltai/mcp-kec inspect:index";
 
 type PackageJson = Readonly<{
@@ -50,56 +59,67 @@ function taskSection(readme: string): string {
   return readme.slice(start, end + sectionEnd.length);
 }
 
-function reconstructsHeadAfterTask57(
-  readme: string,
-  baseline: string,
-): boolean {
+function matchesCommittedReadme(readme: string, baseline: string): boolean {
+  let normalizedReadme: string;
+  try {
+    normalizedReadme =
+      readme === baseline ? readme : removeTask58ReadmeSection(readme);
+  } catch {
+    return false;
+  }
   if (
+    readme.split(sectionStart).length !== 2 ||
+    readme.split(sectionEnd).length !== 2 ||
     readme.split(task57SectionStart).length !== 2 ||
     readme.split(task57SectionEnd).length !== 2
   ) {
     return false;
   }
 
-  const start = readme.indexOf(task57SectionStart);
-  const markerEnd = readme.indexOf(task57SectionEnd, start);
-  if (start < 0 || markerEnd <= start) return false;
+  const task56Start = readme.indexOf(sectionStart);
+  const task56End = readme.indexOf(sectionEnd, task56Start);
+  const task57Start = readme.indexOf(task57SectionStart);
+  const task57End = readme.indexOf(task57SectionEnd, task57Start);
 
-  const end = markerEnd + task57SectionEnd.length;
-  for (let before = 0; before <= 2; before += 1) {
-    for (let after = 0; after <= 2; after += 1) {
-      const removalStart = start - before;
-      const removalEnd = end + after;
-      if (removalStart < 0 || removalEnd > readme.length) continue;
-      if (!/^\n*$/u.test(readme.slice(removalStart, start))) continue;
-      if (!/^\n*$/u.test(readme.slice(end, removalEnd))) continue;
-      if (
-        `${readme.slice(0, removalStart)}${readme.slice(removalEnd)}` ===
-        baseline
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return (
+    task56Start >= 0 &&
+    task56End > task56Start &&
+    task57Start > task56End &&
+    task57End > task57Start &&
+    normalizedReadme === baseline &&
+    (readme === baseline ||
+      (readme.split(task58SectionStart).length === 2 &&
+        readme.split(task58SectionEnd).length === 2 &&
+        readme.indexOf(task58SectionStart) > task57End))
+  );
 }
 
 describe("KEC index diagnostics package script contract", () => {
-  it("allows exactly the future smoke command in the package manifest", () => {
-    const current = readPackage(packageJsonPath);
-    const baseline = JSON.parse(
-      readHeadFile("packages/mcp-kec/package.json"),
-    ) as PackageJson;
+  it("preserves the exact committed package manifest", () => {
+    const currentText = readText(packageJsonPath);
+    const baselineText = readHeadFile("packages/mcp-kec/package.json");
+    const normalizedText =
+      currentText === baselineText
+        ? currentText
+        : removeTask58PackageScript(currentText);
+    expect(normalizedText).toBe(baselineText);
 
-    expect(current).toEqual({
-      ...baseline,
-      scripts: {
-        ...baseline.scripts,
-        "inspect:index": "tsx src/inspectIndex.ts",
-        "smoke:ollama": "tsx src/smokeOllamaEmbedding.ts",
-      },
-    });
+    const current = JSON.parse(currentText) as PackageJson;
+    const baseline = JSON.parse(baselineText) as PackageJson;
+    expect(JSON.parse(normalizedText)).toEqual(baseline);
+    if (currentText !== baselineText) {
+      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
+    }
     expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
+    expect(current.scripts["smoke:ollama"]).toBe(
+      "tsx src/smokeOllamaEmbedding.ts",
+    );
+    if (
+      readText(packageJsonPath) !==
+      readHeadFile("packages/mcp-kec/package.json")
+    ) {
+      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
+    }
   });
 
   it("preserves existing scripts and adds no lifecycle hook, dependency, or embedded configuration", () => {
@@ -151,13 +171,32 @@ describe("KEC index diagnostics package script contract", () => {
 });
 
 describe("KEC index diagnostics README contract", () => {
-  it("preserves Task 56 while allowing exactly one future Task 57 section", () => {
+  it("preserves the exact committed Task 56 and Task 57 README baseline", () => {
     const readme = readText(readmePath);
     const baseline = readHeadFile("README.md");
 
     expect(readme.match(new RegExp(sectionStart, "gu")) ?? []).toHaveLength(1);
     expect(readme.match(new RegExp(sectionEnd, "gu")) ?? []).toHaveLength(1);
-    expect(reconstructsHeadAfterTask57(readme, baseline)).toBe(true);
+    expect(matchesCommittedReadme(readme, baseline)).toBe(true);
+    expect(matchesCommittedReadme(`${readme}unrelated`, baseline)).toBe(false);
+    expect(
+      matchesCommittedReadme(readme.replace(sectionStart, ""), baseline),
+    ).toBe(false);
+    expect(
+      matchesCommittedReadme(
+        readme.replace(sectionStart, `${sectionStart}\n${sectionStart}`),
+        baseline,
+      ),
+    ).toBe(false);
+    expect(
+      matchesCommittedReadme(
+        readme
+          .replace(sectionStart, "TASK_56_MARKER_SWAP")
+          .replace(sectionEnd, sectionStart)
+          .replace("TASK_56_MARKER_SWAP", sectionEnd),
+        baseline,
+      ),
+    ).toBe(false);
     expect(taskSection(readme).match(/^#{1,6}\s+/gmu) ?? []).toHaveLength(1);
   });
 

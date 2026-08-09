@@ -279,3 +279,25 @@ The smoke command does not access SQLite, read or write an index, perform indexi
 Ollama server-side model loading, cache, and pull behavior are outside VoltAI guarantees. `/api/embeddings` support depends on the installed Ollama version and configuration. `READY` means only that a usable vector response was received; there is no retrieval-quality guarantee and no index-compatibility guarantee.
 
 <!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->
+
+<!-- TASK58_KEC_BATCH_INDEX_START -->
+
+### Deterministic explicit KEC batch indexing
+
+Run one short-lived operation with one or more canonical project-relative PDF paths using lowercase `.pdf` extensions:
+
+```bash
+pnpm --filter @voltai/mcp-kec index:batch kec/a.pdf kec/b.pdf
+```
+
+`PROJECT_ROOT` is required, and every source must remain within it. The command reuses `KEC_DB_PATH`, `KEC_EMBED_PROVIDER`, `OLLAMA_BASE_URL`, `OLLAMA_EMBED_MODEL`, `OLLAMA_EMBED_TIMEOUT_MS`, `KEC_EMBED_CONCURRENCY`, `KEC_EMBED_MAX_ATTEMPTS`, and `KEC_EMBED_RETRY_DELAY_MS`; Task 58 adds no environment variables. Directories, aliases, duplicate sources, recursion, globbing, discovery, manifest input, and stdin input are rejected or unsupported.
+
+Each source ID is the full `kecsrc_` prefix plus SHA-256 derived from its canonical path. Sources run in deterministic sourceId order, sequentially, with no source-level concurrency. One source completes before the next starts. Task 55 retains ownership of write compatibility and the existing per-chunk retry and embedding concurrency behavior; Task 58 adds no batch retry and no source-level retry.
+
+Each source uses the existing one-source transaction. The batch fails fast: prior committed sources remain, the failing source is `FAILED`, and later sources are `NOT_ATTEMPTED`. There is no whole-batch atomicity, no rollback of earlier sources, and no continue-on-error behavior.
+
+`SUCCEEDED` exits with code 0. Configuration, preflight, runtime, finalization, and internal errors exit with code 1. `PARTIAL` and source-level `FAILED` results exit with code 2. A completed result is compact JSON on stdout; fixed error messages use stderr. Raw source paths are never output, nor are vectors, text, provider errors, or the database path. A sourceId is a deterministic pseudonym, not a secret or anonymous identifier.
+
+Task 56 remains the separate read-only diagnostics command. Task 57 remains the separate explicit Ollama smoke command, and this batch command does not automatically run that smoke. It provides no directory discovery or globbing, no batch-wide atomicity, no rollback of earlier sources, no stale-source deletion, no unchanged-file detection, no content deduplication, no resume or checkpoint support, no provider fallback, no model pull or startup, no MCP registration, no search registration, and no semantic-quality guarantee.
+
+<!-- TASK58_KEC_BATCH_INDEX_END -->

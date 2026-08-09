@@ -5,6 +5,11 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import {
+  removeTask58PackageScript,
+  removeTask58ReadmeSection,
+} from "./helpers/kecBatchIndexFixture.js";
+
 const testFile = fileURLToPath(import.meta.url);
 const packageRoot = join(dirname(testFile), "..");
 const workspaceRoot = join(packageRoot, "..", "..");
@@ -24,6 +29,10 @@ const task56Start = "<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->";
 const task56End = "<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->";
 const task57Start = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_START -->";
 const task57End = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
+const task58Start = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
+const task58End = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
+const task58ScriptName = "index:batch";
+const task58ScriptValue = "tsx src/indexKecBatch.ts";
 const command = "pnpm --filter @voltai/mcp-kec smoke:ollama";
 const scriptValue = "tsx src/smokeOllamaEmbedding.ts";
 
@@ -56,59 +65,57 @@ function task57Section(readme: string): string {
   return readme.slice(start, markerEnd + task57End.length);
 }
 
-function reconstructsBaseline(readme: string, baseline: string): boolean {
+function matchesCommittedReadme(readme: string, baseline: string): boolean {
+  let normalizedReadme: string;
+  try {
+    normalizedReadme =
+      readme === baseline ? readme : removeTask58ReadmeSection(readme);
+  } catch {
+    return false;
+  }
   if (
+    readme.split(task56Start).length !== 2 ||
+    readme.split(task56End).length !== 2 ||
     readme.split(task57Start).length !== 2 ||
     readme.split(task57End).length !== 2
   ) {
     return false;
   }
 
-  const start = readme.indexOf(task57Start);
-  const markerEnd = readme.indexOf(task57End, start);
-  if (start < 0 || markerEnd <= start) return false;
+  const task56MarkerStart = readme.indexOf(task56Start);
+  const task56MarkerEnd = readme.indexOf(task56End, task56MarkerStart);
+  const task57MarkerStart = readme.indexOf(task57Start);
+  const task57MarkerEnd = readme.indexOf(task57End, task57MarkerStart);
 
-  const end = markerEnd + task57End.length;
-  for (let before = 0; before <= 2; before += 1) {
-    for (let after = 0; after <= 2; after += 1) {
-      const removalStart = start - before;
-      const removalEnd = end + after;
-      if (removalStart < 0 || removalEnd > readme.length) continue;
-      if (!/^\n*$/u.test(readme.slice(removalStart, start))) continue;
-      if (!/^\n*$/u.test(readme.slice(end, removalEnd))) continue;
-      if (
-        `${readme.slice(0, removalStart)}${readme.slice(removalEnd)}` ===
-        baseline
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-function futurePackage(baseline: PackageJson): PackageJson {
-  return {
-    ...baseline,
-    scripts: {
-      ...baseline.scripts,
-      "smoke:ollama": scriptValue,
-    },
-  };
-}
-
-function syntheticReadme(baseline: string, body = "approved"): string {
-  return `${baseline}\n${task57Start}\n${body}\n${task57End}\n`;
+  return (
+    task56MarkerStart >= 0 &&
+    task56MarkerEnd > task56MarkerStart &&
+    task57MarkerStart > task56MarkerEnd &&
+    task57MarkerEnd > task57MarkerStart &&
+    normalizedReadme === baseline &&
+    (readme === baseline ||
+      (readme.split(task58Start).length === 2 &&
+        readme.split(task58End).length === 2 &&
+        readme.indexOf(task58Start) > task57MarkerEnd))
+  );
 }
 
 describe("Ollama embedding smoke package command contract", () => {
-  it("adds exactly the approved package-local smoke command", () => {
-    const current = readPackage(packageJsonPath);
-    const baseline = JSON.parse(
-      readHeadFile("packages/mcp-kec/package.json"),
-    ) as PackageJson;
+  it("preserves the exact committed package-local smoke command", () => {
+    const currentText = readText(packageJsonPath);
+    const baselineText = readHeadFile("packages/mcp-kec/package.json");
+    const normalizedText =
+      currentText === baselineText
+        ? currentText
+        : removeTask58PackageScript(currentText);
+    expect(normalizedText).toBe(baselineText);
 
-    expect(current).toEqual(futurePackage(baseline));
+    const current = JSON.parse(currentText) as PackageJson;
+    const baseline = JSON.parse(baselineText) as PackageJson;
+    expect(JSON.parse(normalizedText)).toEqual(baseline);
+    if (currentText !== baselineText) {
+      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
+    }
     expect(current.scripts["smoke:ollama"]).toBe(scriptValue);
     expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
     expect(current.scripts["dev:hybrid"]).toBe("tsx src/hybrid.ts");
@@ -140,13 +147,19 @@ describe("Ollama embedding smoke package command contract", () => {
     expect(current.scripts["smoke:ollama"] ?? "").not.toMatch(
       /&&|\||\$|KEC_|OLLAMA_|PROJECT_ROOT|KEC_DB_PATH/u,
     );
+    if (
+      readText(packageJsonPath) !==
+      readHeadFile("packages/mcp-kec/package.json")
+    ) {
+      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
+    }
   });
 
   it("rejects fake scripts, changed diagnostics, dependencies, and lifecycle hooks structurally", () => {
     const baseline = JSON.parse(
       readHeadFile("packages/mcp-kec/package.json"),
     ) as PackageJson;
-    const expected = futurePackage(baseline);
+    const expected = baseline;
 
     expect({
       ...expected,
@@ -176,7 +189,7 @@ describe("Ollama embedding smoke package command contract", () => {
 });
 
 describe("Ollama embedding smoke README baseline contract", () => {
-  it("adds exactly one ordered Task 57 section and reconstructs HEAD", () => {
+  it("preserves the exact committed ordered Task 57 section", () => {
     const readme = readText(readmePath);
     const baseline = readHeadFile("README.md");
 
@@ -185,7 +198,7 @@ describe("Ollama embedding smoke README baseline contract", () => {
     expect(readme.indexOf(task57End)).toBeGreaterThan(
       readme.indexOf(task57Start),
     );
-    expect(reconstructsBaseline(readme, baseline)).toBe(true);
+    expect(matchesCommittedReadme(readme, baseline)).toBe(true);
     expect(readme.split(task56Start)).toHaveLength(2);
     expect(readme.split(task56End)).toHaveLength(2);
     expect(readme.indexOf(task56End)).toBeGreaterThan(
@@ -194,34 +207,44 @@ describe("Ollama embedding smoke README baseline contract", () => {
   });
 
   it("rejects unrelated edits, malformed markers, nesting, and Task 56 changes", () => {
-    const baseline = `before\n${task56Start}\nTask 56\n${task56End}\nafter\n`;
-    const valid = syntheticReadme(baseline);
+    const baseline = readHeadFile("README.md");
 
-    expect(reconstructsBaseline(valid, baseline)).toBe(true);
-    expect(reconstructsBaseline(`${valid}unrelated`, baseline)).toBe(false);
-    expect(reconstructsBaseline(valid.replace(task57Start, ""), baseline)).toBe(
-      false,
-    );
-    expect(reconstructsBaseline(valid.replace(task57End, ""), baseline)).toBe(
+    expect(matchesCommittedReadme(baseline, baseline)).toBe(true);
+    expect(matchesCommittedReadme(`${baseline}unrelated`, baseline)).toBe(
       false,
     );
     expect(
-      reconstructsBaseline(valid.replace(task57Start, task57End), baseline),
+      matchesCommittedReadme(baseline.replace(task57Start, ""), baseline),
     ).toBe(false);
     expect(
-      reconstructsBaseline(
-        valid.replace(task57Start, `${task57Start}\n${task57Start}`),
+      matchesCommittedReadme(baseline.replace(task57End, ""), baseline),
+    ).toBe(false);
+    expect(
+      matchesCommittedReadme(
+        baseline
+          .replace(task57Start, "TASK_57_MARKER_SWAP")
+          .replace(task57End, task57Start)
+          .replace("TASK_57_MARKER_SWAP", task57End),
         baseline,
       ),
     ).toBe(false);
     expect(
-      reconstructsBaseline(
-        valid.replace(task57End, `${task57End}\n${task57End}`),
+      matchesCommittedReadme(
+        baseline.replace(task57Start, `${task57Start}\n${task57Start}`),
         baseline,
       ),
     ).toBe(false);
     expect(
-      reconstructsBaseline(valid.replace("Task 56", "changed"), baseline),
+      matchesCommittedReadme(
+        baseline.replace(task57End, `${task57End}\n${task57End}`),
+        baseline,
+      ),
+    ).toBe(false);
+    expect(
+      matchesCommittedReadme(
+        baseline.replace("Read-only KEC index diagnostics", "changed"),
+        baseline,
+      ),
     ).toBe(false);
   });
 });

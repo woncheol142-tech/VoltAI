@@ -6,6 +6,11 @@ import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  removeTask58PackageScript,
+  removeTask58ReadmeSection,
+} from "./helpers/kecBatchIndexFixture.js";
+
+import {
   captureError,
   compatibilityErrorSentinels,
   foreignSourcePath,
@@ -57,6 +62,10 @@ const task56ReadmeStart = "<!-- TASK 56 KEC INDEX DIAGNOSTICS START -->";
 const task56ReadmeEnd = "<!-- TASK 56 KEC INDEX DIAGNOSTICS END -->";
 const task57ReadmeStart = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_START -->";
 const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
+const task58ReadmeStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
+const task58ReadmeEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
+const task58ScriptName = "index:batch";
+const task58ScriptValue = "tsx src/indexKecBatch.ts";
 
 type PackageManifest = Readonly<Record<string, unknown>> &
   Readonly<{
@@ -74,62 +83,52 @@ function readHeadFile(relativePath: string): string {
   });
 }
 
-function expectFutureTask57ReadmeAddition(
+function expectCommittedReadmeBaseline(
   currentReadme: string,
   headReadme: string,
 ): void {
+  const normalizedReadme =
+    currentReadme === headReadme
+      ? currentReadme
+      : removeTask58ReadmeSection(currentReadme);
+  expect(normalizedReadme).toBe(headReadme);
   expect(currentReadme.split(task56ReadmeStart)).toHaveLength(2);
   expect(currentReadme.split(task56ReadmeEnd)).toHaveLength(2);
 
-  const start = currentReadme.indexOf(task56ReadmeStart);
-  const markerEnd = currentReadme.indexOf(task56ReadmeEnd, start);
-  expect(start).toBeGreaterThanOrEqual(0);
-  expect(markerEnd).toBeGreaterThan(start);
+  const task56Start = currentReadme.indexOf(task56ReadmeStart);
+  const task56End = currentReadme.indexOf(task56ReadmeEnd, task56Start);
+  expect(task56Start).toBeGreaterThanOrEqual(0);
+  expect(task56End).toBeGreaterThan(task56Start);
 
   expect(currentReadme.split(task57ReadmeStart)).toHaveLength(2);
   expect(currentReadme.split(task57ReadmeEnd)).toHaveLength(2);
   const task57Start = currentReadme.indexOf(task57ReadmeStart);
-  const task57MarkerEnd = currentReadme.indexOf(task57ReadmeEnd, task57Start);
+  const task57End = currentReadme.indexOf(task57ReadmeEnd, task57Start);
   expect(task57Start).toBeGreaterThanOrEqual(0);
-  expect(task57MarkerEnd).toBeGreaterThan(task57Start);
-
-  const task57End = task57MarkerEnd + task57ReadmeEnd.length;
-  let reconstructsHead = false;
-  for (let before = 0; before <= 2; before += 1) {
-    for (let after = 0; after <= 2; after += 1) {
-      const removalStart = task57Start - before;
-      const removalEnd = task57End + after;
-      if (removalStart < 0 || removalEnd > currentReadme.length) continue;
-      if (!/^\n*$/u.test(currentReadme.slice(removalStart, task57Start))) {
-        continue;
-      }
-      if (!/^\n*$/u.test(currentReadme.slice(task57End, removalEnd))) {
-        continue;
-      }
-      reconstructsHead ||=
-        `${currentReadme.slice(0, removalStart)}${currentReadme.slice(removalEnd)}` ===
-        headReadme;
-    }
+  expect(task57End).toBeGreaterThan(task57Start);
+  expect(task57Start).toBeGreaterThan(task56End);
+  if (currentReadme !== headReadme) {
+    expect(currentReadme.split(task58ReadmeStart)).toHaveLength(2);
+    expect(currentReadme.split(task58ReadmeEnd)).toHaveLength(2);
+    expect(currentReadme.indexOf(task58ReadmeStart)).toBeGreaterThan(task57End);
   }
-  expect(reconstructsHead).toBe(true);
 }
 
-function expectFutureSmokePackageAddition(): void {
-  const currentPackage = JSON.parse(
-    readSource(packageManifest),
-  ) as PackageManifest;
-  const headPackage = JSON.parse(
-    readHeadFile("packages/mcp-kec/package.json"),
-  ) as PackageManifest;
+function expectCommittedPackageBaseline(): void {
+  const currentPackageText = readSource(packageManifest);
+  const headPackageText = readHeadFile("packages/mcp-kec/package.json");
+  const normalizedPackageText =
+    currentPackageText === headPackageText
+      ? currentPackageText
+      : removeTask58PackageScript(currentPackageText);
+  expect(normalizedPackageText).toBe(headPackageText);
 
-  expect(currentPackage).toEqual({
-    ...headPackage,
-    scripts: {
-      ...headPackage.scripts,
-      "inspect:index": "tsx src/inspectIndex.ts",
-      "smoke:ollama": "tsx src/smokeOllamaEmbedding.ts",
-    },
-  });
+  const currentPackage = JSON.parse(currentPackageText) as PackageManifest;
+  const headPackage = JSON.parse(headPackageText) as PackageManifest;
+  expect(JSON.parse(normalizedPackageText)).toEqual(headPackage);
+  if (currentPackageText !== headPackageText) {
+    expect(currentPackage.scripts[task58ScriptName]).toBe(task58ScriptValue);
+  }
   expect(currentPackage.scripts["inspect:index"]).toBe(
     "tsx src/inspectIndex.ts",
   );
@@ -169,11 +168,11 @@ describe("KEC index write compatibility architecture boundaries", () => {
       ".env.example",
     ]) {
       if (relativePath === "packages/mcp-kec/package.json") {
-        expectFutureSmokePackageAddition();
+        expectCommittedPackageBaseline();
         continue;
       }
       if (relativePath === "README.md") {
-        expectFutureTask57ReadmeAddition(
+        expectCommittedReadmeBaseline(
           readSource(workspaceReadme),
           readHeadFile("README.md"),
         );

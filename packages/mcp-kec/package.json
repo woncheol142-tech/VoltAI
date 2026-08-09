@@ -13,6 +13,7 @@
     "start:hybrid": "node dist/hybrid.js",
     "inspect:index": "tsx src/inspectIndex.ts",
     "smoke:ollama": "tsx src/smokeOllamaEmbedding.ts",
+    "index:batch": "tsx src/indexKecBatch.ts",
     "test": "vitest run --root ../.. packages/mcp-kec/test"
   },
   "dependencies": {
