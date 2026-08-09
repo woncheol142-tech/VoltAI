@@ -22,6 +22,7 @@ import { SqliteVectorStore } from "../src/knowledge/sqliteVectorStore.js";
 import * as packageRoot from "../src/index.js";
 import {
   batchIndexErrors,
+  captureTask58ArtifactBoundary,
   createKecBatchIndexFixture,
   createHostileThrownValue,
   expectedBatchSourceId,
@@ -433,29 +434,41 @@ describe("Task 58 batch index CLI module and import boundary", () => {
 
   it("imports in a subprocess without output or observable startup", () => {
     if (!existsSync(cliSourcePath)) return;
-    const result = spawnSync(
-      process.execPath,
-      [
-        "--import",
-        "tsx",
-        "--input-type=module",
-        "--eval",
-        `await import(${JSON.stringify(pathToFileURL(cliSourcePath).href)})`,
-      ],
-      {
-        cwd: packageDirectory,
-        encoding: "utf8",
-        env: { ...process.env, NODE_NO_WARNINGS: "1" },
-        timeout: 10_000,
-      },
-    );
+    const fixture = createKecBatchIndexFixture();
+    try {
+      fixture.writeProjectFile(".voltai/existing-user-index.sqlite", "user");
+      fixture.writeProjectFile(".volt-ai/existing-user-index.db", "user");
+      const before = captureTask58ArtifactBoundary(fixture.projectRoot);
+      const result = spawnSync(
+        process.execPath,
+        [
+          "--import",
+          "tsx",
+          "--input-type=module",
+          "--eval",
+          `await import(${JSON.stringify(pathToFileURL(cliSourcePath).href)})`,
+        ],
+        {
+          cwd: packageDirectory,
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            NODE_NO_WARNINGS: "1",
+            PROJECT_ROOT: fixture.projectRoot,
+            KEC_DB_PATH: fixture.databasePath,
+          },
+          timeout: 10_000,
+        },
+      );
 
-    expect(result.error).toBeUndefined();
-    expect(result.status).toBe(0);
-    expect(result.stdout).toBe("");
-    expect(result.stderr).toBe("");
-    expect(existsSync(join(workspaceRoot, ".voltai"))).toBe(false);
-    expect(existsSync(join(workspaceRoot, ".volt-ai"))).toBe(false);
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toBe("");
+      expect(captureTask58ArtifactBoundary(fixture.projectRoot)).toBe(before);
+    } finally {
+      fixture.cleanup();
+    }
   });
 
   it("has no import-time fetch, timers, output, process exit, or exit-code mutation", async () => {

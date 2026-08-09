@@ -5,6 +5,8 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
+  readlinkSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -29,6 +31,7 @@ export const task58PackageScriptName = "index:batch";
 export const task58PackageScriptValue = "tsx src/indexKecBatch.ts";
 export const task58ReadmeStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
 export const task58ReadmeEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
+const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 
 export const defaultBatchExecutionOptions = Object.freeze({
   concurrency: 4,
@@ -251,7 +254,20 @@ export function addTask58ReadmeSection(
   if (!readme.endsWith("\n")) {
     throw new Error("README baseline must end with LF");
   }
-  return `${readme}\n${task58ReadmeStart}\n${section}\n${task58ReadmeEnd}\n`;
+  if (
+    readme.includes(task58ReadmeStart) ||
+    readme.includes(task58ReadmeEnd) ||
+    section.includes(task58ReadmeStart) ||
+    section.includes(task58ReadmeEnd)
+  ) {
+    throw new Error("Task 58 README markers are not allowed in the baseline");
+  }
+  if (readme.split(task57ReadmeEnd).length !== 2) {
+    throw new Error("Task 57 README anchor must occur exactly once");
+  }
+
+  const insertion = readme.indexOf(task57ReadmeEnd) + task57ReadmeEnd.length;
+  return `${readme.slice(0, insertion)}\n\n${task58ReadmeStart}\n${section}\n${task58ReadmeEnd}${readme.slice(insertion)}`;
 }
 
 export function removeTask58ReadmeSection(readme: string): string {
@@ -278,6 +294,88 @@ export function removeTask58ReadmeSection(readme: string): string {
 
   const removalStart = readme[start - 1] === "\n" ? start - 1 : start;
   return `${readme.slice(0, removalStart)}${readme.slice(sectionEnd + 1)}`;
+}
+
+export function normalizeTask58PackageBaseline(
+  committedPackageText: string,
+): string {
+  const occurrences = committedPackageText.match(/"index:batch"\s*:/gu) ?? [];
+  if (occurrences.length !== 1) {
+    throw new Error("Task 58 package script key must occur exactly once");
+  }
+
+  const manifest = JSON.parse(committedPackageText) as {
+    scripts?: Record<string, unknown>;
+  };
+  if (
+    manifest.scripts === undefined ||
+    manifest.scripts[task58PackageScriptName] !== task58PackageScriptValue
+  ) {
+    throw new Error("Task 58 package script is malformed");
+  }
+
+  const baseline = removeTask58PackageScript(committedPackageText);
+  const baselineManifest = JSON.parse(baseline) as {
+    scripts?: Record<string, unknown>;
+  };
+  if (
+    baselineManifest.scripts !== undefined &&
+    Object.hasOwn(baselineManifest.scripts, task58PackageScriptName)
+  ) {
+    throw new Error("Task 58 package script normalization failed");
+  }
+  return baseline;
+}
+
+export function normalizeTask58ReadmeBaseline(committedReadme: string): string {
+  if (committedReadme.split(task57ReadmeEnd).length !== 2) {
+    throw new Error("Task 57 README anchor must occur exactly once");
+  }
+  const expectedStart =
+    committedReadme.indexOf(task57ReadmeEnd) + task57ReadmeEnd.length + 2;
+  if (committedReadme.indexOf(task58ReadmeStart) !== expectedStart) {
+    throw new Error("Task 58 README section must immediately follow Task 57");
+  }
+  return removeTask58ReadmeSection(committedReadme);
+}
+
+export function captureTask58ArtifactBoundary(rootPath: string): string {
+  const entries: string[] = [];
+
+  const visit = (absolutePath: string, relativePath: string): void => {
+    const stats = lstatSync(absolutePath);
+    if (stats.isSymbolicLink()) {
+      entries.push(`link:${relativePath}:${readlinkSync(absolutePath)}`);
+      return;
+    }
+    if (stats.isDirectory()) {
+      entries.push(`directory:${relativePath}:${stats.mode}:${stats.mtimeMs}`);
+      for (const child of readdirSync(absolutePath).sort()) {
+        visit(join(absolutePath, child), `${relativePath}/${child}`);
+      }
+      return;
+    }
+    if (stats.isFile()) {
+      const digest = createHash("sha256")
+        .update(readFileSync(absolutePath))
+        .digest("hex");
+      entries.push(
+        `file:${relativePath}:${stats.mode}:${stats.size}:${stats.mtimeMs}:${digest}`,
+      );
+      return;
+    }
+    entries.push(
+      `other:${relativePath}:${stats.mode}:${stats.size}:${stats.mtimeMs}`,
+    );
+  };
+
+  for (const name of [".voltai", ".volt-ai"] as const) {
+    const boundaryPath = join(rootPath, name);
+    if (existsSync(boundaryPath)) visit(boundaryPath, name);
+    else entries.push(`missing:${name}`);
+  }
+
+  return JSON.stringify(entries);
 }
 
 export function captureErrorMessage(operation: () => unknown): string {

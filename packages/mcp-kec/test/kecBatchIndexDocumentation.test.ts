@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +8,10 @@ import { describe, expect, it } from "vitest";
 import {
   addTask58PackageScript,
   addTask58ReadmeSection,
+  captureTask58ArtifactBoundary,
+  createKecBatchIndexFixture,
+  normalizeTask58PackageBaseline,
+  normalizeTask58ReadmeBaseline,
   removeTask58PackageScript,
   removeTask58ReadmeSection,
   task58PackageScriptName,
@@ -75,6 +79,14 @@ function task58Section(readme: string): string {
   return readme.slice(start, end + task58ReadmeEnd.length);
 }
 
+function task58SectionBody(readme: string): string {
+  const section = task58Section(readme);
+  const start = `${task58ReadmeStart}\n`;
+  const end = `\n${task58ReadmeEnd}`;
+  if (!section.startsWith(start) || !section.endsWith(end)) return "";
+  return section.slice(start.length, -end.length);
+}
+
 function currentPackageHasTask58Script(): boolean {
   const manifest = JSON.parse(readText(packagePath)) as PackageJson;
   return manifest.scripts[task58PackageScriptName] === task58PackageScriptValue;
@@ -89,7 +101,10 @@ function currentReadmeHasTask58Section(): boolean {
   );
 }
 
-function runPackageCommand(arguments_: readonly string[]): Readonly<{
+function runPackageCommand(
+  arguments_: readonly string[],
+  paths: Readonly<{ projectRoot: string; databasePath: string }>,
+): Readonly<{
   status: number | null;
   stdout: string;
   stderr: string;
@@ -102,7 +117,8 @@ function runPackageCommand(arguments_: readonly string[]): Readonly<{
       encoding: "utf8",
       env: {
         ...process.env,
-        PROJECT_ROOT: workspaceRoot,
+        PROJECT_ROOT: paths.projectRoot,
+        KEC_DB_PATH: paths.databasePath,
         KEC_EMBED_PROVIDER: "invalid",
       },
       timeout: 10_000,
@@ -122,10 +138,12 @@ describe("Task 58 package-local command RED contract", () => {
   });
 
   it("reconstructs the committed manifest after removing exactly the future script", () => {
-    const baseline = readHeadFile("packages/mcp-kec/package.json");
+    const committed = readHeadFile("packages/mcp-kec/package.json");
+    const baseline = normalizeTask58PackageBaseline(committed);
     const future = addTask58PackageScript(baseline);
     const parsed = JSON.parse(future) as PackageJson;
 
+    expect(future).toBe(committed);
     expect(parsed.scripts[task58PackageScriptName]).toBe(
       task58PackageScriptValue,
     );
@@ -139,7 +157,9 @@ describe("Task 58 package-local command RED contract", () => {
   });
 
   it("accepts only the exact script line and rejects malformed or duplicate deltas", () => {
-    const baseline = readHeadFile("packages/mcp-kec/package.json");
+    const baseline = normalizeTask58PackageBaseline(
+      readHeadFile("packages/mcp-kec/package.json"),
+    );
     const future = addTask58PackageScript(baseline);
 
     expect(() => removeTask58PackageScript(baseline)).toThrow();
@@ -205,9 +225,14 @@ describe("Task 58 README RED and reconstruction contract", () => {
   });
 
   it("places the exact future section after Task 57 and reconstructs HEAD byte-for-byte", () => {
-    const baseline = readHeadFile("README.md");
-    const future = addTask58ReadmeSection(baseline, canonicalSection);
+    const committed = readHeadFile("README.md");
+    const baseline = normalizeTask58ReadmeBaseline(committed);
+    const future = addTask58ReadmeSection(
+      baseline,
+      task58SectionBody(committed),
+    );
 
+    expect(future).toBe(committed);
     expect(future.split(task58ReadmeStart)).toHaveLength(2);
     expect(future.split(task58ReadmeEnd)).toHaveLength(2);
     expect(future.indexOf(task58ReadmeStart)).toBeGreaterThan(
@@ -217,7 +242,7 @@ describe("Task 58 README RED and reconstruction contract", () => {
   });
 
   it("rejects missing, duplicate, reversed, nested, and unrelated README mutations", () => {
-    const baseline = readHeadFile("README.md");
+    const baseline = normalizeTask58ReadmeBaseline(readHeadFile("README.md"));
     const future = addTask58ReadmeSection(baseline, canonicalSection);
 
     expect(() => removeTask58ReadmeSection(baseline)).toThrow();
@@ -251,36 +276,52 @@ describe("Task 58 README RED and reconstruction contract", () => {
   });
 
   it("leaves every committed Task 51-57 README byte unchanged", () => {
-    const baseline = readHeadFile("README.md");
-    const future = addTask58ReadmeSection(baseline, canonicalSection);
+    const committed = readHeadFile("README.md");
+    const baseline = normalizeTask58ReadmeBaseline(committed);
+    const future = addTask58ReadmeSection(
+      baseline,
+      task58SectionBody(committed),
+    );
+    expect(future).toBe(committed);
     expect(removeTask58ReadmeSection(future)).toBe(baseline);
   });
 });
 
 describe("Task 58 operator documentation product contract", () => {
   it("forwards the corrected positional command without treating a literal double dash as syntax", () => {
-    const corrected = runPackageCommand(["kec/a.pdf", "kec/b.pdf"]);
-    expect(corrected.status).toBe(1);
-    expect(corrected.stdout).toContain(
-      '> tsx src/indexKecBatch.ts "kec/a.pdf" "kec/b.pdf"',
-    );
-    expect(corrected.stdout).not.toContain('> tsx src/indexKecBatch.ts "--"');
-    expect(corrected.stderr).toContain(
-      "KEC_BATCH_INDEX: INVALID_CONFIGURATION",
-    );
-    expect(corrected.stderr).not.toContain("KEC_BATCH_INDEX: INVALID_ARGUMENT");
+    const fixture = createKecBatchIndexFixture();
+    try {
+      const paths = {
+        projectRoot: fixture.projectRoot,
+        databasePath: fixture.databasePath,
+      } as const;
+      const before = captureTask58ArtifactBoundary(fixture.projectRoot);
+      const corrected = runPackageCommand(["kec/a.pdf", "kec/b.pdf"], paths);
+      expect(corrected.status).toBe(1);
+      expect(corrected.stdout).toContain(
+        '> tsx src/indexKecBatch.ts "kec/a.pdf" "kec/b.pdf"',
+      );
+      expect(corrected.stdout).not.toContain('> tsx src/indexKecBatch.ts "--"');
+      expect(corrected.stderr).toContain(
+        "KEC_BATCH_INDEX: INVALID_CONFIGURATION",
+      );
+      expect(corrected.stderr).not.toContain(
+        "KEC_BATCH_INDEX: INVALID_ARGUMENT",
+      );
 
-    const broken = runPackageCommand(["--", "kec/a.pdf", "kec/b.pdf"]);
-    expect(broken.status).toBe(1);
-    expect(broken.stdout).toContain(
-      '> tsx src/indexKecBatch.ts "--" "kec/a.pdf" "kec/b.pdf"',
-    );
-    expect(broken.stderr).toContain("KEC_BATCH_INDEX: INVALID_ARGUMENT");
-    expect(broken.stderr).not.toContain(
-      "KEC_BATCH_INDEX: INVALID_CONFIGURATION",
-    );
-    expect(existsSync(join(workspaceRoot, ".voltai"))).toBe(false);
-    expect(existsSync(join(workspaceRoot, ".volt-ai"))).toBe(false);
+      const broken = runPackageCommand(["--", "kec/a.pdf", "kec/b.pdf"], paths);
+      expect(broken.status).toBe(1);
+      expect(broken.stdout).toContain(
+        '> tsx src/indexKecBatch.ts "--" "kec/a.pdf" "kec/b.pdf"',
+      );
+      expect(broken.stderr).toContain("KEC_BATCH_INDEX: INVALID_ARGUMENT");
+      expect(broken.stderr).not.toContain(
+        "KEC_BATCH_INDEX: INVALID_CONFIGURATION",
+      );
+      expect(captureTask58ArtifactBoundary(fixture.projectRoot)).toBe(before);
+    } finally {
+      fixture.cleanup();
+    }
   });
 
   it("documents the exact command, explicit sources, project-relative PDFs, and PROJECT_ROOT", () => {
