@@ -6,19 +6,15 @@ import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  addTask59PackageScript,
-  addTask59ReadmeBlock,
-  normalizeTask59PackageBaseline,
-  normalizeTask59ReadmeBaseline,
-  removeTask59PackageScript,
-  removeTask59ReadmeSection,
-  removeTask58PackageScript,
-  removeTask58ReadmeSection,
+  normalizeTask60SqliteKnowledgeStore,
+  task60PackageLayers,
+  task60ReadmeLayers,
   task59PackageScriptName,
   task59PackageScriptValue,
-  task59ReadmeBlock,
   task59ReadmeEnd,
   task59ReadmeStart,
+  task60PackageScriptName,
+  task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
 
 import {
@@ -94,23 +90,8 @@ function readHeadFile(relativePath: string): string {
   });
 }
 
-function expectCommittedReadmeBaseline(
-  currentReadme: string,
-  headReadme: string,
-): void {
-  const currentTask59Baseline = removeTask59ReadmeSection(currentReadme);
-  const headTask59Baseline = normalizeTask59ReadmeBaseline(headReadme);
-  const normalizedReadme =
-    currentTask59Baseline === headTask59Baseline
-      ? currentTask59Baseline
-      : removeTask58ReadmeSection(currentTask59Baseline);
-  expect(normalizedReadme).toBe(headTask59Baseline);
-  expect(
-    addTask59ReadmeBlock(
-      currentTask59Baseline,
-      task59ReadmeBlock(currentReadme),
-    ),
-  ).toBe(currentReadme);
+function expectCommittedReadmeBaseline(currentReadme: string): void {
+  task60ReadmeLayers(currentReadme);
   expect(currentReadme.split(task59ReadmeStart)).toHaveLength(2);
   expect(currentReadme.split(task59ReadmeEnd)).toHaveLength(2);
   expect(currentReadme.indexOf(task59ReadmeStart)).toBe(
@@ -131,36 +112,28 @@ function expectCommittedReadmeBaseline(
   expect(task57Start).toBeGreaterThanOrEqual(0);
   expect(task57End).toBeGreaterThan(task57Start);
   expect(task57Start).toBeGreaterThan(task56End);
-  if (currentReadme !== headReadme) {
-    expect(currentReadme.split(task58ReadmeStart)).toHaveLength(2);
-    expect(currentReadme.split(task58ReadmeEnd)).toHaveLength(2);
-    expect(currentReadme.indexOf(task58ReadmeStart)).toBeGreaterThan(task57End);
-  }
+  expect(currentReadme.split(task58ReadmeStart)).toHaveLength(2);
+  expect(currentReadme.split(task58ReadmeEnd)).toHaveLength(2);
+  expect(currentReadme.indexOf(task58ReadmeStart)).toBeGreaterThan(task57End);
 }
 
 function expectCommittedPackageBaseline(): void {
   const currentPackageText = readSource(packageManifest);
-  const headPackageText = readHeadFile("packages/mcp-kec/package.json");
-  const currentTask59Baseline = removeTask59PackageScript(currentPackageText);
-  const headTask59Baseline = normalizeTask59PackageBaseline(headPackageText);
-  const normalizedPackageText =
-    currentTask59Baseline === headTask59Baseline
-      ? currentTask59Baseline
-      : removeTask58PackageScript(currentTask59Baseline);
-  expect(normalizedPackageText).toBe(headTask59Baseline);
-  expect(addTask59PackageScript(currentTask59Baseline)).toBe(
-    currentPackageText,
-  );
+  const { preTask58 } = task60PackageLayers(currentPackageText);
 
   const currentPackage = JSON.parse(currentPackageText) as PackageManifest;
-  const headPackage = JSON.parse(headTask59Baseline) as PackageManifest;
-  expect(JSON.parse(normalizedPackageText)).toEqual(headPackage);
-  if (currentTask59Baseline !== headTask59Baseline) {
-    expect(currentPackage.scripts[task58ScriptName]).toBe(task58ScriptValue);
-  }
+  const preTask58Package = JSON.parse(preTask58) as PackageManifest;
+  expect(currentPackage.scripts[task58ScriptName]).toBe(task58ScriptValue);
   expect(currentPackage.scripts[task59PackageScriptName]).toBe(
     task59PackageScriptValue,
   );
+  expect(currentPackage.scripts[task60PackageScriptName]).toBe(
+    task60PackageScriptValue,
+  );
+  expect(currentPackage).toMatchObject({
+    ...preTask58Package,
+    scripts: currentPackage.scripts,
+  });
   expect(currentPackage.scripts["inspect:index"]).toBe(
     "tsx src/inspectIndex.ts",
   );
@@ -204,9 +177,14 @@ describe("KEC index write compatibility architecture boundaries", () => {
         continue;
       }
       if (relativePath === "README.md") {
-        expectCommittedReadmeBaseline(
-          readSource(workspaceReadme),
-          readHeadFile("README.md"),
+        expectCommittedReadmeBaseline(readSource(workspaceReadme));
+        continue;
+      }
+      if (
+        relativePath === "packages/knowledge-sqlite/src/sqliteKnowledgeStore.ts"
+      ) {
+        normalizeTask60SqliteKnowledgeStore(
+          readSource(join(workspaceRoot, relativePath)),
         );
         continue;
       }

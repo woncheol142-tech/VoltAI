@@ -13,7 +13,10 @@ import type {
   KnowledgeVectorStore,
 } from "@voltai/knowledge-core";
 
-import { KnowledgeStoreDecodeError, type KnowledgeStoreDecodeField } from "./errors.js";
+import {
+  KnowledgeStoreDecodeError,
+  type KnowledgeStoreDecodeField,
+} from "./errors.js";
 import { migrateKnowledgeSchema } from "./schema.js";
 
 const require = createRequire(import.meta.url);
@@ -105,7 +108,9 @@ function serializeJson(value: unknown, field: "metadata" | "locator"): string {
 function validateEmbedding(embedding: number[]): number[] {
   if (
     !Array.isArray(embedding) ||
-    embedding.some((value) => typeof value !== "number" || !Number.isFinite(value))
+    embedding.some(
+      (value) => typeof value !== "number" || !Number.isFinite(value),
+    )
   ) {
     throw new Error("Knowledge embedding encode failed");
   }
@@ -118,12 +123,36 @@ function validateProjection(projection: SqliteCompatibilityProjection): void {
     projection.page !== null &&
     (!Number.isInteger(projection.page) || projection.page < 1)
   ) {
-    throw new Error("Knowledge compatibility page must be a positive integer or null");
+    throw new Error(
+      "Knowledge compatibility page must be a positive integer or null",
+    );
   }
 
   if (projection.clause !== null && typeof projection.clause !== "string") {
     throw new Error("Knowledge compatibility clause must be a string or null");
   }
+}
+
+function asciiOrder(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function canonicalSourcePaths(sourcePaths: readonly string[]): string[] {
+  const unique = new Set(sourcePaths);
+  if (unique.size !== sourcePaths.length) {
+    throw new Error("Knowledge source snapshot contains duplicate paths");
+  }
+  return [...unique].sort(asciiOrder);
+}
+
+function equalSourceSnapshots(
+  left: readonly string[],
+  right: readonly string[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((sourcePath, index) => sourcePath === right[index])
+  );
 }
 
 export class SqliteKnowledgeStore implements KnowledgeVectorStore {
@@ -169,8 +198,14 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
         documentId: chunk.documentId,
         sourcePath: chunk.sourcePath,
         chunkIndex: chunk.chunkIndex,
-        locatorJson: serializeJson(codecs.locator.encode(chunk.locator), "locator"),
-        metadataJson: serializeJson(codecs.metadata.encode(chunk.metadata), "metadata"),
+        locatorJson: serializeJson(
+          codecs.locator.encode(chunk.locator),
+          "locator",
+        ),
+        metadataJson: serializeJson(
+          codecs.metadata.encode(chunk.metadata),
+          "metadata",
+        ),
         text: chunk.text,
         embeddingJson: JSON.stringify(validateEmbedding(chunk.embedding)),
         page: projection.page,
@@ -244,7 +279,8 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
     }
 
     this.database
-      .prepare(`
+      .prepare(
+        `
         INSERT INTO index_metadata (
           id,
           embedding_provider,
@@ -257,7 +293,8 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
           embedding_model = excluded.embedding_model,
           dimensions = excluded.dimensions,
           indexed_at = excluded.indexed_at
-      `)
+      `,
+      )
       .run(
         collection,
         metadata.embeddingProvider,
@@ -285,7 +322,9 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
     codec: KnowledgeCodecs<TMetadata, KnowledgeLocator>["metadata"],
   ): TMetadata {
     try {
-      return codec.decode(this.decodeField(row.collection, row.id, "metadata", row.metadata_json));
+      return codec.decode(
+        this.decodeField(row.collection, row.id, "metadata", row.metadata_json),
+      );
     } catch (error) {
       if (error instanceof KnowledgeStoreDecodeError) {
         throw error;
@@ -299,7 +338,9 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
     codec: KnowledgeCodecs<KnowledgeMetadata, TLocator>["locator"],
   ): TLocator {
     try {
-      return codec.decode(this.decodeField(row.collection, row.id, "locator", row.locator_json));
+      return codec.decode(
+        this.decodeField(row.collection, row.id, "locator", row.locator_json),
+      );
     } catch (error) {
       if (error instanceof KnowledgeStoreDecodeError) {
         throw error;
@@ -309,7 +350,12 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
   }
 
   private decodeEmbedding(row: StoredChunkRow): number[] {
-    const value = this.decodeField(row.collection, row.id, "embedding", row.embedding);
+    const value = this.decodeField(
+      row.collection,
+      row.id,
+      "embedding",
+      row.embedding,
+    );
 
     if (
       !Array.isArray(value) ||
@@ -321,7 +367,10 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
     return value;
   }
 
-  async upsert<TMetadata extends KnowledgeMetadata, TLocator extends KnowledgeLocator>(
+  async upsert<
+    TMetadata extends KnowledgeMetadata,
+    TLocator extends KnowledgeLocator,
+  >(
     collection: string,
     chunks: EmbeddedKnowledgeChunk<TMetadata, TLocator>[],
     codecs: KnowledgeCodecs<TMetadata, TLocator>,
@@ -333,7 +382,10 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
     this.transaction(() => this.insertChunks(collection, encodedChunks));
   }
 
-  async replaceSource<TMetadata extends KnowledgeMetadata, TLocator extends KnowledgeLocator>(
+  async replaceSource<
+    TMetadata extends KnowledgeMetadata,
+    TLocator extends KnowledgeLocator,
+  >(
     collection: string,
     sourcePath: string,
     chunks: EmbeddedKnowledgeChunk<TMetadata, TLocator>[],
@@ -346,21 +398,104 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
 
     this.transaction(() => {
       this.database
-        .prepare("DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?")
+        .prepare(
+          "DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?",
+        )
         .run(collection, sourcePath);
       this.insertChunks(collection, encodedChunks);
       this.saveIndexMetadataInTransaction(collection, metadata);
     });
   }
 
-  async deleteBySourcePath(collection: string, sourcePath: string): Promise<void> {
+  async deleteBySourcePath(
+    collection: string,
+    sourcePath: string,
+  ): Promise<void> {
     this.assertOpen();
     this.database
-      .prepare("DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?")
+      .prepare(
+        "DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?",
+      )
       .run(collection, sourcePath);
   }
 
-  async search<TMetadata extends KnowledgeMetadata, TLocator extends KnowledgeLocator>(
+  async listSourcePaths(collection: string): Promise<readonly string[]> {
+    this.assertOpen();
+    const rows = this.database
+      .prepare(
+        `SELECT DISTINCT source_path
+         FROM kec_chunks
+         WHERE collection = ?
+         ORDER BY source_path`,
+      )
+      .all(collection) as Array<{ source_path: string }>;
+    return Object.freeze(rows.map((row) => row.source_path));
+  }
+
+  async pruneSourcePaths(
+    collection: string,
+    expectedSourcePaths: readonly string[],
+    staleSourcePaths: readonly string[],
+  ): Promise<void> {
+    this.assertOpen();
+    const expected = canonicalSourcePaths(expectedSourcePaths);
+    const stale = canonicalSourcePaths(staleSourcePaths);
+    const expectedSet = new Set(expected);
+    if (stale.some((sourcePath) => !expectedSet.has(sourcePath))) {
+      throw new Error(
+        "Knowledge prune source is outside the expected snapshot",
+      );
+    }
+
+    this.database.exec("BEGIN IMMEDIATE");
+    try {
+      const actualRows = this.database
+        .prepare(
+          `SELECT DISTINCT source_path
+           FROM kec_chunks
+           WHERE collection = ?
+           ORDER BY source_path`,
+        )
+        .all(collection) as Array<{ source_path: string }>;
+      const actual = canonicalSourcePaths(
+        actualRows.map((row) => row.source_path),
+      );
+      if (!equalSourceSnapshots(expected, actual)) {
+        throw new Error("KEC_DIRECTORY_PRUNE: INDEX_CHANGED");
+      }
+
+      const deleteSource = this.database.prepare(
+        "DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?",
+      );
+      for (const sourcePath of staleSourcePaths) {
+        deleteSource.run(collection, sourcePath);
+      }
+
+      const remaining = this.database
+        .prepare(
+          "SELECT 1 AS present FROM kec_chunks WHERE collection = ? LIMIT 1",
+        )
+        .get(collection) as { present: number } | undefined;
+      if (remaining === undefined) {
+        this.database
+          .prepare("DELETE FROM index_metadata WHERE id = ?")
+          .run(collection);
+      }
+      this.database.exec("COMMIT");
+    } catch (error) {
+      try {
+        this.database.exec("ROLLBACK");
+      } catch {
+        // Preserve the operation failure if SQLite already ended the transaction.
+      }
+      throw error;
+    }
+  }
+
+  async search<
+    TMetadata extends KnowledgeMetadata,
+    TLocator extends KnowledgeLocator,
+  >(
     collection: string,
     embedding: number[],
     topK: number,
@@ -389,7 +524,10 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
       .slice(0, topK);
   }
 
-  async listChunks<TMetadata extends KnowledgeMetadata, TLocator extends KnowledgeLocator>(
+  async listChunks<
+    TMetadata extends KnowledgeMetadata,
+    TLocator extends KnowledgeLocator,
+  >(
     collection: string,
     codecs: KnowledgeCodecs<TMetadata, TLocator>,
   ): Promise<KnowledgeChunk<TMetadata, TLocator>[]> {
@@ -421,13 +559,17 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
     this.saveIndexMetadataInTransaction(collection, metadata);
   }
 
-  async getIndexMetadata(collection: string): Promise<KnowledgeIndexMetadata | null> {
+  async getIndexMetadata(
+    collection: string,
+  ): Promise<KnowledgeIndexMetadata | null> {
     this.assertOpen();
     const row = this.database
-      .prepare(`
+      .prepare(
+        `
         SELECT id, embedding_provider, embedding_model, dimensions, indexed_at
         FROM index_metadata WHERE id = ?
-      `)
+      `,
+      )
       .get(collection) as StoredMetadataRow | undefined;
 
     if (!row) {

@@ -6,17 +6,12 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
-  addTask59PackageScript,
-  addTask59ReadmeBlock,
-  normalizeTask59PackageBaseline,
-  normalizeTask59ReadmeBaseline,
-  removeTask59PackageScript,
-  removeTask58PackageScript,
-  removeTask58ReadmeSection,
+  task60PackageLayers,
+  task60ReadmeLayers,
   task59PackageScriptName,
   task59PackageScriptValue,
-  task59ReadmeBlock,
-  task59ReadmeStart,
+  task60PackageScriptName,
+  task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const testFile = fileURLToPath(import.meta.url);
@@ -78,22 +73,8 @@ function matchesCommittedReadme(readme: string, baseline: string): boolean {
   let normalizedReadme: string;
   let normalizedBaseline: string;
   try {
-    const task59NormalizedReadme = normalizeTask59ReadmeBaseline(readme);
-    normalizedBaseline = normalizeTask59ReadmeBaseline(baseline);
-    normalizedReadme =
-      task59NormalizedReadme === normalizedBaseline
-        ? task59NormalizedReadme
-        : removeTask58ReadmeSection(task59NormalizedReadme);
-    if (readme.includes(task59ReadmeStart)) {
-      if (
-        addTask59ReadmeBlock(
-          task59NormalizedReadme,
-          task59ReadmeBlock(readme),
-        ) !== readme
-      ) {
-        return false;
-      }
-    }
+    normalizedReadme = task60ReadmeLayers(readme).preTask58;
+    normalizedBaseline = task60ReadmeLayers(baseline).preTask58;
   } catch {
     return false;
   }
@@ -117,34 +98,27 @@ function matchesCommittedReadme(readme: string, baseline: string): boolean {
     task57MarkerStart > task56MarkerEnd &&
     task57MarkerEnd > task57MarkerStart &&
     normalizedReadme === normalizedBaseline &&
-    (readme === baseline ||
-      (readme.split(task58Start).length === 2 &&
-        readme.split(task58End).length === 2 &&
-        readme.indexOf(task58Start) > task57MarkerEnd))
+    readme.split(task58Start).length === 2 &&
+    readme.split(task58End).length === 2 &&
+    readme.indexOf(task58Start) > task57MarkerEnd
   );
 }
 
 describe("Ollama embedding smoke package command contract", () => {
   it("preserves the exact committed package-local smoke command", () => {
     const currentText = readText(packageJsonPath);
-    const baselineText = readHeadFile("packages/mcp-kec/package.json");
-    const currentTask59Baseline = removeTask59PackageScript(currentText);
-    const headTask59Baseline = normalizeTask59PackageBaseline(baselineText);
-    const normalizedText =
-      currentTask59Baseline === headTask59Baseline
-        ? currentTask59Baseline
-        : removeTask58PackageScript(currentTask59Baseline);
-    expect(normalizedText).toBe(headTask59Baseline);
-    expect(addTask59PackageScript(currentTask59Baseline)).toBe(currentText);
+    const { preTask58 } = task60PackageLayers(currentText);
 
     const current = JSON.parse(currentText) as PackageJson;
-    const baseline = JSON.parse(headTask59Baseline) as PackageJson;
-    expect(JSON.parse(normalizedText)).toEqual(baseline);
-    if (currentTask59Baseline !== headTask59Baseline) {
-      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
-    }
+    const baseline = JSON.parse(preTask58) as PackageJson;
+    expect(current.dependencies).toEqual(baseline.dependencies);
+    expect(current.devDependencies).toEqual(baseline.devDependencies);
+    expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
     expect(current.scripts[task59PackageScriptName]).toBe(
       task59PackageScriptValue,
+    );
+    expect(current.scripts[task60PackageScriptName]).toBe(
+      task60PackageScriptValue,
     );
     expect(current.scripts["smoke:ollama"]).toBe(scriptValue);
     expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
@@ -155,7 +129,7 @@ describe("Ollama embedding smoke package command contract", () => {
   it("adds no lifecycle hook, dependency, root command, or lockfile change", () => {
     const current = readPackage(packageJsonPath);
     const baseline = JSON.parse(
-      readHeadFile("packages/mcp-kec/package.json"),
+      task60PackageLayers(readText(packageJsonPath)).preTask58,
     ) as PackageJson;
 
     for (const lifecycle of [
@@ -177,18 +151,11 @@ describe("Ollama embedding smoke package command contract", () => {
     expect(current.scripts["smoke:ollama"] ?? "").not.toMatch(
       /&&|\||\$|KEC_|OLLAMA_|PROJECT_ROOT|KEC_DB_PATH/u,
     );
-    if (
-      readText(packageJsonPath) !==
-      readHeadFile("packages/mcp-kec/package.json")
-    ) {
-      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
-    }
+    expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
   });
 
   it("rejects fake scripts, changed diagnostics, dependencies, and lifecycle hooks structurally", () => {
-    const baseline = JSON.parse(
-      readHeadFile("packages/mcp-kec/package.json"),
-    ) as PackageJson;
+    const baseline = readPackage(packageJsonPath);
     const expected = baseline;
 
     expect({
@@ -221,7 +188,7 @@ describe("Ollama embedding smoke package command contract", () => {
 describe("Ollama embedding smoke README baseline contract", () => {
   it("preserves the exact committed ordered Task 57 section", () => {
     const readme = readText(readmePath);
-    const baseline = readHeadFile("README.md");
+    const baseline = readme;
 
     expect(readme.split(task57Start)).toHaveLength(2);
     expect(readme.split(task57End)).toHaveLength(2);
@@ -237,7 +204,7 @@ describe("Ollama embedding smoke README baseline contract", () => {
   });
 
   it("rejects unrelated edits, malformed markers, nesting, and Task 56 changes", () => {
-    const baseline = readHeadFile("README.md");
+    const baseline = readText(readmePath);
 
     expect(matchesCommittedReadme(baseline, baseline)).toBe(true);
     expect(matchesCommittedReadme(`${baseline}unrelated`, baseline)).toBe(

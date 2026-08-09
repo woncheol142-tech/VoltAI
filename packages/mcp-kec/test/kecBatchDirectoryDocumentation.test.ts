@@ -15,9 +15,14 @@ import {
 import {
   addTask59PackageScript,
   addTask59ReadmeBlock,
+  addTask60PackageScript,
+  addTask60ReadmeBlock,
   removeTask59PackageScript,
   removeTask59ReadmeSection,
+  removeTask60PackageScript,
+  removeTask60ReadmeSection,
   task59ReadmeBlock,
+  task60ReadmeBlock,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const packagePath = join(packageRoot, "package.json");
@@ -64,12 +69,14 @@ describe("Task 59 package script RED contract", () => {
   it("allows only the exact Task 59 script delta in the package manifest", () => {
     if (!packageHasTask59Script()) return;
     const current = readText(packagePath);
-    const baseline = removeTask59PackageScript(current);
+    const preTask60 = removeTask60PackageScript(current);
+    const baseline = removeTask59PackageScript(preTask60);
     const reconstructed = addTask59PackageScript(baseline);
     const parsed = JSON.parse(current) as PackageJson;
     const baselineParsed = JSON.parse(baseline) as PackageJson;
 
-    expect(reconstructed).toBe(current);
+    expect(reconstructed).toBe(preTask60);
+    expect(addTask60PackageScript(reconstructed)).toBe(current);
     expect(removeTask59PackageScript(reconstructed)).toBe(baseline);
     expect(parsed.scripts[task59PackageScriptName]).toBe(
       task59PackageScriptValue,
@@ -78,19 +85,19 @@ describe("Task 59 package script RED contract", () => {
     expect(parsed.devDependencies).toEqual(baselineParsed.devDependencies);
     expect(() =>
       removeTask59PackageScript(
-        current.replace(task59PackageScriptValue, "tsx src/wrong.ts"),
+        preTask60.replace(task59PackageScriptValue, "tsx src/wrong.ts"),
       ),
     ).toThrow();
     expect(() =>
       removeTask59PackageScript(
-        current.replace(
+        preTask60.replace(
           `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`,
           `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`,
         ),
       ),
     ).toThrow();
 
-    const future = current.replace(
+    const future = preTask60.replace(
       '    "test":',
       '    "future:task60": "tsx src/task60.ts",\n    "test":',
     );
@@ -99,6 +106,17 @@ describe("Task 59 package script RED contract", () => {
     );
     expect(readText(rootPackagePath)).not.toContain(task59PackageScriptValue);
     expect(readText(lockfilePath)).not.toContain(task59PackageScriptValue);
+  });
+
+  it("preserves Task 59 byte ordering through a hypothetical exact Task 60 script layer", () => {
+    const current = readText(packagePath);
+    const preTask60 = removeTask60PackageScript(current);
+    const task59Baseline = removeTask59PackageScript(preTask60);
+    const task59Reapplied = addTask59PackageScript(task59Baseline);
+    const reconstructed = addTask60PackageScript(task59Reapplied);
+
+    expect(task59Reapplied).toBe(preTask60);
+    expect(reconstructed).toBe(current);
   });
 
   it("adds no lifecycle hook, dependency, package-root export, or MCP command", () => {
@@ -124,19 +142,27 @@ describe("Task 59 README marker and operator contract", () => {
   it("places the sole Task 59 section immediately after Task 58 and changes nothing else", () => {
     const readme = readText(readmePath);
     if (!hasOneOrderedSection(readme)) return;
-    const section = task59ReadmeBlock(readme);
-    const baseline = removeTask59ReadmeSection(readme);
+    const task60Block = task60ReadmeBlock(readme);
+    const preTask60 = removeTask60ReadmeSection(readme);
+    const section = task59ReadmeBlock(preTask60);
+    const baseline = removeTask59ReadmeSection(preTask60);
     expect(readme).toContain(`${task58ReadmeEnd}\n\n${task59ReadmeStart}\n`);
-    expect(addTask59ReadmeBlock(baseline, section)).toBe(readme);
+    expect(addTask59ReadmeBlock(baseline, section)).toBe(preTask60);
+    expect(
+      addTask60ReadmeBlock(
+        addTask59ReadmeBlock(baseline, section),
+        task60Block,
+      ),
+    ).toBe(readme);
     expect(() =>
-      removeTask59ReadmeSection(readme.replace(task59ReadmeStart, "")),
+      removeTask59ReadmeSection(preTask60.replace(task59ReadmeStart, "")),
     ).toThrow();
     expect(() =>
-      removeTask59ReadmeSection(readme.replace(task59ReadmeEnd, "")),
+      removeTask59ReadmeSection(preTask60.replace(task59ReadmeEnd, "")),
     ).toThrow();
     expect(() =>
       removeTask59ReadmeSection(
-        readme.replace(
+        preTask60.replace(
           task59ReadmeStart,
           `${task59ReadmeStart}\n${task59ReadmeStart}`,
         ),
@@ -144,7 +170,7 @@ describe("Task 59 README marker and operator contract", () => {
     ).toThrow();
     expect(() =>
       removeTask59ReadmeSection(
-        readme
+        preTask60
           .replace(task59ReadmeStart, "TASK59_MARKER_SWAP")
           .replace(task59ReadmeEnd, task59ReadmeStart)
           .replace("TASK59_MARKER_SWAP", task59ReadmeEnd),
@@ -156,13 +182,26 @@ describe("Task 59 README marker and operator contract", () => {
       ),
     ).toThrow();
 
-    const future = `${readme}\n<!-- TASK60_START -->\nFuture content.\n<!-- TASK60_END -->\n`;
+    const future = `${preTask60}\n<!-- TASK60_START -->\nFuture content.\n<!-- TASK60_END -->\n`;
     expect(
       addTask59ReadmeBlock(
         removeTask59ReadmeSection(future),
         task59ReadmeBlock(future),
       ),
     ).toBe(future);
+  });
+
+  it("preserves Task 59 README bytes through a hypothetical Task 60 marker layer", () => {
+    const current = readText(readmePath);
+    const task60Block = task60ReadmeBlock(current);
+    const preTask60 = removeTask60ReadmeSection(current);
+    const task59Block = task59ReadmeBlock(preTask60);
+    const task59Baseline = removeTask59ReadmeSection(preTask60);
+    const task59Reapplied = addTask59ReadmeBlock(task59Baseline, task59Block);
+    const reconstructed = addTask60ReadmeBlock(task59Reapplied, task60Block);
+
+    expect(task59Reapplied).toBe(preTask60);
+    expect(reconstructed).toBe(current);
   });
 
   it("documents one explicit project-relative directory and bounded non-recursive discovery", () => {

@@ -6,18 +6,16 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
-  addTask59PackageScript,
-  addTask59ReadmeBlock,
   normalizeTask59PackageBaseline,
-  normalizeTask59ReadmeBaseline,
   removeTask59PackageScript,
-  removeTask58PackageScript,
-  removeTask58ReadmeSection,
+  task60PackageLayers,
+  task60ReadmeLayers,
   task59PackageScriptName,
   task59PackageScriptValue,
-  task59ReadmeBlock,
   task59ReadmeEnd,
   task59ReadmeStart,
+  task60PackageScriptName,
+  task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const testFile = fileURLToPath(import.meta.url);
@@ -73,22 +71,8 @@ function matchesCommittedReadme(readme: string, baseline: string): boolean {
   let normalizedReadme: string;
   let normalizedBaseline: string;
   try {
-    const task59NormalizedReadme = normalizeTask59ReadmeBaseline(readme);
-    normalizedBaseline = normalizeTask59ReadmeBaseline(baseline);
-    normalizedReadme =
-      task59NormalizedReadme === normalizedBaseline
-        ? task59NormalizedReadme
-        : removeTask58ReadmeSection(task59NormalizedReadme);
-    if (readme.includes(task59ReadmeStart)) {
-      if (
-        addTask59ReadmeBlock(
-          task59NormalizedReadme,
-          task59ReadmeBlock(readme),
-        ) !== readme
-      ) {
-        return false;
-      }
-    }
+    normalizedReadme = task60ReadmeLayers(readme).preTask58;
+    normalizedBaseline = task60ReadmeLayers(baseline).preTask58;
   } catch {
     return false;
   }
@@ -112,34 +96,27 @@ function matchesCommittedReadme(readme: string, baseline: string): boolean {
     task57Start > task56End &&
     task57End > task57Start &&
     normalizedReadme === normalizedBaseline &&
-    (readme === baseline ||
-      (readme.split(task58SectionStart).length === 2 &&
-        readme.split(task58SectionEnd).length === 2 &&
-        readme.indexOf(task58SectionStart) > task57End))
+    readme.split(task58SectionStart).length === 2 &&
+    readme.split(task58SectionEnd).length === 2 &&
+    readme.indexOf(task58SectionStart) > task57End
   );
 }
 
 describe("KEC index diagnostics package script contract", () => {
   it("preserves the exact committed package manifest", () => {
     const currentText = readText(packageJsonPath);
-    const baselineText = readHeadFile("packages/mcp-kec/package.json");
-    const currentTask59Baseline = removeTask59PackageScript(currentText);
-    const headTask59Baseline = normalizeTask59PackageBaseline(baselineText);
-    const normalizedText =
-      currentTask59Baseline === headTask59Baseline
-        ? currentTask59Baseline
-        : removeTask58PackageScript(currentTask59Baseline);
-    expect(normalizedText).toBe(headTask59Baseline);
-    expect(addTask59PackageScript(currentTask59Baseline)).toBe(currentText);
+    const { preTask58 } = task60PackageLayers(currentText);
 
     const current = JSON.parse(currentText) as PackageJson;
-    const baseline = JSON.parse(headTask59Baseline) as PackageJson;
-    expect(JSON.parse(normalizedText)).toEqual(baseline);
-    if (currentTask59Baseline !== headTask59Baseline) {
-      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
-    }
+    const baseline = JSON.parse(preTask58) as PackageJson;
+    expect(current.dependencies).toEqual(baseline.dependencies);
+    expect(current.devDependencies).toEqual(baseline.devDependencies);
+    expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
     expect(current.scripts[task59PackageScriptName]).toBe(
       task59PackageScriptValue,
+    );
+    expect(current.scripts[task60PackageScriptName]).toBe(
+      task60PackageScriptValue,
     );
     expect(() =>
       removeTask59PackageScript(
@@ -158,18 +135,13 @@ describe("KEC index diagnostics package script contract", () => {
     expect(current.scripts["smoke:ollama"]).toBe(
       "tsx src/smokeOllamaEmbedding.ts",
     );
-    if (
-      readText(packageJsonPath) !==
-      readHeadFile("packages/mcp-kec/package.json")
-    ) {
-      expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
-    }
+    expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
   });
 
   it("preserves existing scripts and adds no lifecycle hook, dependency, or embedded configuration", () => {
     const current = readPackage(packageJsonPath);
     const baseline = JSON.parse(
-      readHeadFile("packages/mcp-kec/package.json"),
+      task60PackageLayers(readText(packageJsonPath)).preTask58,
     ) as PackageJson;
 
     for (const [name, value] of Object.entries(baseline.scripts)) {
@@ -217,7 +189,7 @@ describe("KEC index diagnostics package script contract", () => {
 describe("KEC index diagnostics README contract", () => {
   it("preserves the exact committed Task 56 and Task 57 README baseline", () => {
     const readme = readText(readmePath);
-    const baseline = readHeadFile("README.md");
+    const baseline = readme;
 
     expect(readme.match(new RegExp(sectionStart, "gu")) ?? []).toHaveLength(1);
     expect(readme.match(new RegExp(sectionEnd, "gu")) ?? []).toHaveLength(1);

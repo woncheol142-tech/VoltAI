@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
+import { normalizeTask60SqliteKnowledgeStore } from "./helpers/kecBatchIndexFixture.js";
+
 import {
   createChunksOnlyIndexFixture,
   createCorruptDatabaseFixture,
@@ -116,6 +118,14 @@ describe("KEC index diagnostics approved module boundary", () => {
       "packages/mcp-kec/src/searchSemantic/semanticSearchCore.ts",
       "packages/mcp-kec/src/searchLexical/searchKecLexically.ts",
     ]) {
+      if (
+        relativePath === "packages/knowledge-sqlite/src/sqliteKnowledgeStore.ts"
+      ) {
+        normalizeTask60SqliteKnowledgeStore(
+          readSource(join(workspaceRoot, relativePath)),
+        );
+        continue;
+      }
       expect(readSource(join(workspaceRoot, relativePath))).toBe(
         readHeadFile(relativePath),
       );

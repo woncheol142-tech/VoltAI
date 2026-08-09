@@ -317,3 +317,11 @@ Discovery is non-recursive and inspects direct children only. It includes regula
 Task 58 existing indexing and result semantics are reused, including canonical source validation, sourceId ordering, sequential fail-fast execution, serialization, and exit behavior. Task 59 provides no recursive traversal, no pruning or stale-source deletion, no incremental or unchanged-file indexing, no resume or checkpoint behavior, and no MCP registration.
 
 <!-- TASK59_KEC_DIRECTORY_BATCH_END -->
+
+<!-- TASK60_KEC_DIRECTORY_PRUNE_START -->
+
+### Deterministic provider-free stale KEC directory pruning
+
+Run `pnpm --filter @voltai/mcp-kec prune:directory kec/manuals` with one explicit project-relative directory. The command prunes only stale direct-child KEC source identities, fails with `NO_SOURCES` for zero eligible lowercase PDFs, and never indexes, embeds, parses PDFs, uses Ollama/network authority, or registers MCP.
+
+<!-- TASK60_KEC_DIRECTORY_PRUNE_END -->

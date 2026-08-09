@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { accessSync, constants, readFileSync } from "node:fs";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -10,6 +10,8 @@ import {
   addTask58ReadmeSection,
   addTask59PackageScript,
   addTask59ReadmeBlock,
+  addTask60PackageScript,
+  addTask60ReadmeBlock,
   captureTask58ArtifactBoundary,
   createKecBatchIndexFixture,
   normalizeTask58PackageBaseline,
@@ -18,11 +20,14 @@ import {
   removeTask58ReadmeSection,
   removeTask59PackageScript,
   removeTask59ReadmeSection,
+  removeTask60PackageScript,
+  removeTask60ReadmeSection,
   task58PackageScriptName,
   task58PackageScriptValue,
   task58ReadmeEnd,
   task58ReadmeStart,
   task59ReadmeBlock,
+  task60ReadmeBlock,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const testFile = fileURLToPath(import.meta.url);
@@ -36,6 +41,7 @@ const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 const command = "pnpm --filter @voltai/mcp-kec index:batch kec/a.pdf kec/b.pdf";
 const brokenCommand =
   "pnpm --filter @voltai/mcp-kec index:batch -- kec/a.pdf kec/b.pdf";
+const TEST_PNPM_OVERRIDE = "VOLT_AI_TEST_PNPM_EXECUTABLE";
 const compatibilityFiles = [
   "kecHybridSearchIntegrationBoundaries.test.ts",
   "kecNativeHybridSearchEntryPointBoundaries.test.ts",
@@ -69,6 +75,51 @@ type PackageJson = Readonly<{
 function readText(path: string): string {
   return readFileSync(path, "utf8");
 }
+
+function resolvePnpmExecutable(): string {
+  const rootManifest = JSON.parse(readText(rootPackagePath)) as {
+    packageManager?: unknown;
+  };
+  if (rootManifest.packageManager !== "pnpm@9.15.4") {
+    throw new Error(
+      "Task 58 test requires repository packageManager pnpm@9.15.4",
+    );
+  }
+
+  const override = process.env[TEST_PNPM_OVERRIDE];
+  const npmExecPath = process.env.npm_execpath;
+  const executable = override ?? npmExecPath;
+  const source = override === undefined ? "npm_execpath" : TEST_PNPM_OVERRIDE;
+  if (
+    typeof executable !== "string" ||
+    executable.length === 0 ||
+    !isAbsolute(executable) ||
+    !/^pnpm(?:\.(?:c?js|cmd|exe))?$/iu.test(basename(executable))
+  ) {
+    throw new Error(`Task 58 test ${source} is not a valid pnpm launcher`);
+  }
+  try {
+    accessSync(executable, constants.X_OK);
+  } catch {
+    throw new Error(`Task 58 test ${source} pnpm launcher is not executable`);
+  }
+
+  const version = spawnSync(executable, ["--version"], {
+    encoding: "utf8",
+    env: process.env,
+    timeout: 5_000,
+  });
+  if (
+    version.error !== undefined ||
+    version.status !== 0 ||
+    version.stdout.trim() !== "9.15.4"
+  ) {
+    throw new Error(`Task 58 test ${source} must launch pnpm 9.15.4`);
+  }
+  return executable;
+}
+
+const pnpmExecutable = resolvePnpmExecutable();
 
 function task58Section(readme: string): string {
   const start = readme.indexOf(task58ReadmeStart);
@@ -108,7 +159,7 @@ function runPackageCommand(
   stderr: string;
 }> {
   const result = spawnSync(
-    "pnpm",
+    pnpmExecutable,
     ["--filter", "@voltai/mcp-kec", "index:batch", ...arguments_],
     {
       cwd: workspaceRoot,
@@ -136,15 +187,18 @@ describe("Task 58 package-local command RED contract", () => {
   });
 
   it("reconstructs the committed manifest after removing exactly the future script", () => {
-    const committed = readText(packagePath);
-    const preTask59 = removeTask59PackageScript(committed);
+    const current = readText(packagePath);
+    const preTask60 = removeTask60PackageScript(current);
+    const preTask59 = removeTask59PackageScript(preTask60);
     const baseline = normalizeTask58PackageBaseline(preTask59);
     const task58Future = addTask58PackageScript(baseline);
-    const reconstructed = addTask59PackageScript(task58Future);
-    const parsed = JSON.parse(reconstructed) as PackageJson;
+    const task59Reapplied = addTask59PackageScript(task58Future);
+    const reconstructed = addTask60PackageScript(task59Reapplied);
+    const parsed = JSON.parse(current) as PackageJson;
 
     expect(task58Future).toBe(preTask59);
-    expect(reconstructed).toBe(committed);
+    expect(task59Reapplied).toBe(preTask60);
+    expect(reconstructed).toBe(current);
     expect(parsed.scripts[task58PackageScriptName]).toBe(
       task58PackageScriptValue,
     );
@@ -157,9 +211,25 @@ describe("Task 58 package-local command RED contract", () => {
     );
   });
 
+  it("keeps Task 58 reconstruction byte-exact through the required Task 60 then Task 59 peel layers", () => {
+    const current = readText(packagePath);
+    const task60Peeled = removeTask60PackageScript(current);
+    const task59Peeled = removeTask59PackageScript(task60Peeled);
+    const baseline = normalizeTask58PackageBaseline(task59Peeled);
+    const task58Reapplied = addTask58PackageScript(baseline);
+    const task59Reapplied = addTask59PackageScript(task58Reapplied);
+    const reconstructed = addTask60PackageScript(task59Reapplied);
+
+    expect(task58Reapplied).toBe(task59Peeled);
+    expect(task59Reapplied).toBe(task60Peeled);
+    expect(reconstructed).toBe(current);
+  });
+
   it("accepts only the exact script line and rejects malformed or duplicate deltas", () => {
     const baseline = normalizeTask58PackageBaseline(
-      removeTask59PackageScript(readText(packagePath)),
+      removeTask59PackageScript(
+        removeTask60PackageScript(readText(packagePath)),
+      ),
     );
     const future = addTask58PackageScript(baseline);
 
@@ -196,11 +266,12 @@ describe("Task 58 package-local command RED contract", () => {
   });
 
   it("protects all existing scripts, lifecycle hooks, dependencies, root package, and lockfile", () => {
-    const committed = readText(packagePath);
-    const preTask59 = removeTask59PackageScript(committed);
+    const currentText = readText(packagePath);
+    const preTask60 = removeTask60PackageScript(currentText);
+    const preTask59 = removeTask59PackageScript(preTask60);
     const baselineText = normalizeTask58PackageBaseline(preTask59);
     const baseline = JSON.parse(baselineText) as PackageJson;
-    const current = JSON.parse(committed) as PackageJson;
+    const current = JSON.parse(currentText) as PackageJson;
 
     for (const [name, value] of Object.entries(baseline.scripts)) {
       expect(current.scripts[name]).toBe(value);
@@ -216,9 +287,11 @@ describe("Task 58 package-local command RED contract", () => {
     }
     expect(current.dependencies).toEqual(baseline.dependencies);
     expect(current.devDependencies).toEqual(baseline.devDependencies);
-    expect(addTask59PackageScript(addTask58PackageScript(baselineText))).toBe(
-      committed,
+    const task59Reapplied = addTask59PackageScript(
+      addTask58PackageScript(baselineText),
     );
+    expect(task59Reapplied).toBe(preTask60);
+    expect(addTask60PackageScript(task59Reapplied)).toBe(currentText);
     expect(readText(rootPackagePath)).not.toContain(task58PackageScriptValue);
     expect(readText(lockfilePath)).not.toContain(task58PackageScriptValue);
   });
@@ -230,18 +303,22 @@ describe("Task 58 README RED and reconstruction contract", () => {
   });
 
   it("places the exact future section after Task 57 and reconstructs HEAD byte-for-byte", () => {
-    const committed = readText(readmePath);
-    const task59Block = task59ReadmeBlock(committed);
-    const preTask59 = removeTask59ReadmeSection(committed);
+    const current = readText(readmePath);
+    const task60Block = task60ReadmeBlock(current);
+    const preTask60 = removeTask60ReadmeSection(current);
+    const task59Block = task59ReadmeBlock(preTask60);
+    const preTask59 = removeTask59ReadmeSection(preTask60);
     const baseline = normalizeTask58ReadmeBaseline(preTask59);
     const task58Future = addTask58ReadmeSection(
       baseline,
       task58SectionBody(preTask59),
     );
-    const reconstructed = addTask59ReadmeBlock(task58Future, task59Block);
+    const task59Reapplied = addTask59ReadmeBlock(task58Future, task59Block);
+    const reconstructed = addTask60ReadmeBlock(task59Reapplied, task60Block);
 
     expect(task58Future).toBe(preTask59);
-    expect(reconstructed).toBe(committed);
+    expect(task59Reapplied).toBe(preTask60);
+    expect(reconstructed).toBe(current);
     expect(task58Future.split(task58ReadmeStart)).toHaveLength(2);
     expect(task58Future.split(task58ReadmeEnd)).toHaveLength(2);
     expect(task58Future.indexOf(task58ReadmeStart)).toBeGreaterThan(
@@ -250,9 +327,30 @@ describe("Task 58 README RED and reconstruction contract", () => {
     expect(removeTask58ReadmeSection(task58Future)).toBe(baseline);
   });
 
+  it("preserves Task 58 reconstruction through current Task 60 README peel/reapply", () => {
+    const current = readText(readmePath);
+    const task60Block = task60ReadmeBlock(current);
+    const task60Peeled = removeTask60ReadmeSection(current);
+    const task59Block = task59ReadmeBlock(task60Peeled);
+    const task59Peeled = removeTask59ReadmeSection(task60Peeled);
+    const baseline = normalizeTask58ReadmeBaseline(task59Peeled);
+    const task58Body = task58SectionBody(task59Peeled);
+    const reconstructed = addTask60ReadmeBlock(
+      addTask59ReadmeBlock(
+        addTask58ReadmeSection(baseline, task58Body),
+        task59Block,
+      ),
+      task60Block,
+    );
+
+    expect(reconstructed).toBe(current);
+  });
+
   it("rejects missing, duplicate, reversed, nested, and unrelated README mutations", () => {
     const baseline = normalizeTask58ReadmeBaseline(
-      removeTask59ReadmeSection(readText(readmePath)),
+      removeTask59ReadmeSection(
+        removeTask60ReadmeSection(readText(readmePath)),
+      ),
     );
     const future = addTask58ReadmeSection(baseline, canonicalSection);
 
@@ -287,16 +385,20 @@ describe("Task 58 README RED and reconstruction contract", () => {
   });
 
   it("leaves every committed Task 51-57 README byte unchanged", () => {
-    const committed = readText(readmePath);
-    const task59Block = task59ReadmeBlock(committed);
-    const preTask59 = removeTask59ReadmeSection(committed);
+    const current = readText(readmePath);
+    const task60Block = task60ReadmeBlock(current);
+    const preTask60 = removeTask60ReadmeSection(current);
+    const task59Block = task59ReadmeBlock(preTask60);
+    const preTask59 = removeTask59ReadmeSection(preTask60);
     const baseline = normalizeTask58ReadmeBaseline(preTask59);
     const task58Future = addTask58ReadmeSection(
       baseline,
       task58SectionBody(preTask59),
     );
     expect(task58Future).toBe(preTask59);
-    expect(addTask59ReadmeBlock(task58Future, task59Block)).toBe(committed);
+    const task59Reapplied = addTask59ReadmeBlock(task58Future, task59Block);
+    expect(task59Reapplied).toBe(preTask60);
+    expect(addTask60ReadmeBlock(task59Reapplied, task60Block)).toBe(current);
     expect(removeTask58ReadmeSection(task58Future)).toBe(baseline);
   });
 });

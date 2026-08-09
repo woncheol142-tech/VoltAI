@@ -371,6 +371,24 @@ export function discoverKecBatchDirectory(
   request: unknown,
   dependencies?: KecBatchDirectoryDiscoveryDependencies,
 ): KecBatchDirectoryDiscovery {
+  const discovery = discoverKecBatchDirectoryScope(
+    projectRoot,
+    request,
+    dependencies,
+  );
+  return Object.freeze({ sources: discovery.sources });
+}
+
+export type KecBatchDirectoryScopeDiscovery = Readonly<{
+  directoryPath: string;
+  sources: readonly string[];
+}>;
+
+export function discoverKecBatchDirectoryScope(
+  projectRoot: string,
+  request: unknown,
+  dependencies?: KecBatchDirectoryDiscoveryDependencies,
+): KecBatchDirectoryScopeDiscovery {
   if (
     typeof projectRoot !== "string" ||
     projectRoot.length === 0 ||
@@ -479,5 +497,11 @@ export function discoverKecBatchDirectory(
   }
 
   if (sources.length === 0) throw failure(NO_SOURCES);
-  return Object.freeze({ sources: Object.freeze(sources) });
+  const directoryPath = relative(boundaryRoot, realDirectory)
+    .split(sep)
+    .join("/");
+  return Object.freeze({
+    directoryPath: directoryPath.length === 0 ? "." : directoryPath,
+    sources: Object.freeze(sources),
+  });
 }

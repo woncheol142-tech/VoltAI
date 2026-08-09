@@ -35,6 +35,10 @@ export const task59PackageScriptName = "index:directory";
 export const task59PackageScriptValue = "tsx src/indexKecDirectory.ts";
 export const task59ReadmeStart = "<!-- TASK59_KEC_DIRECTORY_BATCH_START -->";
 export const task59ReadmeEnd = "<!-- TASK59_KEC_DIRECTORY_BATCH_END -->";
+export const task60PackageScriptName = "prune:directory";
+export const task60PackageScriptValue = "tsx src/pruneKecDirectory.ts";
+export const task60ReadmeStart = "<!-- TASK60_KEC_DIRECTORY_PRUNE_START -->";
+export const task60ReadmeEnd = "<!-- TASK60_KEC_DIRECTORY_PRUNE_END -->";
 const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 
 export const defaultBatchExecutionOptions = Object.freeze({
@@ -375,6 +379,34 @@ export function normalizeTask59PackageBaseline(packageText: string): string {
   return removeTask59PackageScript(packageText);
 }
 
+export function addTask60PackageScript(packageText: string): string {
+  const anchor = `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`;
+  if (
+    packageText.split(anchor).length !== 2 ||
+    (packageText.match(/"prune:directory"\s*:/gu) ?? []).length !== 0
+  ) {
+    throw new Error("Task 60 package script baseline is malformed");
+  }
+  return packageText.replace(
+    anchor,
+    `${anchor}    "${task60PackageScriptName}": "${task60PackageScriptValue}",\n`,
+  );
+}
+
+export function removeTask60PackageScript(packageText: string): string {
+  const occurrences = packageText.match(/"prune:directory"\s*:/gu) ?? [];
+  const line = `    "${task60PackageScriptName}": "${task60PackageScriptValue}",\n`;
+  const orderedBlock = `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n${line}`;
+  if (
+    occurrences.length !== 1 ||
+    packageText.split(line).length !== 2 ||
+    packageText.split(orderedBlock).length !== 2
+  ) {
+    throw new Error("Task 60 package script must occur exactly once");
+  }
+  return packageText.replace(line, "");
+}
+
 function task59ReadmeBounds(readme: string): Readonly<{
   start: number;
   sectionEnd: number;
@@ -435,6 +467,178 @@ export function normalizeTask59ReadmeBaseline(readme: string): string {
     throw new Error("Task 59 README markers are malformed");
   }
   return removeTask59ReadmeSection(readme);
+}
+
+function task60ReadmeBounds(readme: string): Readonly<{
+  start: number;
+  sectionEnd: number;
+}> {
+  if (
+    readme.split(task60ReadmeStart).length !== 2 ||
+    readme.split(task60ReadmeEnd).length !== 2 ||
+    readme.split(task59ReadmeEnd).length !== 2
+  ) {
+    throw new Error("Task 60 README markers must occur exactly once");
+  }
+
+  const start = readme.indexOf(task60ReadmeStart);
+  const end = readme.indexOf(task60ReadmeEnd, start);
+  const expectedStart =
+    readme.indexOf(task59ReadmeEnd) + task59ReadmeEnd.length + 2;
+  if (start !== expectedStart || end <= start) {
+    throw new Error("Task 60 README section is malformed or misplaced");
+  }
+  const sectionEnd = end + task60ReadmeEnd.length;
+  if (readme[sectionEnd] !== "\n") {
+    throw new Error("Task 60 README section must end with LF");
+  }
+  return Object.freeze({ start, sectionEnd });
+}
+
+export function task60ReadmeBlock(readme: string): string {
+  const { start, sectionEnd } = task60ReadmeBounds(readme);
+  return readme.slice(start, sectionEnd);
+}
+
+export function addTask60ReadmeBlock(readme: string, block: string): string {
+  if (
+    readme.split(task59ReadmeEnd).length !== 2 ||
+    readme.includes(task60ReadmeStart) ||
+    readme.includes(task60ReadmeEnd) ||
+    !block.startsWith(task60ReadmeStart) ||
+    !block.endsWith(task60ReadmeEnd) ||
+    block.split(task60ReadmeStart).length !== 2 ||
+    block.split(task60ReadmeEnd).length !== 2
+  ) {
+    throw new Error("Task 60 README block or baseline is malformed");
+  }
+  const insertion = readme.indexOf(task59ReadmeEnd) + task59ReadmeEnd.length;
+  return `${readme.slice(0, insertion)}\n\n${block}${readme.slice(insertion)}`;
+}
+
+export function removeTask60ReadmeSection(readme: string): string {
+  const { start, sectionEnd } = task60ReadmeBounds(readme);
+  return `${readme.slice(0, start - 1)}${readme.slice(sectionEnd + 1)}`;
+}
+
+export type Task60PackageLayers = Readonly<{
+  preTask60: string;
+  preTask59: string;
+  preTask58: string;
+}>;
+
+export function task60PackageLayers(
+  currentPackageText: string,
+): Task60PackageLayers {
+  const preTask60 = removeTask60PackageScript(currentPackageText);
+  const preTask59 = removeTask59PackageScript(preTask60);
+  const preTask58 = removeTask58PackageScript(preTask59);
+
+  if (
+    addTask58PackageScript(preTask58) !== preTask59 ||
+    addTask59PackageScript(preTask59) !== preTask60 ||
+    addTask60PackageScript(preTask60) !== currentPackageText
+  ) {
+    throw new Error("Task 58-60 package layering is not byte-reversible");
+  }
+
+  return Object.freeze({ preTask60, preTask59, preTask58 });
+}
+
+export type Task60ReadmeLayers = Readonly<{
+  preTask60: string;
+  preTask59: string;
+  preTask58: string;
+}>;
+
+export function task60ReadmeLayers(currentReadme: string): Task60ReadmeLayers {
+  const task60Block = task60ReadmeBlock(currentReadme);
+  const preTask60 = removeTask60ReadmeSection(currentReadme);
+  const task59Block = task59ReadmeBlock(preTask60);
+  const preTask59 = removeTask59ReadmeSection(preTask60);
+  const task58Start = preTask59.indexOf(task58ReadmeStart);
+  const task58End = preTask59.indexOf(task58ReadmeEnd, task58Start);
+  if (task58Start < 0 || task58End <= task58Start) {
+    throw new Error("Task 58 README section is malformed");
+  }
+  const task58Content = preTask59.slice(
+    task58Start + task58ReadmeStart.length + 1,
+    task58End - 1,
+  );
+  const preTask58 = removeTask58ReadmeSection(preTask59);
+
+  if (
+    addTask58ReadmeSection(preTask58, task58Content) !== preTask59 ||
+    addTask59ReadmeBlock(preTask59, task59Block) !== preTask60 ||
+    addTask60ReadmeBlock(preTask60, task60Block) !== currentReadme
+  ) {
+    throw new Error("Task 58-60 README layering is not byte-reversible");
+  }
+
+  return Object.freeze({ preTask60, preTask59, preTask58 });
+}
+
+const task60SqlitePreludeSha256 =
+  "ce4765af20833ab3e2816fa90e912838060285f82ea1cc95bb29098ae40a27a8";
+const task60SqliteMethodsSha256 =
+  "a941f6e9d957bfbc9a94ff6729a5b0defbe092b65b0a8d106f312f03e511cd10";
+const preTask60SqliteStoreSha256 =
+  "820384df711fa796acd3db88cd607231136cc173380cfffe316f1f74face6ff3";
+
+function sha256Text(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function exactlyOnePosition(source: string, marker: string): number {
+  const position = source.indexOf(marker);
+  if (position < 0 || source.indexOf(marker, position + marker.length) >= 0) {
+    throw new Error("Task 60 SQLite compatibility marker is not unique");
+  }
+  return position;
+}
+
+export function normalizeTask60SqliteKnowledgeStore(source: string): string {
+  const preludeStart = exactlyOnePosition(source, "function asciiOrder(");
+  const classStart = exactlyOnePosition(
+    source,
+    "export class SqliteKnowledgeStore",
+  );
+  const methodsStart = exactlyOnePosition(source, "  async listSourcePaths(");
+  const searchStart = exactlyOnePosition(source, "  async search<");
+  if (!(
+    preludeStart < classStart &&
+    classStart < methodsStart &&
+    methodsStart < searchStart
+  )) {
+    throw new Error("Task 60 SQLite compatibility blocks are misplaced");
+  }
+
+  const prelude = source.slice(preludeStart, classStart);
+  const methods = source.slice(methodsStart, searchStart);
+  if (
+    sha256Text(prelude) !== task60SqlitePreludeSha256 ||
+    sha256Text(methods) !== task60SqliteMethodsSha256
+  ) {
+    throw new Error("Task 60 SQLite compatibility blocks changed");
+  }
+
+  const normalized = `${source.slice(0, preludeStart)}${source.slice(
+    classStart,
+    methodsStart,
+  )}${source.slice(searchStart)}`;
+  if (sha256Text(normalized) !== preTask60SqliteStoreSha256) {
+    throw new Error("Pre-Task 60 SQLite store boundary changed");
+  }
+
+  const reconstructed = `${normalized.slice(0, preludeStart)}${prelude}${normalized.slice(
+    preludeStart,
+    methodsStart - prelude.length,
+  )}${methods}${normalized.slice(methodsStart - prelude.length)}`;
+  if (reconstructed !== source) {
+    throw new Error("Task 60 SQLite layering is not byte-reversible");
+  }
+
+  return normalized;
 }
 
 export function captureTask58ArtifactBoundary(rootPath: string): string {

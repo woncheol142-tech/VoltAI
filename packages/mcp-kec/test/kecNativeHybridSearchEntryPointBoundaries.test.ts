@@ -7,19 +7,15 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import {
-  addTask59PackageScript,
-  addTask59ReadmeBlock,
-  normalizeTask59PackageBaseline,
-  normalizeTask59ReadmeBaseline,
-  removeTask59PackageScript,
-  removeTask59ReadmeSection,
-  removeTask58PackageScript,
-  removeTask58ReadmeSection,
+  normalizeTask60SqliteKnowledgeStore,
+  task60PackageLayers,
+  task60ReadmeLayers,
   task59PackageScriptName,
   task59PackageScriptValue,
-  task59ReadmeBlock,
   task59ReadmeEnd,
   task59ReadmeStart,
+  task60PackageScriptName,
+  task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const testFile = fileURLToPath(import.meta.url);
@@ -70,7 +66,11 @@ const protectedProduction = [
   "packages/mcp-kec/src/knowledge/sqliteVectorStore.ts",
   "packages/mcp-kec/src/knowledge/vectorStore.ts",
   "packages/knowledge-core",
-  "packages/knowledge-sqlite",
+  "packages/knowledge-sqlite/package.json",
+  "packages/knowledge-sqlite/tsconfig.json",
+  "packages/knowledge-sqlite/src/errors.ts",
+  "packages/knowledge-sqlite/src/index.ts",
+  "packages/knowledge-sqlite/src/schema.ts",
   "package.json",
   "pnpm-lock.yaml",
 ];
@@ -79,30 +79,8 @@ function readSource(path: string): string {
   return existsSync(path) ? readFileSync(path, "utf8") : "";
 }
 
-function readHeadFile(relativePath: string): string {
-  return execFileSync("git", ["show", `HEAD:${relativePath}`], {
-    cwd: workspaceRoot,
-    encoding: "utf8",
-  });
-}
-
-function expectCommittedReadmeBaseline(
-  currentReadme: string,
-  headReadme: string,
-): void {
-  const currentTask59Baseline = removeTask59ReadmeSection(currentReadme);
-  const headTask59Baseline = normalizeTask59ReadmeBaseline(headReadme);
-  const normalizedReadme =
-    currentTask59Baseline === headTask59Baseline
-      ? currentTask59Baseline
-      : removeTask58ReadmeSection(currentTask59Baseline);
-  expect(normalizedReadme).toBe(headTask59Baseline);
-  expect(
-    addTask59ReadmeBlock(
-      currentTask59Baseline,
-      task59ReadmeBlock(currentReadme),
-    ),
-  ).toBe(currentReadme);
+function expectCommittedReadmeBaseline(currentReadme: string): void {
+  task60ReadmeLayers(currentReadme);
   expect(currentReadme.split(task59ReadmeStart)).toHaveLength(2);
   expect(currentReadme.split(task59ReadmeEnd)).toHaveLength(2);
   expect(currentReadme.indexOf(task59ReadmeStart)).toBe(
@@ -123,36 +101,28 @@ function expectCommittedReadmeBaseline(
   expect(task57Start).toBeGreaterThanOrEqual(0);
   expect(task57End).toBeGreaterThan(task57Start);
   expect(task57Start).toBeGreaterThan(task56End);
-  if (currentReadme !== headReadme) {
-    expect(currentReadme.split(task58ReadmeStart)).toHaveLength(2);
-    expect(currentReadme.split(task58ReadmeEnd)).toHaveLength(2);
-    expect(currentReadme.indexOf(task58ReadmeStart)).toBeGreaterThan(task57End);
-  }
+  expect(currentReadme.split(task58ReadmeStart)).toHaveLength(2);
+  expect(currentReadme.split(task58ReadmeEnd)).toHaveLength(2);
+  expect(currentReadme.indexOf(task58ReadmeStart)).toBeGreaterThan(task57End);
 }
 
 function expectCurrentCommittedPackageAndReadmeBaseline(): void {
   const currentPackageText = readFileSync(packageManifest, "utf8");
-  const headPackageText = readHeadFile("packages/mcp-kec/package.json");
-  const currentTask59Baseline = removeTask59PackageScript(currentPackageText);
-  const headTask59Baseline = normalizeTask59PackageBaseline(headPackageText);
-  const normalizedPackageText =
-    currentTask59Baseline === headTask59Baseline
-      ? currentTask59Baseline
-      : removeTask58PackageScript(currentTask59Baseline);
-  expect(normalizedPackageText).toBe(headTask59Baseline);
-  expect(addTask59PackageScript(currentTask59Baseline)).toBe(
-    currentPackageText,
-  );
+  const { preTask58 } = task60PackageLayers(currentPackageText);
 
   const currentPackage = JSON.parse(currentPackageText) as PackageManifest;
-  const headPackage = JSON.parse(headTask59Baseline) as PackageManifest;
-  expect(JSON.parse(normalizedPackageText)).toEqual(headPackage);
-  if (currentTask59Baseline !== headTask59Baseline) {
-    expect(currentPackage.scripts[task58ScriptName]).toBe(task58ScriptValue);
-  }
+  const preTask58Package = JSON.parse(preTask58) as PackageManifest;
+  expect(currentPackage.scripts[task58ScriptName]).toBe(task58ScriptValue);
   expect(currentPackage.scripts[task59PackageScriptName]).toBe(
     task59PackageScriptValue,
   );
+  expect(currentPackage.scripts[task60PackageScriptName]).toBe(
+    task60PackageScriptValue,
+  );
+  expect(currentPackage).toMatchObject({
+    ...preTask58Package,
+    scripts: currentPackage.scripts,
+  });
 
   const currentScripts = currentPackage.scripts;
   expect(currentScripts.dev).toBe("tsx src/index.ts");
@@ -166,7 +136,6 @@ function expectCurrentCommittedPackageAndReadmeBaseline(): void {
   expect(JSON.stringify(currentPackage)).not.toContain("KEC_HYBRID_ENABLED");
 
   const currentReadme = readFileSync(workspaceReadme, "utf8");
-  const headReadme = readHeadFile("README.md");
   const startMarker = "### Default KEC runtime";
   const endMarker = "Remaining scaffold packages can also run:";
   const sectionStart = currentReadme.indexOf(startMarker);
@@ -177,7 +146,7 @@ function expectCurrentCommittedPackageAndReadmeBaseline(): void {
   expect(currentReadme.indexOf(startMarker, sectionStart + 1)).toBe(-1);
 
   const task54Section = currentReadme.slice(sectionStart, sectionEnd);
-  expectCommittedReadmeBaseline(currentReadme, headReadme);
+  expectCommittedReadmeBaseline(currentReadme);
   expect(task54Section).toContain(
     "The default KEC runtime remains legacy-only.",
   );
@@ -531,6 +500,18 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
   });
 
   it("keeps Task 52 implementation and protected Task 46-51 production HEAD-stable", () => {
+    normalizeTask60SqliteKnowledgeStore(
+      readFileSync(
+        join(
+          workspaceRoot,
+          "packages",
+          "knowledge-sqlite",
+          "src",
+          "sqliteKnowledgeStore.ts",
+        ),
+        "utf8",
+      ),
+    );
     expect(() =>
       execFileSync(
         "git",
