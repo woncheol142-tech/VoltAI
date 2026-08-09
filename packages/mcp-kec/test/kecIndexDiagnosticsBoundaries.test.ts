@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { normalizeTask60SqliteKnowledgeStore } from "./helpers/kecBatchIndexFixture.js";
+import {
+  assertTask61KnowledgeSqliteCompatibility,
+  readCompatibilityBaseline,
+  readCompatibilityWorkingTree,
+} from "./helpers/knowledgeSqliteCompatibility.js";
 
 import {
   createChunksOnlyIndexFixture,
@@ -121,8 +125,9 @@ describe("KEC index diagnostics approved module boundary", () => {
       if (
         relativePath === "packages/knowledge-sqlite/src/sqliteKnowledgeStore.ts"
       ) {
-        normalizeTask60SqliteKnowledgeStore(
-          readSource(join(workspaceRoot, relativePath)),
+        assertTask61KnowledgeSqliteCompatibility(
+          readCompatibilityBaseline(workspaceRoot),
+          readCompatibilityWorkingTree(workspaceRoot),
         );
         continue;
       }

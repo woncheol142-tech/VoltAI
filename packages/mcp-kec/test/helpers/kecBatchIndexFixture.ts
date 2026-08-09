@@ -578,69 +578,6 @@ export function task60ReadmeLayers(currentReadme: string): Task60ReadmeLayers {
   return Object.freeze({ preTask60, preTask59, preTask58 });
 }
 
-const task60SqlitePreludeSha256 =
-  "ce4765af20833ab3e2816fa90e912838060285f82ea1cc95bb29098ae40a27a8";
-const task60SqliteMethodsSha256 =
-  "a941f6e9d957bfbc9a94ff6729a5b0defbe092b65b0a8d106f312f03e511cd10";
-const preTask60SqliteStoreSha256 =
-  "820384df711fa796acd3db88cd607231136cc173380cfffe316f1f74face6ff3";
-
-function sha256Text(value: string): string {
-  return createHash("sha256").update(value, "utf8").digest("hex");
-}
-
-function exactlyOnePosition(source: string, marker: string): number {
-  const position = source.indexOf(marker);
-  if (position < 0 || source.indexOf(marker, position + marker.length) >= 0) {
-    throw new Error("Task 60 SQLite compatibility marker is not unique");
-  }
-  return position;
-}
-
-export function normalizeTask60SqliteKnowledgeStore(source: string): string {
-  const preludeStart = exactlyOnePosition(source, "function asciiOrder(");
-  const classStart = exactlyOnePosition(
-    source,
-    "export class SqliteKnowledgeStore",
-  );
-  const methodsStart = exactlyOnePosition(source, "  async listSourcePaths(");
-  const searchStart = exactlyOnePosition(source, "  async search<");
-  if (!(
-    preludeStart < classStart &&
-    classStart < methodsStart &&
-    methodsStart < searchStart
-  )) {
-    throw new Error("Task 60 SQLite compatibility blocks are misplaced");
-  }
-
-  const prelude = source.slice(preludeStart, classStart);
-  const methods = source.slice(methodsStart, searchStart);
-  if (
-    sha256Text(prelude) !== task60SqlitePreludeSha256 ||
-    sha256Text(methods) !== task60SqliteMethodsSha256
-  ) {
-    throw new Error("Task 60 SQLite compatibility blocks changed");
-  }
-
-  const normalized = `${source.slice(0, preludeStart)}${source.slice(
-    classStart,
-    methodsStart,
-  )}${source.slice(searchStart)}`;
-  if (sha256Text(normalized) !== preTask60SqliteStoreSha256) {
-    throw new Error("Pre-Task 60 SQLite store boundary changed");
-  }
-
-  const reconstructed = `${normalized.slice(0, preludeStart)}${prelude}${normalized.slice(
-    preludeStart,
-    methodsStart - prelude.length,
-  )}${methods}${normalized.slice(methodsStart - prelude.length)}`;
-  if (reconstructed !== source) {
-    throw new Error("Task 60 SQLite layering is not byte-reversible");
-  }
-
-  return normalized;
-}
-
 export function captureTask58ArtifactBoundary(rootPath: string): string {
   const entries: string[] = [];
 

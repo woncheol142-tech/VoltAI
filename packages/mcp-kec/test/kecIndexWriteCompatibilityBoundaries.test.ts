@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  normalizeTask60SqliteKnowledgeStore,
   task60PackageLayers,
   task60ReadmeLayers,
   task59PackageScriptName,
@@ -16,6 +15,11 @@ import {
   task60PackageScriptName,
   task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
+import {
+  assertTask61KnowledgeSqliteCompatibility,
+  readCompatibilityBaseline,
+  readCompatibilityWorkingTree,
+} from "./helpers/knowledgeSqliteCompatibility.js";
 
 import {
   captureError,
@@ -183,8 +187,9 @@ describe("KEC index write compatibility architecture boundaries", () => {
       if (
         relativePath === "packages/knowledge-sqlite/src/sqliteKnowledgeStore.ts"
       ) {
-        normalizeTask60SqliteKnowledgeStore(
-          readSource(join(workspaceRoot, relativePath)),
+        assertTask61KnowledgeSqliteCompatibility(
+          readCompatibilityBaseline(workspaceRoot),
+          readCompatibilityWorkingTree(workspaceRoot),
         );
         continue;
       }

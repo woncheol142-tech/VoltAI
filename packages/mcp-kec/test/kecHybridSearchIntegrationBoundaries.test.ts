@@ -7,7 +7,6 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 import {
-  normalizeTask60SqliteKnowledgeStore,
   task60PackageLayers,
   task60ReadmeLayers,
   task59PackageScriptName,
@@ -17,6 +16,11 @@ import {
   task60PackageScriptName,
   task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
+import {
+  assertTask61KnowledgeSqliteCompatibility,
+  readCompatibilityBaseline,
+  readCompatibilityWorkingTree,
+} from "./helpers/knowledgeSqliteCompatibility.js";
 
 const testFile = fileURLToPath(import.meta.url);
 const packageRoot = join(dirname(testFile), "..");
@@ -400,17 +404,9 @@ describe("KEC hybrid search integration architecture boundaries", () => {
   });
 
   it("keeps Task 51 stable while allowing only the approved forward integration", () => {
-    normalizeTask60SqliteKnowledgeStore(
-      readFileSync(
-        join(
-          workspaceRoot,
-          "packages",
-          "knowledge-sqlite",
-          "src",
-          "sqliteKnowledgeStore.ts",
-        ),
-        "utf8",
-      ),
+    assertTask61KnowledgeSqliteCompatibility(
+      readCompatibilityBaseline(workspaceRoot),
+      readCompatibilityWorkingTree(workspaceRoot),
     );
     expect(() =>
       execFileSync(

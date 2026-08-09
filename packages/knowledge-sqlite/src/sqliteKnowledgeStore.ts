@@ -133,28 +133,6 @@ function validateProjection(projection: SqliteCompatibilityProjection): void {
   }
 }
 
-function asciiOrder(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0;
-}
-
-function canonicalSourcePaths(sourcePaths: readonly string[]): string[] {
-  const unique = new Set(sourcePaths);
-  if (unique.size !== sourcePaths.length) {
-    throw new Error("Knowledge source snapshot contains duplicate paths");
-  }
-  return [...unique].sort(asciiOrder);
-}
-
-function equalSourceSnapshots(
-  left: readonly string[],
-  right: readonly string[],
-): boolean {
-  return (
-    left.length === right.length &&
-    left.every((sourcePath, index) => sourcePath === right[index])
-  );
-}
-
 export class SqliteKnowledgeStore implements KnowledgeVectorStore {
   private readonly database: InstanceType<typeof DatabaseSync>;
   private closed = false;
@@ -417,79 +395,6 @@ export class SqliteKnowledgeStore implements KnowledgeVectorStore {
         "DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?",
       )
       .run(collection, sourcePath);
-  }
-
-  async listSourcePaths(collection: string): Promise<readonly string[]> {
-    this.assertOpen();
-    const rows = this.database
-      .prepare(
-        `SELECT DISTINCT source_path
-         FROM kec_chunks
-         WHERE collection = ?
-         ORDER BY source_path`,
-      )
-      .all(collection) as Array<{ source_path: string }>;
-    return Object.freeze(rows.map((row) => row.source_path));
-  }
-
-  async pruneSourcePaths(
-    collection: string,
-    expectedSourcePaths: readonly string[],
-    staleSourcePaths: readonly string[],
-  ): Promise<void> {
-    this.assertOpen();
-    const expected = canonicalSourcePaths(expectedSourcePaths);
-    const stale = canonicalSourcePaths(staleSourcePaths);
-    const expectedSet = new Set(expected);
-    if (stale.some((sourcePath) => !expectedSet.has(sourcePath))) {
-      throw new Error(
-        "Knowledge prune source is outside the expected snapshot",
-      );
-    }
-
-    this.database.exec("BEGIN IMMEDIATE");
-    try {
-      const actualRows = this.database
-        .prepare(
-          `SELECT DISTINCT source_path
-           FROM kec_chunks
-           WHERE collection = ?
-           ORDER BY source_path`,
-        )
-        .all(collection) as Array<{ source_path: string }>;
-      const actual = canonicalSourcePaths(
-        actualRows.map((row) => row.source_path),
-      );
-      if (!equalSourceSnapshots(expected, actual)) {
-        throw new Error("KEC_DIRECTORY_PRUNE: INDEX_CHANGED");
-      }
-
-      const deleteSource = this.database.prepare(
-        "DELETE FROM kec_chunks WHERE collection = ? AND source_path = ?",
-      );
-      for (const sourcePath of staleSourcePaths) {
-        deleteSource.run(collection, sourcePath);
-      }
-
-      const remaining = this.database
-        .prepare(
-          "SELECT 1 AS present FROM kec_chunks WHERE collection = ? LIMIT 1",
-        )
-        .get(collection) as { present: number } | undefined;
-      if (remaining === undefined) {
-        this.database
-          .prepare("DELETE FROM index_metadata WHERE id = ?")
-          .run(collection);
-      }
-      this.database.exec("COMMIT");
-    } catch (error) {
-      try {
-        this.database.exec("ROLLBACK");
-      } catch {
-        // Preserve the operation failure if SQLite already ended the transaction.
-      }
-      throw error;
-    }
   }
 
   async search<
