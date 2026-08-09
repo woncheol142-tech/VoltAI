@@ -6,8 +6,18 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  addTask59PackageScript,
+  addTask59ReadmeBlock,
+  normalizeTask59PackageBaseline,
+  normalizeTask59ReadmeBaseline,
+  removeTask59PackageScript,
   removeTask58PackageScript,
   removeTask58ReadmeSection,
+  task59PackageScriptName,
+  task59PackageScriptValue,
+  task59ReadmeBlock,
+  task59ReadmeEnd,
+  task59ReadmeStart,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const testFile = fileURLToPath(import.meta.url);
@@ -61,9 +71,24 @@ function taskSection(readme: string): string {
 
 function matchesCommittedReadme(readme: string, baseline: string): boolean {
   let normalizedReadme: string;
+  let normalizedBaseline: string;
   try {
+    const task59NormalizedReadme = normalizeTask59ReadmeBaseline(readme);
+    normalizedBaseline = normalizeTask59ReadmeBaseline(baseline);
     normalizedReadme =
-      readme === baseline ? readme : removeTask58ReadmeSection(readme);
+      task59NormalizedReadme === normalizedBaseline
+        ? task59NormalizedReadme
+        : removeTask58ReadmeSection(task59NormalizedReadme);
+    if (readme.includes(task59ReadmeStart)) {
+      if (
+        addTask59ReadmeBlock(
+          task59NormalizedReadme,
+          task59ReadmeBlock(readme),
+        ) !== readme
+      ) {
+        return false;
+      }
+    }
   } catch {
     return false;
   }
@@ -86,7 +111,7 @@ function matchesCommittedReadme(readme: string, baseline: string): boolean {
     task56End > task56Start &&
     task57Start > task56End &&
     task57End > task57Start &&
-    normalizedReadme === baseline &&
+    normalizedReadme === normalizedBaseline &&
     (readme === baseline ||
       (readme.split(task58SectionStart).length === 2 &&
         readme.split(task58SectionEnd).length === 2 &&
@@ -98,18 +123,37 @@ describe("KEC index diagnostics package script contract", () => {
   it("preserves the exact committed package manifest", () => {
     const currentText = readText(packageJsonPath);
     const baselineText = readHeadFile("packages/mcp-kec/package.json");
+    const currentTask59Baseline = removeTask59PackageScript(currentText);
+    const headTask59Baseline = normalizeTask59PackageBaseline(baselineText);
     const normalizedText =
-      currentText === baselineText
-        ? currentText
-        : removeTask58PackageScript(currentText);
-    expect(normalizedText).toBe(baselineText);
+      currentTask59Baseline === headTask59Baseline
+        ? currentTask59Baseline
+        : removeTask58PackageScript(currentTask59Baseline);
+    expect(normalizedText).toBe(headTask59Baseline);
+    expect(addTask59PackageScript(currentTask59Baseline)).toBe(currentText);
 
     const current = JSON.parse(currentText) as PackageJson;
-    const baseline = JSON.parse(baselineText) as PackageJson;
+    const baseline = JSON.parse(headTask59Baseline) as PackageJson;
     expect(JSON.parse(normalizedText)).toEqual(baseline);
-    if (currentText !== baselineText) {
+    if (currentTask59Baseline !== headTask59Baseline) {
       expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
     }
+    expect(current.scripts[task59PackageScriptName]).toBe(
+      task59PackageScriptValue,
+    );
+    expect(() =>
+      removeTask59PackageScript(
+        currentText.replace(task59PackageScriptValue, "tsx wrong.ts"),
+      ),
+    ).toThrow();
+    expect(() =>
+      normalizeTask59PackageBaseline(
+        currentText.replace(
+          `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`,
+          `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`,
+        ),
+      ),
+    ).toThrow();
     expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
     expect(current.scripts["smoke:ollama"]).toBe(
       "tsx src/smokeOllamaEmbedding.ts",
@@ -178,6 +222,27 @@ describe("KEC index diagnostics README contract", () => {
     expect(readme.match(new RegExp(sectionStart, "gu")) ?? []).toHaveLength(1);
     expect(readme.match(new RegExp(sectionEnd, "gu")) ?? []).toHaveLength(1);
     expect(matchesCommittedReadme(readme, baseline)).toBe(true);
+    expect(
+      matchesCommittedReadme(readme.replace(task59ReadmeStart, ""), baseline),
+    ).toBe(false);
+    expect(
+      matchesCommittedReadme(
+        readme.replace(
+          task59ReadmeStart,
+          `${task59ReadmeStart}\n${task59ReadmeStart}`,
+        ),
+        baseline,
+      ),
+    ).toBe(false);
+    expect(
+      matchesCommittedReadme(
+        readme
+          .replace(task59ReadmeStart, "TASK_59_MARKER_SWAP")
+          .replace(task59ReadmeEnd, task59ReadmeStart)
+          .replace("TASK_59_MARKER_SWAP", task59ReadmeEnd),
+        baseline,
+      ),
+    ).toBe(false);
     expect(matchesCommittedReadme(`${readme}unrelated`, baseline)).toBe(false);
     expect(
       matchesCommittedReadme(readme.replace(sectionStart, ""), baseline),

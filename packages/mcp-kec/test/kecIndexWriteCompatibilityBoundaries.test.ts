@@ -6,8 +6,19 @@ import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  addTask59PackageScript,
+  addTask59ReadmeBlock,
+  normalizeTask59PackageBaseline,
+  normalizeTask59ReadmeBaseline,
+  removeTask59PackageScript,
+  removeTask59ReadmeSection,
   removeTask58PackageScript,
   removeTask58ReadmeSection,
+  task59PackageScriptName,
+  task59PackageScriptValue,
+  task59ReadmeBlock,
+  task59ReadmeEnd,
+  task59ReadmeStart,
 } from "./helpers/kecBatchIndexFixture.js";
 
 import {
@@ -87,11 +98,24 @@ function expectCommittedReadmeBaseline(
   currentReadme: string,
   headReadme: string,
 ): void {
+  const currentTask59Baseline = removeTask59ReadmeSection(currentReadme);
+  const headTask59Baseline = normalizeTask59ReadmeBaseline(headReadme);
   const normalizedReadme =
-    currentReadme === headReadme
-      ? currentReadme
-      : removeTask58ReadmeSection(currentReadme);
-  expect(normalizedReadme).toBe(headReadme);
+    currentTask59Baseline === headTask59Baseline
+      ? currentTask59Baseline
+      : removeTask58ReadmeSection(currentTask59Baseline);
+  expect(normalizedReadme).toBe(headTask59Baseline);
+  expect(
+    addTask59ReadmeBlock(
+      currentTask59Baseline,
+      task59ReadmeBlock(currentReadme),
+    ),
+  ).toBe(currentReadme);
+  expect(currentReadme.split(task59ReadmeStart)).toHaveLength(2);
+  expect(currentReadme.split(task59ReadmeEnd)).toHaveLength(2);
+  expect(currentReadme.indexOf(task59ReadmeStart)).toBe(
+    currentReadme.indexOf(task58ReadmeEnd) + task58ReadmeEnd.length + 2,
+  );
   expect(currentReadme.split(task56ReadmeStart)).toHaveLength(2);
   expect(currentReadme.split(task56ReadmeEnd)).toHaveLength(2);
 
@@ -117,18 +141,26 @@ function expectCommittedReadmeBaseline(
 function expectCommittedPackageBaseline(): void {
   const currentPackageText = readSource(packageManifest);
   const headPackageText = readHeadFile("packages/mcp-kec/package.json");
+  const currentTask59Baseline = removeTask59PackageScript(currentPackageText);
+  const headTask59Baseline = normalizeTask59PackageBaseline(headPackageText);
   const normalizedPackageText =
-    currentPackageText === headPackageText
-      ? currentPackageText
-      : removeTask58PackageScript(currentPackageText);
-  expect(normalizedPackageText).toBe(headPackageText);
+    currentTask59Baseline === headTask59Baseline
+      ? currentTask59Baseline
+      : removeTask58PackageScript(currentTask59Baseline);
+  expect(normalizedPackageText).toBe(headTask59Baseline);
+  expect(addTask59PackageScript(currentTask59Baseline)).toBe(
+    currentPackageText,
+  );
 
   const currentPackage = JSON.parse(currentPackageText) as PackageManifest;
-  const headPackage = JSON.parse(headPackageText) as PackageManifest;
+  const headPackage = JSON.parse(headTask59Baseline) as PackageManifest;
   expect(JSON.parse(normalizedPackageText)).toEqual(headPackage);
-  if (currentPackageText !== headPackageText) {
+  if (currentTask59Baseline !== headTask59Baseline) {
     expect(currentPackage.scripts[task58ScriptName]).toBe(task58ScriptValue);
   }
+  expect(currentPackage.scripts[task59PackageScriptName]).toBe(
+    task59PackageScriptValue,
+  );
   expect(currentPackage.scripts["inspect:index"]).toBe(
     "tsx src/inspectIndex.ts",
   );

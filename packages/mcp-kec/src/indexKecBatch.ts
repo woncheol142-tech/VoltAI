@@ -10,8 +10,7 @@ import {
   type KecBatchIndexResultV1,
   type PreparedKecBatchIndex,
 } from "./batchIndexing/index.js";
-import type { EmbeddingProvider } from "./knowledge/embedding.js";
-import type { VectorStore } from "./knowledge/vectorStore.js";
+import { createKecBatchExecutionDependencies } from "./batchIndexing/createKecBatchExecutionDependencies.js";
 
 export type KecBatchIndexCliDependencies = Readonly<{
   cwd: string;
@@ -295,43 +294,6 @@ function readSelectedEnvironment(
   return selected;
 }
 
-function createExecutionDependencies(
-  prepared: PreparedKecBatchIndex,
-): KecBatchIndexExecutionDependencies {
-  return Object.freeze({
-    createProvider: async (provider) => {
-      if (provider !== prepared.provider) {
-        throw new Error(INVALID_CONFIGURATION);
-      }
-      const { createEmbeddingProviderFromEnv } =
-        await import("./knowledge/embedding.js");
-      return createEmbeddingProviderFromEnv();
-    },
-    createStore: async (databasePath) => {
-      const { SqliteVectorStore } =
-        await import("./knowledge/sqliteVectorStore.js");
-      return new SqliteVectorStore(databasePath);
-    },
-    indexSource: async (projectRoot, input, dependencies) => {
-      const { indexKec } = await import("./tools/indexKec.js");
-      const result = await indexKec(projectRoot, input, {
-        embeddingProvider: dependencies.embeddingProvider as EmbeddingProvider,
-        vectorStore: dependencies.vectorStore as VectorStore,
-      });
-      return Object.freeze({ indexedChunks: result.indexedChunks });
-    },
-    closeStore: async (store) => {
-      const { SqliteVectorStore } =
-        await import("./knowledge/sqliteVectorStore.js");
-      if (!(store instanceof SqliteVectorStore)) {
-        throw new Error(INTERNAL_ERROR);
-      }
-      await store.close();
-    },
-    closeProvider: () => {},
-  });
-}
-
 export async function main(): Promise<void> {
   process.exitCode = await runKecBatchIndexCli(
     process.argv.slice(2),
@@ -342,7 +304,7 @@ export async function main(): Promise<void> {
       prepare: prepareKecBatchIndex,
       execute: executeKecBatchIndex,
       serialize: serializeKecBatchIndexResult,
-      createExecutionDependencies,
+      createExecutionDependencies: createKecBatchExecutionDependencies,
       writeStdout: (text) => {
         process.stdout.write(text);
       },

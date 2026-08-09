@@ -62,6 +62,18 @@ const testFile = fileURLToPath(import.meta.url);
 const packageDirectory = join(dirname(testFile), "..");
 const workspaceRoot = resolve(packageDirectory, "..", "..");
 const cliSourcePath = join(packageDirectory, "src", "indexKecBatch.ts");
+const directoryCliSourcePath = join(
+  packageDirectory,
+  "src",
+  "indexKecDirectory.ts",
+);
+const runtimeBindingSourcePath = join(
+  packageDirectory,
+  "src",
+  "batchIndexing",
+  "createKecBatchExecutionDependencies.ts",
+);
+const packageIndexPath = join(packageDirectory, "src", "index.ts");
 const batchBarrelPath = join(
   packageDirectory,
   "src",
@@ -963,17 +975,71 @@ describe("Task 58 batch index CLI descriptor and authority boundaries", () => {
     );
   });
 
-  it("binds only the approved provider, store, and index authorities", () => {
+  it("keeps the approved provider, store, and index lifecycle in one Task 58-owned binding", () => {
     if (!existsSync(cliSourcePath)) return;
-    const source = readFileSync(cliSourcePath, "utf8");
+    expect(existsSync(runtimeBindingSourcePath)).toBe(true);
+    expect(existsSync(directoryCliSourcePath)).toBe(true);
 
-    expect(source).toMatch(/\bcreateEmbeddingProviderFromEnv\b/u);
-    expect(source).toMatch(/\bSqliteVectorStore\b/u);
-    expect(source).toMatch(/\bindexKec\b/u);
-    expect(source).not.toMatch(
+    const batchCli = readFileSync(cliSourcePath, "utf8");
+    const directoryCli = readFileSync(directoryCliSourcePath, "utf8");
+    const runtimeBinding = readFileSync(runtimeBindingSourcePath, "utf8");
+    const packageIndex = readFileSync(packageIndexPath, "utf8");
+    const sharedImport =
+      /import\s*\{\s*createKecBatchExecutionDependencies\s*\}\s*from\s*["']\.\/batchIndexing\/createKecBatchExecutionDependencies\.js["']/gu;
+
+    expect(batchCli.match(sharedImport)).toHaveLength(1);
+    expect(directoryCli.match(sharedImport)).toHaveLength(1);
+    expect(
+      batchCli.match(
+        /createExecutionDependencies:\s*createKecBatchExecutionDependencies/gu,
+      ),
+    ).toHaveLength(1);
+    expect(
+      directoryCli.match(
+        /createExecutionDependencies:\s*createKecBatchExecutionDependencies/gu,
+      ),
+    ).toHaveLength(1);
+
+    for (const cli of [batchCli, directoryCli]) {
+      expect(cli).not.toMatch(
+        /\bcreateEmbeddingProviderFromEnv\b|\bSqliteVectorStore\b|\bindexKec\b/u,
+      );
+      expect(cli).not.toMatch(
+        /\b(?:createProvider|createStore|indexSource|closeStore|closeProvider)\s*:/u,
+      );
+    }
+
+    for (const member of [
+      "createProvider",
+      "createStore",
+      "indexSource",
+      "closeStore",
+      "closeProvider",
+    ]) {
+      expect(
+        runtimeBinding.match(new RegExp(`\\b${member}\\s*:`, "gu")),
+      ).toHaveLength(1);
+    }
+    expect(
+      runtimeBinding.match(/return\s+createEmbeddingProviderFromEnv\(\);/gu),
+    ).toHaveLength(1);
+    expect(
+      runtimeBinding.match(/new\s+SqliteVectorStore\(databasePath\)/gu),
+    ).toHaveLength(1);
+    expect(
+      runtimeBinding.match(/const\s+result\s*=\s*await\s+indexKec\(/gu),
+    ).toHaveLength(1);
+    expect(runtimeBinding).toMatch(
+      /return\s+Object\.freeze\(\{\s*indexedChunks:\s*result\.indexedChunks\s*\}\);/u,
+    );
+    expect(runtimeBinding.match(/await\s+store\.close\(\);/gu)).toHaveLength(1);
+    expect(runtimeBinding).toMatch(/closeProvider:\s*\(\)\s*=>\s*\{\}/u);
+    expect(packageIndex).not.toContain("createKecBatchExecutionDependencies");
+
+    expect(runtimeBinding).not.toMatch(
       /readPdfPages|createPageChunks|runStdioServer|createVoltAiMcpServer|searchKec|smokeOllamaEmbedding|probeOllamaEmbedding|Promise\.(?:all|allSettled)|setTimeout|setInterval|console\.|logger/iu,
     );
-    expect(source).not.toMatch(
+    expect(runtimeBinding).not.toMatch(
       /\b(?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|VACUUM|REINDEX)\b/iu,
     );
   });

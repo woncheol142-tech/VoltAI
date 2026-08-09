@@ -1,0 +1,184 @@
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+import {
+  packageRoot,
+  task58ReadmeEnd,
+  task59PackageScriptName,
+  task59PackageScriptValue,
+  task59ReadmeEnd,
+  task59ReadmeStart,
+  workspaceRoot,
+} from "./helpers/kecBatchDirectoryFixture.js";
+
+const packagePath = join(packageRoot, "package.json");
+const readmePath = join(workspaceRoot, "README.md");
+const rootPackagePath = join(workspaceRoot, "package.json");
+const lockfilePath = join(workspaceRoot, "pnpm-lock.yaml");
+
+type PackageJson = Readonly<{
+  scripts: Readonly<Record<string, string>>;
+  dependencies?: Readonly<Record<string, string>>;
+  devDependencies?: Readonly<Record<string, string>>;
+  [key: string]: unknown;
+}>;
+
+function readText(path: string): string {
+  return readFileSync(path, "utf8");
+}
+
+function readHead(relativePath: string): string {
+  return execFileSync("git", ["show", `HEAD:${relativePath}`], {
+    cwd: workspaceRoot,
+    encoding: "utf8",
+  });
+}
+
+function packageHasTask59Script(): boolean {
+  const manifest = JSON.parse(readText(packagePath)) as PackageJson;
+  return manifest.scripts[task59PackageScriptName] === task59PackageScriptValue;
+}
+
+function removeTask59Script(packageText: string): string {
+  const line = `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`;
+  if (packageText.split(line).length !== 2) {
+    throw new Error("Task 59 package script must occur exactly once");
+  }
+  return packageText.replace(line, "");
+}
+
+function readmeSection(readme: string): string {
+  const start = readme.indexOf(task59ReadmeStart);
+  const end = readme.indexOf(task59ReadmeEnd, start);
+  if (start < 0 || end <= start) return "";
+  return readme.slice(start, end + task59ReadmeEnd.length);
+}
+
+function removeTask59ReadmeSection(readme: string): string {
+  if (
+    readme.split(task59ReadmeStart).length !== 2 ||
+    readme.split(task59ReadmeEnd).length !== 2
+  ) {
+    throw new Error("Task 59 README markers must occur exactly once");
+  }
+  const start = readme.indexOf(task59ReadmeStart);
+  const end = readme.indexOf(task59ReadmeEnd, start);
+  if (start < 0 || end <= start) {
+    throw new Error("Task 59 README markers are malformed");
+  }
+  const sectionEnd = end + task59ReadmeEnd.length;
+  const removalStart =
+    readme.slice(start - 2, start) === "\n\n" ? start - 1 : start;
+  const removalEnd = readme[sectionEnd] === "\n" ? sectionEnd + 1 : sectionEnd;
+  return `${readme.slice(0, removalStart)}${readme.slice(removalEnd)}`;
+}
+
+function hasOneOrderedSection(readme: string): boolean {
+  return (
+    readme.split(task59ReadmeStart).length === 2 &&
+    readme.split(task59ReadmeEnd).length === 2 &&
+    readme.indexOf(task59ReadmeEnd) > readme.indexOf(task59ReadmeStart)
+  );
+}
+
+describe("Task 59 package script RED contract", () => {
+  it("is RED until the exact package-local index:directory script exists", () => {
+    expect(packageHasTask59Script()).toBe(true);
+  });
+
+  it("allows only the exact Task 59 script delta in the package manifest", () => {
+    if (!packageHasTask59Script()) return;
+    const current = readText(packagePath);
+    const baseline = readHead("packages/mcp-kec/package.json");
+    const parsed = JSON.parse(current) as PackageJson;
+    const baselineParsed = JSON.parse(baseline) as PackageJson;
+
+    expect(removeTask59Script(current)).toBe(baseline);
+    expect(parsed.scripts[task59PackageScriptName]).toBe(
+      task59PackageScriptValue,
+    );
+    expect(parsed.dependencies).toEqual(baselineParsed.dependencies);
+    expect(parsed.devDependencies).toEqual(baselineParsed.devDependencies);
+    expect(readText(rootPackagePath)).toBe(readHead("package.json"));
+    expect(readText(lockfilePath)).toBe(readHead("pnpm-lock.yaml"));
+  });
+
+  it("adds no lifecycle hook, dependency, package-root export, or MCP command", () => {
+    if (!packageHasTask59Script()) return;
+    const manifest = JSON.parse(readText(packagePath)) as PackageJson;
+    for (const hook of [
+      "preindex:directory",
+      "postindex:directory",
+      "preinstall",
+      "postinstall",
+      "prepare",
+    ]) {
+      expect(manifest.scripts).not.toHaveProperty(hook);
+    }
+  });
+});
+
+describe("Task 59 README marker and operator contract", () => {
+  it("is RED until exactly one ordered Task 59 marker pair exists", () => {
+    expect(hasOneOrderedSection(readText(readmePath))).toBe(true);
+  });
+
+  it("places the sole Task 59 section immediately after Task 58 and changes nothing else", () => {
+    const readme = readText(readmePath);
+    if (!hasOneOrderedSection(readme)) return;
+    expect(readme).toContain(`${task58ReadmeEnd}\n\n${task59ReadmeStart}\n`);
+    expect(removeTask59ReadmeSection(readme)).toBe(readHead("README.md"));
+  });
+
+  it("documents one explicit project-relative directory and bounded non-recursive discovery", () => {
+    const readme = readText(readmePath);
+    if (!hasOneOrderedSection(readme)) return;
+    const section = readmeSection(readme);
+    expect(section).toMatch(
+      /pnpm --filter @voltai\/mcp-kec index:directory\s+[^\s<]+/u,
+    );
+    expect(section).toMatch(/exactly one|one explicit|single/iu);
+    expect(section).toMatch(/project-relative|relative directory/iu);
+    expect(section).toMatch(/non-recursive|does not recurse|no recursive/iu);
+    expect(section).toMatch(/direct (?:children|child files)/iu);
+    expect(section).toMatch(/lowercase\s+`?\.pdf`?|ends? in lowercase/iu);
+  });
+
+  it("documents symlink rejection, ignored entries, NO_SOURCES, and no numeric cap", () => {
+    const readme = readText(readmePath);
+    if (!hasOneOrderedSection(readme)) return;
+    const section = readmeSection(readme);
+    expect(section).toMatch(
+      /symlinks?[^.\n]*(?:reject|not followed)|reject[^.\n]*symlinks?/iu,
+    );
+    expect(section).toMatch(/non-PDF[^.\n]*(?:ignored|ignore)/iu);
+    expect(section).toMatch(/zero|empty|NO_SOURCES/iu);
+    expect(section).toMatch(
+      /no (?:numeric|arbitrary) (?:source )?(?:limit|cap)|does not add[^.\n]*(?:limit|cap)/iu,
+    );
+    expect(section).not.toMatch(
+      /(?:limit|maximum|max)\s*(?:of\s*)?100|100-source/iu,
+    );
+  });
+
+  it("states Task 58 reuse and every Task 59 non-goal without new authority claims", () => {
+    const readme = readText(readmePath);
+    if (!hasOneOrderedSection(readme)) return;
+    const section = readmeSection(readme);
+    expect(section).toMatch(/Task 58[^.\n]*(?:reuse|existing|semantics)/iu);
+    for (const contract of [
+      /no (?:stale-source )?(?:delete|deletion|prune)|no pruning/iu,
+      /no (?:unchanged-file detection|incremental)/iu,
+      /no (?:resume|checkpoint)/iu,
+      /no MCP|does not register[^.\n]*MCP/iu,
+    ]) {
+      expect(section).toMatch(contract);
+    }
+    expect(section).not.toMatch(
+      /automatically prune|unchanged files? (?:are|will be) skipped|resume from a checkpoint|registers? an MCP tool/iu,
+    );
+  });
+});

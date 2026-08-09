@@ -31,6 +31,10 @@ export const task58PackageScriptName = "index:batch";
 export const task58PackageScriptValue = "tsx src/indexKecBatch.ts";
 export const task58ReadmeStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
 export const task58ReadmeEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
+export const task59PackageScriptName = "index:directory";
+export const task59PackageScriptValue = "tsx src/indexKecDirectory.ts";
+export const task59ReadmeStart = "<!-- TASK59_KEC_DIRECTORY_BATCH_START -->";
+export const task59ReadmeEnd = "<!-- TASK59_KEC_DIRECTORY_BATCH_END -->";
 const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 
 export const defaultBatchExecutionOptions = Object.freeze({
@@ -337,6 +341,100 @@ export function normalizeTask58ReadmeBaseline(committedReadme: string): string {
     throw new Error("Task 58 README section must immediately follow Task 57");
   }
   return removeTask58ReadmeSection(committedReadme);
+}
+
+export function addTask59PackageScript(packageText: string): string {
+  const anchor = '    "test": "vitest run --root ../.. packages/mcp-kec/test"';
+  if (
+    packageText.split(anchor).length !== 2 ||
+    (packageText.match(/"index:directory"\s*:/gu) ?? []).length !== 0
+  ) {
+    throw new Error("Task 59 package script baseline is malformed");
+  }
+  return packageText.replace(
+    anchor,
+    `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n${anchor}`,
+  );
+}
+
+export function removeTask59PackageScript(packageText: string): string {
+  const occurrences = packageText.match(/"index:directory"\s*:/gu) ?? [];
+  const line = `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`;
+  if (occurrences.length !== 1 || packageText.split(line).length !== 2) {
+    throw new Error("Task 59 package script must occur exactly once");
+  }
+  return packageText.replace(line, "");
+}
+
+export function normalizeTask59PackageBaseline(packageText: string): string {
+  const occurrences = packageText.match(/"index:directory"\s*:/gu) ?? [];
+  if (occurrences.length === 0) return packageText;
+  if (occurrences.length !== 1) {
+    throw new Error("Task 59 package script key must occur at most once");
+  }
+  return removeTask59PackageScript(packageText);
+}
+
+function task59ReadmeBounds(readme: string): Readonly<{
+  start: number;
+  sectionEnd: number;
+}> {
+  if (
+    readme.split(task59ReadmeStart).length !== 2 ||
+    readme.split(task59ReadmeEnd).length !== 2 ||
+    readme.split(task58ReadmeEnd).length !== 2
+  ) {
+    throw new Error("Task 59 README markers must occur exactly once");
+  }
+
+  const start = readme.indexOf(task59ReadmeStart);
+  const end = readme.indexOf(task59ReadmeEnd, start);
+  const expectedStart =
+    readme.indexOf(task58ReadmeEnd) + task58ReadmeEnd.length + 2;
+  if (start !== expectedStart || end <= start) {
+    throw new Error("Task 59 README section is malformed or misplaced");
+  }
+  const sectionEnd = end + task59ReadmeEnd.length;
+  if (readme[sectionEnd] !== "\n") {
+    throw new Error("Task 59 README section must end with LF");
+  }
+  return Object.freeze({ start, sectionEnd });
+}
+
+export function task59ReadmeBlock(readme: string): string {
+  const { start, sectionEnd } = task59ReadmeBounds(readme);
+  return readme.slice(start, sectionEnd);
+}
+
+export function addTask59ReadmeBlock(readme: string, block: string): string {
+  if (
+    readme.split(task58ReadmeEnd).length !== 2 ||
+    readme.includes(task59ReadmeStart) ||
+    readme.includes(task59ReadmeEnd) ||
+    !block.startsWith(task59ReadmeStart) ||
+    !block.endsWith(task59ReadmeEnd) ||
+    block.split(task59ReadmeStart).length !== 2 ||
+    block.split(task59ReadmeEnd).length !== 2
+  ) {
+    throw new Error("Task 59 README block or baseline is malformed");
+  }
+  const insertion = readme.indexOf(task58ReadmeEnd) + task58ReadmeEnd.length;
+  return `${readme.slice(0, insertion)}\n\n${block}${readme.slice(insertion)}`;
+}
+
+export function removeTask59ReadmeSection(readme: string): string {
+  const { start, sectionEnd } = task59ReadmeBounds(readme);
+  return `${readme.slice(0, start - 1)}${readme.slice(sectionEnd + 1)}`;
+}
+
+export function normalizeTask59ReadmeBaseline(readme: string): string {
+  const starts = readme.split(task59ReadmeStart).length - 1;
+  const ends = readme.split(task59ReadmeEnd).length - 1;
+  if (starts === 0 && ends === 0) return readme;
+  if (starts !== 1 || ends !== 1) {
+    throw new Error("Task 59 README markers are malformed");
+  }
+  return removeTask59ReadmeSection(readme);
 }
 
 export function captureTask58ArtifactBoundary(rootPath: string): string {

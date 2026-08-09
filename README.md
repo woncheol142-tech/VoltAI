@@ -301,3 +301,19 @@ Each source uses the existing one-source transaction. The batch fails fast: prio
 Task 56 remains the separate read-only diagnostics command. Task 57 remains the separate explicit Ollama smoke command, and this batch command does not automatically run that smoke. It provides no directory discovery or globbing, no batch-wide atomicity, no rollback of earlier sources, no stale-source deletion, no unchanged-file detection, no content deduplication, no resume or checkpoint support, no provider fallback, no model pull or startup, no MCP registration, no search registration, and no semantic-quality guarantee.
 
 <!-- TASK58_KEC_BATCH_INDEX_END -->
+
+<!-- TASK59_KEC_DIRECTORY_BATCH_START -->
+
+### Deterministic KEC directory batch indexing
+
+Run the command with exactly one explicit project-relative directory:
+
+```bash
+pnpm --filter @voltai/mcp-kec index:directory kec/manuals
+```
+
+Discovery is non-recursive and inspects direct children only. It includes regular files ending in lowercase `.pdf`; non-PDF entries are ignored, as are uppercase `.PDF` files and nested directories. Directory and source symlinks are rejected and never followed. A directory with zero eligible sources is rejected with `NO_SOURCES`, and Task 59 adds no arbitrary source cap.
+
+Task 58 existing indexing and result semantics are reused, including canonical source validation, sourceId ordering, sequential fail-fast execution, serialization, and exit behavior. Task 59 provides no recursive traversal, no pruning or stale-source deletion, no incremental or unchanged-file indexing, no resume or checkpoint behavior, and no MCP registration.
+
+<!-- TASK59_KEC_DIRECTORY_BATCH_END -->

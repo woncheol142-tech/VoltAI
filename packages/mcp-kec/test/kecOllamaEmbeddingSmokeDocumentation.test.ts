@@ -6,8 +6,17 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  addTask59PackageScript,
+  addTask59ReadmeBlock,
+  normalizeTask59PackageBaseline,
+  normalizeTask59ReadmeBaseline,
+  removeTask59PackageScript,
   removeTask58PackageScript,
   removeTask58ReadmeSection,
+  task59PackageScriptName,
+  task59PackageScriptValue,
+  task59ReadmeBlock,
+  task59ReadmeStart,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const testFile = fileURLToPath(import.meta.url);
@@ -67,9 +76,24 @@ function task57Section(readme: string): string {
 
 function matchesCommittedReadme(readme: string, baseline: string): boolean {
   let normalizedReadme: string;
+  let normalizedBaseline: string;
   try {
+    const task59NormalizedReadme = normalizeTask59ReadmeBaseline(readme);
+    normalizedBaseline = normalizeTask59ReadmeBaseline(baseline);
     normalizedReadme =
-      readme === baseline ? readme : removeTask58ReadmeSection(readme);
+      task59NormalizedReadme === normalizedBaseline
+        ? task59NormalizedReadme
+        : removeTask58ReadmeSection(task59NormalizedReadme);
+    if (readme.includes(task59ReadmeStart)) {
+      if (
+        addTask59ReadmeBlock(
+          task59NormalizedReadme,
+          task59ReadmeBlock(readme),
+        ) !== readme
+      ) {
+        return false;
+      }
+    }
   } catch {
     return false;
   }
@@ -92,7 +116,7 @@ function matchesCommittedReadme(readme: string, baseline: string): boolean {
     task56MarkerEnd > task56MarkerStart &&
     task57MarkerStart > task56MarkerEnd &&
     task57MarkerEnd > task57MarkerStart &&
-    normalizedReadme === baseline &&
+    normalizedReadme === normalizedBaseline &&
     (readme === baseline ||
       (readme.split(task58Start).length === 2 &&
         readme.split(task58End).length === 2 &&
@@ -104,18 +128,24 @@ describe("Ollama embedding smoke package command contract", () => {
   it("preserves the exact committed package-local smoke command", () => {
     const currentText = readText(packageJsonPath);
     const baselineText = readHeadFile("packages/mcp-kec/package.json");
+    const currentTask59Baseline = removeTask59PackageScript(currentText);
+    const headTask59Baseline = normalizeTask59PackageBaseline(baselineText);
     const normalizedText =
-      currentText === baselineText
-        ? currentText
-        : removeTask58PackageScript(currentText);
-    expect(normalizedText).toBe(baselineText);
+      currentTask59Baseline === headTask59Baseline
+        ? currentTask59Baseline
+        : removeTask58PackageScript(currentTask59Baseline);
+    expect(normalizedText).toBe(headTask59Baseline);
+    expect(addTask59PackageScript(currentTask59Baseline)).toBe(currentText);
 
     const current = JSON.parse(currentText) as PackageJson;
-    const baseline = JSON.parse(baselineText) as PackageJson;
+    const baseline = JSON.parse(headTask59Baseline) as PackageJson;
     expect(JSON.parse(normalizedText)).toEqual(baseline);
-    if (currentText !== baselineText) {
+    if (currentTask59Baseline !== headTask59Baseline) {
       expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
     }
+    expect(current.scripts[task59PackageScriptName]).toBe(
+      task59PackageScriptValue,
+    );
     expect(current.scripts["smoke:ollama"]).toBe(scriptValue);
     expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
     expect(current.scripts["dev:hybrid"]).toBe("tsx src/hybrid.ts");
