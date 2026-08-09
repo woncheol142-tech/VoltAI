@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -13,6 +12,13 @@ import {
   task59ReadmeStart,
   workspaceRoot,
 } from "./helpers/kecBatchDirectoryFixture.js";
+import {
+  addTask59PackageScript,
+  addTask59ReadmeBlock,
+  removeTask59PackageScript,
+  removeTask59ReadmeSection,
+  task59ReadmeBlock,
+} from "./helpers/kecBatchIndexFixture.js";
 
 const packagePath = join(packageRoot, "package.json");
 const readmePath = join(workspaceRoot, "README.md");
@@ -30,24 +36,9 @@ function readText(path: string): string {
   return readFileSync(path, "utf8");
 }
 
-function readHead(relativePath: string): string {
-  return execFileSync("git", ["show", `HEAD:${relativePath}`], {
-    cwd: workspaceRoot,
-    encoding: "utf8",
-  });
-}
-
 function packageHasTask59Script(): boolean {
   const manifest = JSON.parse(readText(packagePath)) as PackageJson;
   return manifest.scripts[task59PackageScriptName] === task59PackageScriptValue;
-}
-
-function removeTask59Script(packageText: string): string {
-  const line = `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`;
-  if (packageText.split(line).length !== 2) {
-    throw new Error("Task 59 package script must occur exactly once");
-  }
-  return packageText.replace(line, "");
 }
 
 function readmeSection(readme: string): string {
@@ -55,25 +46,6 @@ function readmeSection(readme: string): string {
   const end = readme.indexOf(task59ReadmeEnd, start);
   if (start < 0 || end <= start) return "";
   return readme.slice(start, end + task59ReadmeEnd.length);
-}
-
-function removeTask59ReadmeSection(readme: string): string {
-  if (
-    readme.split(task59ReadmeStart).length !== 2 ||
-    readme.split(task59ReadmeEnd).length !== 2
-  ) {
-    throw new Error("Task 59 README markers must occur exactly once");
-  }
-  const start = readme.indexOf(task59ReadmeStart);
-  const end = readme.indexOf(task59ReadmeEnd, start);
-  if (start < 0 || end <= start) {
-    throw new Error("Task 59 README markers are malformed");
-  }
-  const sectionEnd = end + task59ReadmeEnd.length;
-  const removalStart =
-    readme.slice(start - 2, start) === "\n\n" ? start - 1 : start;
-  const removalEnd = readme[sectionEnd] === "\n" ? sectionEnd + 1 : sectionEnd;
-  return `${readme.slice(0, removalStart)}${readme.slice(removalEnd)}`;
 }
 
 function hasOneOrderedSection(readme: string): boolean {
@@ -92,18 +64,41 @@ describe("Task 59 package script RED contract", () => {
   it("allows only the exact Task 59 script delta in the package manifest", () => {
     if (!packageHasTask59Script()) return;
     const current = readText(packagePath);
-    const baseline = readHead("packages/mcp-kec/package.json");
+    const baseline = removeTask59PackageScript(current);
+    const reconstructed = addTask59PackageScript(baseline);
     const parsed = JSON.parse(current) as PackageJson;
     const baselineParsed = JSON.parse(baseline) as PackageJson;
 
-    expect(removeTask59Script(current)).toBe(baseline);
+    expect(reconstructed).toBe(current);
+    expect(removeTask59PackageScript(reconstructed)).toBe(baseline);
     expect(parsed.scripts[task59PackageScriptName]).toBe(
       task59PackageScriptValue,
     );
     expect(parsed.dependencies).toEqual(baselineParsed.dependencies);
     expect(parsed.devDependencies).toEqual(baselineParsed.devDependencies);
-    expect(readText(rootPackagePath)).toBe(readHead("package.json"));
-    expect(readText(lockfilePath)).toBe(readHead("pnpm-lock.yaml"));
+    expect(() =>
+      removeTask59PackageScript(
+        current.replace(task59PackageScriptValue, "tsx src/wrong.ts"),
+      ),
+    ).toThrow();
+    expect(() =>
+      removeTask59PackageScript(
+        current.replace(
+          `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`,
+          `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`,
+        ),
+      ),
+    ).toThrow();
+
+    const future = current.replace(
+      '    "test":',
+      '    "future:task60": "tsx src/task60.ts",\n    "test":',
+    );
+    expect(addTask59PackageScript(removeTask59PackageScript(future))).toBe(
+      future,
+    );
+    expect(readText(rootPackagePath)).not.toContain(task59PackageScriptValue);
+    expect(readText(lockfilePath)).not.toContain(task59PackageScriptValue);
   });
 
   it("adds no lifecycle hook, dependency, package-root export, or MCP command", () => {
@@ -129,8 +124,45 @@ describe("Task 59 README marker and operator contract", () => {
   it("places the sole Task 59 section immediately after Task 58 and changes nothing else", () => {
     const readme = readText(readmePath);
     if (!hasOneOrderedSection(readme)) return;
+    const section = task59ReadmeBlock(readme);
+    const baseline = removeTask59ReadmeSection(readme);
     expect(readme).toContain(`${task58ReadmeEnd}\n\n${task59ReadmeStart}\n`);
-    expect(removeTask59ReadmeSection(readme)).toBe(readHead("README.md"));
+    expect(addTask59ReadmeBlock(baseline, section)).toBe(readme);
+    expect(() =>
+      removeTask59ReadmeSection(readme.replace(task59ReadmeStart, "")),
+    ).toThrow();
+    expect(() =>
+      removeTask59ReadmeSection(readme.replace(task59ReadmeEnd, "")),
+    ).toThrow();
+    expect(() =>
+      removeTask59ReadmeSection(
+        readme.replace(
+          task59ReadmeStart,
+          `${task59ReadmeStart}\n${task59ReadmeStart}`,
+        ),
+      ),
+    ).toThrow();
+    expect(() =>
+      removeTask59ReadmeSection(
+        readme
+          .replace(task59ReadmeStart, "TASK59_MARKER_SWAP")
+          .replace(task59ReadmeEnd, task59ReadmeStart)
+          .replace("TASK59_MARKER_SWAP", task59ReadmeEnd),
+      ),
+    ).toThrow();
+    expect(() =>
+      removeTask59ReadmeSection(
+        `${baseline}\n<!-- TASK60_START -->\nFuture content.\n<!-- TASK60_END -->\n\n${section}\n`,
+      ),
+    ).toThrow();
+
+    const future = `${readme}\n<!-- TASK60_START -->\nFuture content.\n<!-- TASK60_END -->\n`;
+    expect(
+      addTask59ReadmeBlock(
+        removeTask59ReadmeSection(future),
+        task59ReadmeBlock(future),
+      ),
+    ).toBe(future);
   });
 
   it("documents one explicit project-relative directory and bounded non-recursive discovery", () => {

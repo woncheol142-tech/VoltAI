@@ -344,7 +344,7 @@ export function normalizeTask58ReadmeBaseline(committedReadme: string): string {
 }
 
 export function addTask59PackageScript(packageText: string): string {
-  const anchor = '    "test": "vitest run --root ../.. packages/mcp-kec/test"';
+  const anchor = `    "${task58PackageScriptName}": "${task58PackageScriptValue}",\n`;
   if (
     packageText.split(anchor).length !== 2 ||
     (packageText.match(/"index:directory"\s*:/gu) ?? []).length !== 0
@@ -353,7 +353,7 @@ export function addTask59PackageScript(packageText: string): string {
   }
   return packageText.replace(
     anchor,
-    `    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n${anchor}`,
+    `${anchor}    "${task59PackageScriptName}": "${task59PackageScriptValue}",\n`,
   );
 }
 

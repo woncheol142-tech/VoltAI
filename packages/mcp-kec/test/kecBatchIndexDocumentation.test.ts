@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,16 +8,21 @@ import { describe, expect, it } from "vitest";
 import {
   addTask58PackageScript,
   addTask58ReadmeSection,
+  addTask59PackageScript,
+  addTask59ReadmeBlock,
   captureTask58ArtifactBoundary,
   createKecBatchIndexFixture,
   normalizeTask58PackageBaseline,
   normalizeTask58ReadmeBaseline,
   removeTask58PackageScript,
   removeTask58ReadmeSection,
+  removeTask59PackageScript,
+  removeTask59ReadmeSection,
   task58PackageScriptName,
   task58PackageScriptValue,
   task58ReadmeEnd,
   task58ReadmeStart,
+  task59ReadmeBlock,
 } from "./helpers/kecBatchIndexFixture.js";
 
 const testFile = fileURLToPath(import.meta.url);
@@ -63,13 +68,6 @@ type PackageJson = Readonly<{
 
 function readText(path: string): string {
   return readFileSync(path, "utf8");
-}
-
-function readHeadFile(relativePath: string): string {
-  return execFileSync("git", ["show", `HEAD:${relativePath}`], {
-    cwd: workspaceRoot,
-    encoding: "utf8",
-  });
 }
 
 function task58Section(readme: string): string {
@@ -138,16 +136,19 @@ describe("Task 58 package-local command RED contract", () => {
   });
 
   it("reconstructs the committed manifest after removing exactly the future script", () => {
-    const committed = readHeadFile("packages/mcp-kec/package.json");
-    const baseline = normalizeTask58PackageBaseline(committed);
-    const future = addTask58PackageScript(baseline);
-    const parsed = JSON.parse(future) as PackageJson;
+    const committed = readText(packagePath);
+    const preTask59 = removeTask59PackageScript(committed);
+    const baseline = normalizeTask58PackageBaseline(preTask59);
+    const task58Future = addTask58PackageScript(baseline);
+    const reconstructed = addTask59PackageScript(task58Future);
+    const parsed = JSON.parse(reconstructed) as PackageJson;
 
-    expect(future).toBe(committed);
+    expect(task58Future).toBe(preTask59);
+    expect(reconstructed).toBe(committed);
     expect(parsed.scripts[task58PackageScriptName]).toBe(
       task58PackageScriptValue,
     );
-    expect(removeTask58PackageScript(future)).toBe(baseline);
+    expect(removeTask58PackageScript(task58Future)).toBe(baseline);
     expect(parsed.dependencies).toEqual(
       (JSON.parse(baseline) as PackageJson).dependencies,
     );
@@ -158,7 +159,7 @@ describe("Task 58 package-local command RED contract", () => {
 
   it("accepts only the exact script line and rejects malformed or duplicate deltas", () => {
     const baseline = normalizeTask58PackageBaseline(
-      readHeadFile("packages/mcp-kec/package.json"),
+      removeTask59PackageScript(readText(packagePath)),
     );
     const future = addTask58PackageScript(baseline);
 
@@ -195,10 +196,11 @@ describe("Task 58 package-local command RED contract", () => {
   });
 
   it("protects all existing scripts, lifecycle hooks, dependencies, root package, and lockfile", () => {
-    const baseline = JSON.parse(
-      readHeadFile("packages/mcp-kec/package.json"),
-    ) as PackageJson;
-    const current = JSON.parse(readText(packagePath)) as PackageJson;
+    const committed = readText(packagePath);
+    const preTask59 = removeTask59PackageScript(committed);
+    const baselineText = normalizeTask58PackageBaseline(preTask59);
+    const baseline = JSON.parse(baselineText) as PackageJson;
+    const current = JSON.parse(committed) as PackageJson;
 
     for (const [name, value] of Object.entries(baseline.scripts)) {
       expect(current.scripts[name]).toBe(value);
@@ -214,8 +216,11 @@ describe("Task 58 package-local command RED contract", () => {
     }
     expect(current.dependencies).toEqual(baseline.dependencies);
     expect(current.devDependencies).toEqual(baseline.devDependencies);
-    expect(readText(rootPackagePath)).toBe(readHeadFile("package.json"));
-    expect(readText(lockfilePath)).toBe(readHeadFile("pnpm-lock.yaml"));
+    expect(addTask59PackageScript(addTask58PackageScript(baselineText))).toBe(
+      committed,
+    );
+    expect(readText(rootPackagePath)).not.toContain(task58PackageScriptValue);
+    expect(readText(lockfilePath)).not.toContain(task58PackageScriptValue);
   });
 });
 
@@ -225,24 +230,30 @@ describe("Task 58 README RED and reconstruction contract", () => {
   });
 
   it("places the exact future section after Task 57 and reconstructs HEAD byte-for-byte", () => {
-    const committed = readHeadFile("README.md");
-    const baseline = normalizeTask58ReadmeBaseline(committed);
-    const future = addTask58ReadmeSection(
+    const committed = readText(readmePath);
+    const task59Block = task59ReadmeBlock(committed);
+    const preTask59 = removeTask59ReadmeSection(committed);
+    const baseline = normalizeTask58ReadmeBaseline(preTask59);
+    const task58Future = addTask58ReadmeSection(
       baseline,
-      task58SectionBody(committed),
+      task58SectionBody(preTask59),
     );
+    const reconstructed = addTask59ReadmeBlock(task58Future, task59Block);
 
-    expect(future).toBe(committed);
-    expect(future.split(task58ReadmeStart)).toHaveLength(2);
-    expect(future.split(task58ReadmeEnd)).toHaveLength(2);
-    expect(future.indexOf(task58ReadmeStart)).toBeGreaterThan(
-      future.indexOf(task57ReadmeEnd),
+    expect(task58Future).toBe(preTask59);
+    expect(reconstructed).toBe(committed);
+    expect(task58Future.split(task58ReadmeStart)).toHaveLength(2);
+    expect(task58Future.split(task58ReadmeEnd)).toHaveLength(2);
+    expect(task58Future.indexOf(task58ReadmeStart)).toBeGreaterThan(
+      task58Future.indexOf(task57ReadmeEnd),
     );
-    expect(removeTask58ReadmeSection(future)).toBe(baseline);
+    expect(removeTask58ReadmeSection(task58Future)).toBe(baseline);
   });
 
   it("rejects missing, duplicate, reversed, nested, and unrelated README mutations", () => {
-    const baseline = normalizeTask58ReadmeBaseline(readHeadFile("README.md"));
+    const baseline = normalizeTask58ReadmeBaseline(
+      removeTask59ReadmeSection(readText(readmePath)),
+    );
     const future = addTask58ReadmeSection(baseline, canonicalSection);
 
     expect(() => removeTask58ReadmeSection(baseline)).toThrow();
@@ -276,14 +287,17 @@ describe("Task 58 README RED and reconstruction contract", () => {
   });
 
   it("leaves every committed Task 51-57 README byte unchanged", () => {
-    const committed = readHeadFile("README.md");
-    const baseline = normalizeTask58ReadmeBaseline(committed);
-    const future = addTask58ReadmeSection(
+    const committed = readText(readmePath);
+    const task59Block = task59ReadmeBlock(committed);
+    const preTask59 = removeTask59ReadmeSection(committed);
+    const baseline = normalizeTask58ReadmeBaseline(preTask59);
+    const task58Future = addTask58ReadmeSection(
       baseline,
-      task58SectionBody(committed),
+      task58SectionBody(preTask59),
     );
-    expect(future).toBe(committed);
-    expect(removeTask58ReadmeSection(future)).toBe(baseline);
+    expect(task58Future).toBe(preTask59);
+    expect(addTask59ReadmeBlock(task58Future, task59Block)).toBe(committed);
+    expect(removeTask58ReadmeSection(task58Future)).toBe(baseline);
   });
 });
 
