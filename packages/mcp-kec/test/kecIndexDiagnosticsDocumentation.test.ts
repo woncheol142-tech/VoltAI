@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +38,8 @@ const task58SectionEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
 const task58ScriptName = "index:batch";
 const task58ScriptValue = "tsx src/indexKecBatch.ts";
 const command = "pnpm --filter @voltai/mcp-kec inspect:index";
+const approvedTask56ReadmeBlockSha256 =
+  "f2d81f2a7dc0f619a994addbf7fbabb37d5bf711192005cf05d243a9da160c35";
 
 type PackageJson = Readonly<{
   scripts: Readonly<Record<string, string>>;
@@ -67,18 +70,38 @@ function taskSection(readme: string): string {
   return readme.slice(start, end + sectionEnd.length);
 }
 
-function matchesCommittedReadme(readme: string, baseline: string): boolean {
-  let normalizedReadme: string;
-  let normalizedBaseline: string;
+function rawInclusiveBlock(
+  source: string,
+  startMarker: string,
+  endMarker: string,
+): string {
+  const startCount = source.split(startMarker).length - 1;
+  const endCount = source.split(endMarker).length - 1;
+  if (startCount !== 1 || endCount !== 1) {
+    throw new Error("README block requires exactly one start and end marker");
+  }
+
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker);
+  if (start >= end) {
+    throw new Error("README block start marker must precede end marker");
+  }
+  return source.slice(start, end + endMarker.length);
+}
+
+function sha256Text(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
+function matchesCommittedReadme(readme: string): boolean {
+  let task56Block: string;
   try {
-    normalizedReadme = task60ReadmeLayers(readme).preTask58;
-    normalizedBaseline = task60ReadmeLayers(baseline).preTask58;
+    task60ReadmeLayers(readme);
+    task56Block = rawInclusiveBlock(readme, sectionStart, sectionEnd);
   } catch {
     return false;
   }
   if (
-    readme.split(sectionStart).length !== 2 ||
-    readme.split(sectionEnd).length !== 2 ||
     readme.split(task57SectionStart).length !== 2 ||
     readme.split(task57SectionEnd).length !== 2
   ) {
@@ -95,7 +118,7 @@ function matchesCommittedReadme(readme: string, baseline: string): boolean {
     task56End > task56Start &&
     task57Start > task56End &&
     task57End > task57Start &&
-    normalizedReadme === normalizedBaseline &&
+    sha256Text(task56Block) === approvedTask56ReadmeBlockSha256 &&
     readme.split(task58SectionStart).length === 2 &&
     readme.split(task58SectionEnd).length === 2 &&
     readme.indexOf(task58SectionStart) > task57End
@@ -187,23 +210,24 @@ describe("KEC index diagnostics package script contract", () => {
 });
 
 describe("KEC index diagnostics README contract", () => {
-  it("preserves the exact committed Task 56 and Task 57 README baseline", () => {
+  it("preserves the exact committed raw Task 56 README block", () => {
     const readme = readText(readmePath);
-    const baseline = readme;
 
     expect(readme.match(new RegExp(sectionStart, "gu")) ?? []).toHaveLength(1);
     expect(readme.match(new RegExp(sectionEnd, "gu")) ?? []).toHaveLength(1);
-    expect(matchesCommittedReadme(readme, baseline)).toBe(true);
     expect(
-      matchesCommittedReadme(readme.replace(task59ReadmeStart, ""), baseline),
-    ).toBe(false);
+      sha256Text(rawInclusiveBlock(readme, sectionStart, sectionEnd)),
+    ).toBe(approvedTask56ReadmeBlockSha256);
+    expect(matchesCommittedReadme(readme)).toBe(true);
+    expect(matchesCommittedReadme(readme.replace(task59ReadmeStart, ""))).toBe(
+      false,
+    );
     expect(
       matchesCommittedReadme(
         readme.replace(
           task59ReadmeStart,
           `${task59ReadmeStart}\n${task59ReadmeStart}`,
         ),
-        baseline,
       ),
     ).toBe(false);
     expect(
@@ -212,17 +236,14 @@ describe("KEC index diagnostics README contract", () => {
           .replace(task59ReadmeStart, "TASK_59_MARKER_SWAP")
           .replace(task59ReadmeEnd, task59ReadmeStart)
           .replace("TASK_59_MARKER_SWAP", task59ReadmeEnd),
-        baseline,
       ),
     ).toBe(false);
-    expect(matchesCommittedReadme(`${readme}unrelated`, baseline)).toBe(false);
-    expect(
-      matchesCommittedReadme(readme.replace(sectionStart, ""), baseline),
-    ).toBe(false);
+    expect(matchesCommittedReadme(readme.replace(sectionStart, ""))).toBe(
+      false,
+    );
     expect(
       matchesCommittedReadme(
         readme.replace(sectionStart, `${sectionStart}\n${sectionStart}`),
-        baseline,
       ),
     ).toBe(false);
     expect(
@@ -231,10 +252,45 @@ describe("KEC index diagnostics README contract", () => {
           .replace(sectionStart, "TASK_56_MARKER_SWAP")
           .replace(sectionEnd, sectionStart)
           .replace("TASK_56_MARKER_SWAP", sectionEnd),
-        baseline,
       ),
     ).toBe(false);
     expect(taskSection(readme).match(/^#{1,6}\s+/gmu) ?? []).toHaveLength(1);
+  });
+
+  it.each([
+    [
+      "a duplicate start marker",
+      `${sectionStart}\n${sectionStart}\nbody\n${sectionEnd}`,
+    ],
+    [
+      "a duplicate end marker",
+      `${sectionStart}\nbody\n${sectionEnd}\n${sectionEnd}`,
+    ],
+    ["a missing start marker", `body\n${sectionEnd}`],
+    ["a missing end marker", `${sectionStart}\nbody`],
+    ["reversed marker ordering", `${sectionEnd}\nbody\n${sectionStart}`],
+  ])("Task62 raw Task 56 extractor rejects %s", (_caseName, malformed) => {
+    expect(() =>
+      rawInclusiveBlock(malformed, sectionStart, sectionEnd),
+    ).toThrow();
+  });
+
+  it("Task62 rejects additive and replacement Task 56 drift", () => {
+    const readme = readText(readmePath);
+    const sentinel =
+      "Task62 synthetic material drift preserves every existing Task 56 semantic term.";
+    const mutated = readme.replace(sectionEnd, `${sentinel}\n${sectionEnd}`);
+    const replaced = readme.replace(
+      "Read-only KEC index diagnostics",
+      "Read-only KEC index diagnostic status",
+    );
+
+    expect(mutated).not.toBe(readme);
+    expect(mutated.replace(`${sentinel}\n`, "")).toBe(readme);
+    expect(taskSection(mutated)).toContain(sentinel);
+    expect(matchesCommittedReadme(mutated)).toBe(false);
+    expect(replaced).not.toBe(readme);
+    expect(matchesCommittedReadme(replaced)).toBe(false);
   });
 
   it("documents the exact short-lived read-only command and path precedence", () => {

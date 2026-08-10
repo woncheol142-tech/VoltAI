@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { accessSync, constants, readFileSync } from "node:fs";
+import { accessSync, constants, readFileSync, readdirSync } from "node:fs";
 import { basename, dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -49,7 +49,7 @@ const compatibilityFiles = [
   "kecIndexDiagnosticsDocumentation.test.ts",
   "kecOllamaEmbeddingSmokeDocumentation.test.ts",
 ] as const;
-const canonicalSection = `### Deterministic explicit KEC batch indexing
+const syntheticTask58SectionFixture = `### Deterministic explicit KEC batch indexing
 
 Run repeated canonical project-relative PDF source paths explicitly:
 
@@ -74,6 +74,15 @@ type PackageJson = Readonly<{
 
 function readText(path: string): string {
   return readFileSync(path, "utf8");
+}
+
+function carriesTask58CompatibilityDelta(source: string): boolean {
+  return (
+    source.includes(task58ReadmeStart) &&
+    source.includes(task58ReadmeEnd) &&
+    source.includes(task58PackageScriptName) &&
+    source.includes(task58PackageScriptValue)
+  );
 }
 
 function resolvePnpmExecutable(): string {
@@ -352,7 +361,10 @@ describe("Task 58 README RED and reconstruction contract", () => {
         removeTask60ReadmeSection(readText(readmePath)),
       ),
     );
-    const future = addTask58ReadmeSection(baseline, canonicalSection);
+    const future = addTask58ReadmeSection(
+      baseline,
+      syntheticTask58SectionFixture,
+    );
 
     expect(() => removeTask58ReadmeSection(baseline)).toThrow();
     expect(() =>
@@ -400,6 +412,12 @@ describe("Task 58 README RED and reconstruction contract", () => {
     expect(task59Reapplied).toBe(preTask60);
     expect(addTask60ReadmeBlock(task59Reapplied, task60Block)).toBe(current);
     expect(removeTask58ReadmeSection(task58Future)).toBe(baseline);
+  });
+
+  it("characterizes the synthetic fixture as distinct from the live Task 58 body", () => {
+    const liveBody = task58SectionBody(readText(readmePath));
+
+    expect(syntheticTask58SectionFixture).not.toBe(liveBody);
   });
 });
 
@@ -562,4 +580,45 @@ describe("Task 58 forward-compatible baseline remediation contract", () => {
       expect(source).toContain(task58PackageScriptValue);
     },
   );
+
+  it("documents why Task 58 carriers must be discovered beyond the manual iteration boundary", () => {
+    const syntheticSixthFile = "kecTask62SyntheticCompatibility.test.ts";
+    const syntheticSixthSource = `
+const task58ReadmeStart = "${task58ReadmeStart}";
+const task58ReadmeEnd = "${task58ReadmeEnd}";
+const task58PackageScriptName = "${task58PackageScriptName}";
+const task58PackageScriptValue = "${task58PackageScriptValue}";
+`;
+    const inspectedByCurrentManualMechanism = compatibilityFiles.map(
+      (fileName) => {
+        const source = readText(join(packageRoot, "test", fileName));
+        expect(carriesTask58CompatibilityDelta(source)).toBe(true);
+        return fileName;
+      },
+    );
+
+    expect(carriesTask58CompatibilityDelta(syntheticSixthSource)).toBe(true);
+    expect(compatibilityFiles).not.toContain(syntheticSixthFile);
+    expect(inspectedByCurrentManualMechanism).not.toContain(syntheticSixthFile);
+  });
+
+  it("keeps the reviewed Task 58 carrier set equal to top-level inline carriers", () => {
+    const testRoot = join(packageRoot, "test");
+    const diskQualifyingSet = readdirSync(testRoot, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".test.ts"))
+      .filter((entry) =>
+        carriesTask58CompatibilityDelta(readText(join(testRoot, entry.name))),
+      )
+      .map((entry) => entry.name)
+      .sort();
+
+    // Deliberately non-recursive: helpers/kecBatchIndexFixture.ts is the
+    // definition site and would be a false positive for this carrier set.
+    // This file imports the marker constants, so it is not an inline-literal
+    // Task 58 compatibility carrier.
+    expect(diskQualifyingSet).not.toContain(
+      "kecBatchIndexDocumentation.test.ts",
+    );
+    expect(diskQualifyingSet).toEqual([...compatibilityFiles].sort());
+  });
 });
