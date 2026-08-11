@@ -454,6 +454,7 @@ describe("Task 58 batch index CLI module and import boundary", () => {
       const result = spawnSync(
         process.execPath,
         [
+          "--conditions=voltai-source",
           "--import",
           "tsx",
           "--input-type=module",

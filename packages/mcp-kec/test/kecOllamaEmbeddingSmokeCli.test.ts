@@ -135,7 +135,7 @@ function runCliSubprocess(
 ): SpawnSyncReturns<string> {
   return spawnSync(
     process.execPath,
-    ["--import", "tsx", cliSourcePath, ...argv],
+    ["--conditions=voltai-source", "--import", "tsx", cliSourcePath, ...argv],
     {
       cwd: packageRootPath,
       encoding: "utf8",
@@ -149,6 +149,7 @@ function runImportSubprocess(): SpawnSyncReturns<string> {
   return spawnSync(
     process.execPath,
     [
+      "--conditions=voltai-source",
       "--import",
       "tsx",
       "--input-type=module",

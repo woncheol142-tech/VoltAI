@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const packagesRoot = join(root, "packages");
+const sourceCapablePackages = [
+  ["@voltai/mcp-core", "mcp-core"],
+  ["@voltai/knowledge-core", "knowledge-core"],
+  ["@voltai/knowledge-sqlite", "knowledge-sqlite"],
+] as const;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap((entry) => {
@@ -27,12 +32,19 @@ function workspacePackages(): Map<string, string> {
       const packageJsonPath = join(packagesRoot, directory, "package.json");
 
       try {
-        const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+        const packageJson = JSON.parse(
+          readFileSync(packageJsonPath, "utf8"),
+        ) as {
           name?: unknown;
         };
 
         return typeof packageJson.name === "string"
-          ? [[packageJson.name, `./packages/${directory}/src/index.ts`] as const]
+          ? [
+              [
+                packageJson.name,
+                `./packages/${directory}/src/index.ts`,
+              ] as const,
+            ]
           : [];
       } catch {
         return [];
@@ -41,11 +53,16 @@ function workspacePackages(): Map<string, string> {
   );
 }
 
-function importedWorkspacePackages(packageNames: Set<string>): Map<string, string[]> {
+function importedWorkspacePackages(
+  packageNames: Set<string>,
+): Map<string, string[]> {
   const imports = new Map<string, string[]>();
   const importPattern = /(?:from\s+|import\s*\()?["'](@voltai\/[^"']+)["']/g;
 
-  for (const file of [...sourceFiles(packagesRoot), ...sourceFiles(join(root, "tests"))]) {
+  for (const file of [
+    ...sourceFiles(packagesRoot),
+    ...sourceFiles(join(root, "tests")),
+  ]) {
     const source = readFileSync(file, "utf8");
 
     for (const match of source.matchAll(importPattern)) {
@@ -55,7 +72,10 @@ function importedWorkspacePackages(packageNames: Set<string>): Map<string, strin
         continue;
       }
 
-      imports.set(packageName, [...(imports.get(packageName) ?? []), relative(root, file)]);
+      imports.set(packageName, [
+        ...(imports.get(packageName) ?? []),
+        relative(root, file),
+      ]);
     }
   }
 
@@ -63,6 +83,38 @@ function importedWorkspacePackages(packageNames: Set<string>): Map<string, strin
 }
 
 describe("workspace source resolution", () => {
+  it.each(sourceCapablePackages)(
+    "%s preserves legacy entries and exposes the approved source-capable root",
+    (packageName, directory) => {
+      const manifest = JSON.parse(
+        readFileSync(join(packagesRoot, directory, "package.json"), "utf8"),
+      ) as {
+        main?: unknown;
+        types?: unknown;
+        exports?: Record<string, unknown>;
+      };
+      const rootExport = manifest.exports?.["."] as
+        Record<string, unknown> | undefined;
+
+      expect(manifest.main).toBe("dist/index.js");
+      expect(manifest.types).toBe("dist/index.d.ts");
+      expect(
+        rootExport,
+        `${packageName} is missing exports["."]`,
+      ).toBeDefined();
+      expect(Object.keys(rootExport ?? {})).toEqual([
+        "types",
+        "voltai-source",
+        "default",
+      ]);
+      expect(rootExport).toEqual({
+        types: "./src/index.ts",
+        "voltai-source": "./src/index.ts",
+        default: "./dist/index.js",
+      });
+    },
+  );
+
   it("aliases every imported workspace package directly to src/index.ts", () => {
     const packages = workspacePackages();
     const imports = importedWorkspacePackages(new Set(packages.keys()));
@@ -70,14 +122,23 @@ describe("workspace source resolution", () => {
     const missing = Array.from(imports.keys()).filter((packageName) => {
       const sourceEntry = packages.get(packageName);
 
-      return !vitestConfig.includes(`"${packageName}"`) || !vitestConfig.includes(sourceEntry ?? "");
+      return (
+        !vitestConfig.includes(`"${packageName}"`) ||
+        !vitestConfig.includes(sourceEntry ?? "")
+      );
     });
 
-    expect(missing, `Missing source aliases for: ${missing.join(", ")}`).toEqual([]);
+    expect(
+      missing,
+      `Missing source aliases for: ${missing.join(", ")}`,
+    ).toEqual([]);
   });
 
   it("keeps CI test before build and explicitly removes stale package dist output", () => {
-    const workflow = readFileSync(join(root, ".github", "workflows", "ci.yml"), "utf8");
+    const workflow = readFileSync(
+      join(root, ".github", "workflows", "ci.yml"),
+      "utf8",
+    );
     const testIndex = workflow.indexOf("pnpm test");
     const buildIndex = workflow.indexOf("pnpm build");
 

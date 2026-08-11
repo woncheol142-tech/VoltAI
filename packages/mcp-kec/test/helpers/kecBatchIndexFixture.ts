@@ -28,7 +28,8 @@ export const batchIndexErrors = Object.freeze({
 });
 
 export const task58PackageScriptName = "index:batch";
-export const task58PackageScriptValue = "tsx src/indexKecBatch.ts";
+export const task58PackageScriptValue =
+  "tsx --conditions=voltai-source src/indexKecBatch.ts";
 export const task58ReadmeStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
 export const task58ReadmeEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
 export const task59PackageScriptName = "index:directory";
@@ -348,9 +349,11 @@ export function normalizeTask58ReadmeBaseline(committedReadme: string): string {
 }
 
 export function addTask59PackageScript(packageText: string): string {
-  const anchor = `    "${task58PackageScriptName}": "${task58PackageScriptValue}",\n`;
+  const occurrences = packageText.match(/"index:batch"\s*:/gu) ?? [];
+  const anchor = packageText.match(/^ {4}"index:batch": "[^"\r\n]+",\n/mu)?.[0];
   if (
-    packageText.split(anchor).length !== 2 ||
+    occurrences.length !== 1 ||
+    anchor === undefined ||
     (packageText.match(/"index:directory"\s*:/gu) ?? []).length !== 0
   ) {
     throw new Error("Task 59 package script baseline is malformed");

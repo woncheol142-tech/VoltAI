@@ -234,6 +234,43 @@ describe("Task 58 package-local command RED contract", () => {
     expect(reconstructed).toBe(current);
   });
 
+  it("round-trips only the final canonical Task 58 script value", () => {
+    const current = removeTask59PackageScript(
+      removeTask60PackageScript(readText(packagePath)),
+    );
+    const canonicalLine = `    "${task58PackageScriptName}": "${task58PackageScriptValue}",\n`;
+    const withScriptValue = (scriptValue: string): string =>
+      current.replace(
+        canonicalLine,
+        `    "${task58PackageScriptName}": "${scriptValue}",\n`,
+      );
+
+    expect(
+      addTask58PackageScript(normalizeTask58PackageBaseline(current)),
+    ).toBe(current);
+
+    for (const unreviewedValue of [
+      "tsx src/indexKecBatch.ts",
+      "tsx --conditions=EVIL src/pwn.ts",
+      "rm -rf /tmp/x && tsx src/indexKecBatch.ts",
+      "tsx src/indexKecBatch.ts --extra",
+      "tsx  --conditions=voltai-source src/indexKecBatch.ts",
+    ]) {
+      expect(() =>
+        normalizeTask58PackageBaseline(withScriptValue(unreviewedValue)),
+      ).toThrow();
+    }
+
+    expect(() =>
+      normalizeTask58PackageBaseline(current.replace(canonicalLine, "")),
+    ).toThrow();
+    expect(() =>
+      normalizeTask58PackageBaseline(
+        current.replace(canonicalLine, `${canonicalLine}${canonicalLine}`),
+      ),
+    ).toThrow();
+  });
+
   it("accepts only the exact script line and rejects malformed or duplicate deltas", () => {
     const baseline = normalizeTask58PackageBaseline(
       removeTask59PackageScript(
@@ -433,9 +470,11 @@ describe("Task 58 operator documentation product contract", () => {
       const corrected = runPackageCommand(["kec/a.pdf", "kec/b.pdf"], paths);
       expect(corrected.status).toBe(1);
       expect(corrected.stdout).toContain(
-        '> tsx src/indexKecBatch.ts "kec/a.pdf" "kec/b.pdf"',
+        '> tsx --conditions=voltai-source src/indexKecBatch.ts "kec/a.pdf" "kec/b.pdf"',
       );
-      expect(corrected.stdout).not.toContain('> tsx src/indexKecBatch.ts "--"');
+      expect(corrected.stdout).not.toContain(
+        '> tsx --conditions=voltai-source src/indexKecBatch.ts "--"',
+      );
       expect(corrected.stderr).toContain(
         "KEC_BATCH_INDEX: INVALID_CONFIGURATION",
       );
@@ -446,7 +485,7 @@ describe("Task 58 operator documentation product contract", () => {
       const broken = runPackageCommand(["--", "kec/a.pdf", "kec/b.pdf"], paths);
       expect(broken.status).toBe(1);
       expect(broken.stdout).toContain(
-        '> tsx src/indexKecBatch.ts "--" "kec/a.pdf" "kec/b.pdf"',
+        '> tsx --conditions=voltai-source src/indexKecBatch.ts "--" "kec/a.pdf" "kec/b.pdf"',
       );
       expect(broken.stderr).toContain("KEC_BATCH_INDEX: INVALID_ARGUMENT");
       expect(broken.stderr).not.toContain(

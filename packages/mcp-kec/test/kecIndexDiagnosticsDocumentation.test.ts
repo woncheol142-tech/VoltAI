@@ -36,7 +36,7 @@ const task57SectionEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 const task58SectionStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
 const task58SectionEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
 const task58ScriptName = "index:batch";
-const task58ScriptValue = "tsx src/indexKecBatch.ts";
+const task58ScriptValue = "tsx --conditions=voltai-source src/indexKecBatch.ts";
 const command = "pnpm --filter @voltai/mcp-kec inspect:index";
 const approvedTask56ReadmeBlockSha256 =
   "f2d81f2a7dc0f619a994addbf7fbabb37d5bf711192005cf05d243a9da160c35";
@@ -154,9 +154,11 @@ describe("KEC index diagnostics package script contract", () => {
         ),
       ),
     ).toThrow();
-    expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
+    expect(current.scripts["inspect:index"]).toBe(
+      "tsx --conditions=voltai-source src/inspectIndex.ts",
+    );
     expect(current.scripts["smoke:ollama"]).toBe(
-      "tsx src/smokeOllamaEmbedding.ts",
+      "tsx --conditions=voltai-source src/smokeOllamaEmbedding.ts",
     );
     expect(current.scripts[task58ScriptName]).toBe(task58ScriptValue);
   });
@@ -185,11 +187,15 @@ describe("KEC index diagnostics package script contract", () => {
     }
     expect(current.dependencies).toEqual(baseline.dependencies);
     expect(current.devDependencies).toEqual(baseline.devDependencies);
-    expect(current.scripts["inspect:index"] ?? "").not.toMatch(
-      /KEC_DB_PATH|PROJECT_ROOT|OLLAMA|--|&&|\|/u,
+    const inspectScript = current.scripts["inspect:index"] ?? "";
+    expect(inspectScript).toBe(
+      "tsx --conditions=voltai-source src/inspectIndex.ts",
     );
+    expect(
+      inspectScript.replace(" --conditions=voltai-source", ""),
+    ).not.toMatch(/KEC_DB_PATH|PROJECT_ROOT|OLLAMA|--|&&|\|/u);
     expect(current.scripts["smoke:ollama"]).toBe(
-      "tsx src/smokeOllamaEmbedding.ts",
+      "tsx --conditions=voltai-source src/smokeOllamaEmbedding.ts",
     );
   });
 

@@ -76,7 +76,7 @@ const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 const task58ReadmeStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
 const task58ReadmeEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
 const task58ScriptName = "index:batch";
-const task58ScriptValue = "tsx src/indexKecBatch.ts";
+const task58ScriptValue = "tsx --conditions=voltai-source src/indexKecBatch.ts";
 
 type PackageManifest = Readonly<Record<string, unknown>> &
   Readonly<{
@@ -139,10 +139,10 @@ function expectCommittedPackageBaseline(): void {
     scripts: currentPackage.scripts,
   });
   expect(currentPackage.scripts["inspect:index"]).toBe(
-    "tsx src/inspectIndex.ts",
+    "tsx --conditions=voltai-source src/inspectIndex.ts",
   );
   expect(currentPackage.scripts["smoke:ollama"]).toBe(
-    "tsx src/smokeOllamaEmbedding.ts",
+    "tsx --conditions=voltai-source src/smokeOllamaEmbedding.ts",
   );
 }
 

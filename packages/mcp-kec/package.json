@@ -11,9 +11,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "start:hybrid": "node dist/hybrid.js",
-    "inspect:index": "tsx src/inspectIndex.ts",
-    "smoke:ollama": "tsx src/smokeOllamaEmbedding.ts",
-    "index:batch": "tsx src/indexKecBatch.ts",
+    "inspect:index": "tsx --conditions=voltai-source src/inspectIndex.ts",
+    "smoke:ollama": "tsx --conditions=voltai-source src/smokeOllamaEmbedding.ts",
+    "index:batch": "tsx --conditions=voltai-source src/indexKecBatch.ts",
     "index:directory": "tsx src/indexKecDirectory.ts",
     "prune:directory": "tsx src/pruneKecDirectory.ts",
     "test": "vitest run --root ../.. packages/mcp-kec/test"

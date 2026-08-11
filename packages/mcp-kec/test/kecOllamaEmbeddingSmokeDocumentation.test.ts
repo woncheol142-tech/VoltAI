@@ -37,9 +37,10 @@ const task57End = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 const task58Start = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
 const task58End = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
 const task58ScriptName = "index:batch";
-const task58ScriptValue = "tsx src/indexKecBatch.ts";
+const task58ScriptValue = "tsx --conditions=voltai-source src/indexKecBatch.ts";
 const command = "pnpm --filter @voltai/mcp-kec smoke:ollama";
-const scriptValue = "tsx src/smokeOllamaEmbedding.ts";
+const scriptValue =
+  "tsx --conditions=voltai-source src/smokeOllamaEmbedding.ts";
 const approvedTask57ReadmeBlockSha256 =
   "9fda4283b1489e171177330d0a5a35dd204a4ec3f7bfa3a558325d1166f243b7";
 
@@ -146,7 +147,9 @@ describe("Ollama embedding smoke package command contract", () => {
       task60PackageScriptValue,
     );
     expect(current.scripts["smoke:ollama"]).toBe(scriptValue);
-    expect(current.scripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
+    expect(current.scripts["inspect:index"]).toBe(
+      "tsx --conditions=voltai-source src/inspectIndex.ts",
+    );
     expect(current.scripts["dev:hybrid"]).toBe("tsx src/hybrid.ts");
     expect(current.scripts["start:hybrid"]).toBe("node dist/hybrid.js");
   });

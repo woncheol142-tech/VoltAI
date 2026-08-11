@@ -46,7 +46,7 @@ const task57ReadmeEnd = "<!-- TASK57_OLLAMA_EMBEDDING_SMOKE_END -->";
 const task58ReadmeStart = "<!-- TASK58_KEC_BATCH_INDEX_START -->";
 const task58ReadmeEnd = "<!-- TASK58_KEC_BATCH_INDEX_END -->";
 const task58ScriptName = "index:batch";
-const task58ScriptValue = "tsx src/indexKecBatch.ts";
+const task58ScriptValue = "tsx --conditions=voltai-source src/indexKecBatch.ts";
 
 type PackageManifest = Readonly<Record<string, unknown>> &
   Readonly<{
@@ -201,9 +201,11 @@ function expectCurrentCommittedPackageAndReadmeBaseline(): void {
   expect(currentScripts.start).toBe("node dist/index.js");
   expect(currentScripts["dev:hybrid"]).toBe("tsx src/hybrid.ts");
   expect(currentScripts["start:hybrid"]).toBe("node dist/hybrid.js");
-  expect(currentScripts["inspect:index"]).toBe("tsx src/inspectIndex.ts");
+  expect(currentScripts["inspect:index"]).toBe(
+    "tsx --conditions=voltai-source src/inspectIndex.ts",
+  );
   expect(currentScripts["smoke:ollama"]).toBe(
-    "tsx src/smokeOllamaEmbedding.ts",
+    "tsx --conditions=voltai-source src/smokeOllamaEmbedding.ts",
   );
   expect(JSON.stringify(currentPackage)).not.toContain("KEC_HYBRID_ENABLED");
 
