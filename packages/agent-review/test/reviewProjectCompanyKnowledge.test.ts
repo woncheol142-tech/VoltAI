@@ -21,6 +21,7 @@ class CapturingLlm implements ReviewLlm {
 function createPorts(
   llm: CapturingLlm,
   searchCompany?: (query: string) => Promise<CompanySearchResult[]>,
+  companySearchProvider?: string,
 ): ReviewProjectPorts {
   return {
     listProjectFiles: vi.fn().mockResolvedValue([
@@ -42,8 +43,21 @@ function createPorts(
     readExcel: vi.fn(),
     searchKec: vi.fn().mockResolvedValue([kecResult()]),
     ...(searchCompany ? { searchCompany: vi.fn(searchCompany) } : {}),
+    ...(companySearchProvider === undefined ? {} : { companySearchProvider }),
     llm,
   };
+}
+
+function unsupportedCompanyResult(): CompanySearchResult {
+  return companyResult({
+    chunkId: "company-unrelated",
+    sourcePath: "standards/procurement.pdf",
+    standardId: "CS-PROC-900",
+    title: "Procurement Archive Standard",
+    section: null,
+    text: "Purchasing archive retention requirements.",
+    similarity: 0.99,
+  });
 }
 
 describe("reviewProject Company Knowledge integration", () => {
@@ -89,5 +103,48 @@ describe("reviewProject Company Knowledge integration", () => {
     expect(llm.input?.findings.map((finding) => finding.message).join("\n")).not.toContain(
       "private-token",
     );
+  });
+
+  it("filters unsupported Company results for the placeholder provider", async () => {
+    const llm = new CapturingLlm();
+    const supported = companyResult();
+    const unsupported = unsupportedCompanyResult();
+    const ports = createPorts(
+      llm,
+      async () => [unsupported, supported],
+      "placeholder",
+    );
+
+    await reviewProject({ projectPath: "/project" }, ports);
+
+    expect(llm.input?.companyResults).toEqual([supported]);
+    expect(llm.input?.itemReviews).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "케이블",
+          companyResults: [supported],
+        }),
+      ]),
+    );
+  });
+
+  it("passes raw Company results through for a non-placeholder provider", async () => {
+    const llm = new CapturingLlm();
+    const raw = [unsupportedCompanyResult(), companyResult()];
+    const ports = createPorts(llm, async () => raw, "ollama");
+
+    await reviewProject({ projectPath: "/project" }, ports);
+
+    expect(llm.input?.companyResults).toEqual(raw);
+  });
+
+  it("passes raw Company results through when the provider is absent", async () => {
+    const llm = new CapturingLlm();
+    const raw = [unsupportedCompanyResult(), companyResult()];
+    const ports: ReviewProjectPorts = createPorts(llm, async () => raw);
+
+    await reviewProject({ projectPath: "/project" }, ports);
+
+    expect(llm.input?.companyResults).toEqual(raw);
   });
 });

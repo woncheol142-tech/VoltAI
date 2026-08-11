@@ -82,7 +82,7 @@ describe("Company placeholder citation selection", () => {
         searchKec: vi.fn(async () => [kecResult()]),
         searchCompany: vi.fn(async () => raw),
         companySearchProvider: provider,
-      } as never);
+      });
 
     const placeholder = await createService("placeholder").searchProject({
       context: "Cable grounding design",
@@ -102,7 +102,7 @@ describe("Company placeholder citation selection", () => {
       searchKec: vi.fn(async () => [kecResult()]),
       searchCompany,
       companySearchProvider: "placeholder",
-    } as never);
+    });
 
     const result = await service.searchItem({
       name: "케이블",
@@ -135,7 +135,7 @@ describe("Company placeholder citation selection", () => {
       searchKec: vi.fn(async () => [kecResult()]),
       searchCompany: vi.fn(async () => [malformed]),
       companySearchProvider: "placeholder",
-    } as never);
+    });
 
     const result = await service.searchProject({ context: "Cable grounding design" });
 

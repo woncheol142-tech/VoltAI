@@ -121,6 +121,7 @@ export type ReviewProjectPorts = {
   ) => Promise<ExcelReadResult>;
   searchKec: (question: string) => Promise<KecSearchResult[]>;
   searchCompany?: (question: string) => Promise<CompanySearchResult[]>;
+  companySearchProvider?: string;
   llm: ReviewLlm;
   close?: () => Promise<void> | void;
 };
