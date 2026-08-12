@@ -34,6 +34,7 @@ export {
   createSearchDrawingsTool,
   searchDrawings,
 } from "./tools/searchDrawings.js";
+export { loadDrawingIndex } from "./drawingSearch/loadDrawingIndex.js";
 export {
   createExtractDrawingLayoutTool,
   extractDrawingLayout,

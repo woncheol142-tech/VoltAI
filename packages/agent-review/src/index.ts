@@ -44,9 +44,32 @@ export type {
 } from "./llm.js";
 export type { DesignItemRelationFinding } from "./designRelations.js";
 export type { KecCitationMetadata } from "./kecCitationAdapter.js";
-export { defaultReviewIngestionPolicy, reviewProject } from "./reviewProject.js";
-export type { DesignItemCandidate, DesignItemCorpus, DesignItemName } from "./designItems.js";
-export type { ReviewIngestionPolicy, ReviewProjectInput } from "./reviewProject.js";
+export {
+  defaultReviewIngestionPolicy,
+  reviewProject,
+} from "./reviewProject.js";
+export { reviewElectricalRequest } from "./reviewElectricalRequest.js";
+export type {
+  DesignItemCandidate,
+  DesignItemCorpus,
+  DesignItemName,
+} from "./designItems.js";
+export type {
+  ReviewIngestionPolicy,
+  ReviewProjectInput,
+} from "./reviewProject.js";
+export type {
+  ElectricalReviewRequestInput,
+  ElectricalReviewResult,
+  ElectricalReviewSelection,
+  ElectricalSelectedDrawing,
+} from "./reviewElectricalRequest.js";
+export type {
+  ElectricalDrawingCandidate,
+  ElectricalDrawingPage,
+  ElectricalDrawingSearchResult,
+  ElectricalReviewPorts,
+} from "./electricalReviewPorts.js";
 export type {
   ExcelReadResult,
   CadEvidence,
@@ -66,4 +89,7 @@ export type {
   StructuredEvidence,
   UnknownEvidence,
 } from "./ports.js";
-export type { CompanyCitation, CompanySearchResult } from "@voltai/knowledge-company";
+export type {
+  CompanyCitation,
+  CompanySearchResult,
+} from "@voltai/knowledge-company";
