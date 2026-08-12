@@ -33,6 +33,7 @@ export {
 export type {
   FallbackReviewLlmOptions,
   GlmReviewLlmProviderOptions,
+  MarkdownReviewPromptBuilderOptions,
   ReviewLlmFailureKind,
   ReviewLlmFallbackPolicy,
   ReviewLlmProvider,
