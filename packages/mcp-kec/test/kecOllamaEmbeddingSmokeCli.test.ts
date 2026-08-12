@@ -1,6 +1,16 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -40,8 +50,8 @@ type OllamaEmbeddingSmokeCliModule = Readonly<{
 
 const testFile = fileURLToPath(import.meta.url);
 const packageRootPath = join(dirname(testFile), "..");
-const workspaceRoot = resolve(packageRootPath, "..", "..");
 const cliSourcePath = join(packageRootPath, "src", "smokeOllamaEmbedding.ts");
+const tsxLoaderPath = createRequire(import.meta.url).resolve("tsx");
 const approvedEnvironmentKeys = [
   "KEC_EMBED_PROVIDER",
   "OLLAMA_BASE_URL",
@@ -50,6 +60,7 @@ const approvedEnvironmentKeys = [
 ] as const;
 const approvedMessages = Object.freeze(Object.values(smokeErrors));
 let cliModule: Promise<OllamaEmbeddingSmokeCliModule> | undefined;
+const subprocessRoots: string[] = [];
 
 function loadCliModule(): Promise<OllamaEmbeddingSmokeCliModule> {
   cliModule ??=
@@ -132,16 +143,44 @@ function controlledEnvironment(
 function runCliSubprocess(
   environment: NodeJS.ProcessEnv,
   argv: readonly string[] = [],
+  cwd = packageRootPath,
 ): SpawnSyncReturns<string> {
   return spawnSync(
     process.execPath,
-    ["--conditions=voltai-source", "--import", "tsx", cliSourcePath, ...argv],
+    [
+      "--conditions=voltai-source",
+      "--import",
+      tsxLoaderPath,
+      cliSourcePath,
+      ...argv,
+    ],
     {
-      cwd: packageRootPath,
+      cwd,
       encoding: "utf8",
       env: environment,
       timeout: 10_000,
     },
+  );
+}
+
+function useIsolatedSubprocessRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "voltai-ollama-smoke-cli-"));
+  subprocessRoots.push(root);
+  return root;
+}
+
+function controlledArtifactSnapshot(root: string): string {
+  return JSON.stringify(
+    [".voltai", ".volt-ai"].map((directory) => {
+      const directoryPath = join(root, directory);
+      const sentinelPath = join(directoryPath, "sentinel.txt");
+
+      return {
+        directory,
+        entries: readdirSync(directoryPath).sort(),
+        sentinel: readFileSync(sentinelPath, "utf8"),
+      };
+    }),
   );
 }
 
@@ -170,6 +209,9 @@ afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  for (const root of subprocessRoots.splice(0).reverse()) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 describe("Ollama embedding smoke CLI module boundary", () => {
@@ -600,16 +642,50 @@ describe("Ollama embedding smoke safe subprocess contract", () => {
     expect(result.stderr).not.toContain("argument-sentinel");
   });
 
-  it("rejects an invalid provider and terminates without contacting Ollama", () => {
+  it("rejects an invalid provider without creating artifacts in a clean isolated cwd", () => {
+    const cwd = useIsolatedSubprocessRoot();
+    expect(existsSync(join(cwd, ".voltai"))).toBe(false);
+    expect(existsSync(join(cwd, ".volt-ai"))).toBe(false);
+
     const result = runCliSubprocess(
       controlledEnvironment({ KEC_EMBED_PROVIDER: "placeholder" }),
+      [],
+      cwd,
     );
 
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toBe(`${smokeErrors.invalidConfiguration}\n`);
-    expect(existsSync(join(workspaceRoot, ".voltai"))).toBe(false);
-    expect(existsSync(join(workspaceRoot, ".volt-ai"))).toBe(false);
+    expect(existsSync(join(cwd, ".voltai"))).toBe(false);
+    expect(existsSync(join(cwd, ".volt-ai"))).toBe(false);
+  });
+
+  it("rejects an invalid provider without mutating pre-existing isolated artifacts", () => {
+    const cwd = useIsolatedSubprocessRoot();
+    for (const directory of [".voltai", ".volt-ai"] as const) {
+      const directoryPath = join(cwd, directory);
+      mkdirSync(directoryPath);
+      writeFileSync(
+        join(directoryPath, "sentinel.txt"),
+        `${directory}:controlled-sentinel\n`,
+        "utf8",
+      );
+    }
+    const before = controlledArtifactSnapshot(cwd);
+
+    const result = runCliSubprocess(
+      controlledEnvironment({ KEC_EMBED_PROVIDER: "placeholder" }),
+      [],
+      cwd,
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe(`${smokeErrors.invalidConfiguration}\n`);
+    expect(existsSync(join(cwd, ".voltai"))).toBe(true);
+    expect(existsSync(join(cwd, ".volt-ai"))).toBe(true);
+    expect(controlledArtifactSnapshot(cwd)).toBe(before);
   });
 });
