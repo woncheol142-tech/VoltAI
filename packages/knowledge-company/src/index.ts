@@ -5,6 +5,7 @@ export {
 } from "./citation.js";
 export { createCompanyChunks } from "./chunk.js";
 export { createCompanyKnowledgeDocument } from "./document.js";
+export { companyEvidenceAuthority } from "./evidenceAuthority.js";
 export {
   companyKnowledgeCodecs,
   companyKnowledgeMetadataCodec,

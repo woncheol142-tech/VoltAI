@@ -69,7 +69,6 @@ const protectedProduction = [
   "packages/mcp-kec/src/knowledge/pdfPages.ts",
   "packages/mcp-kec/src/knowledge/sqliteVectorStore.ts",
   "packages/mcp-kec/src/knowledge/vectorStore.ts",
-  "packages/knowledge-core",
   "packages/knowledge-sqlite/package.json",
   "packages/knowledge-sqlite/tsconfig.json",
   "packages/knowledge-sqlite/src/errors.ts",

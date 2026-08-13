@@ -247,7 +247,6 @@ const protectedProductionPaths = [
   join(sourceRoot, "searchLexical"),
   join(sourceRoot, "searchAdapters"),
   legacySearch,
-  join(workspaceRoot, "packages", "knowledge-core"),
   join(workspaceRoot, "packages", "knowledge-sqlite", "package.json"),
   join(workspaceRoot, "packages", "knowledge-sqlite", "tsconfig.json"),
   join(workspaceRoot, "packages", "knowledge-sqlite", "src", "errors.ts"),

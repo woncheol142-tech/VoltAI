@@ -4,6 +4,10 @@ export type {
   KnowledgeMetadataCodec,
 } from "./metadataCodec.js";
 export type { KnowledgeEmbeddingProvider } from "./embedding.js";
+export type {
+  EvidenceAuthority,
+  KnowledgeAuthorityClass,
+} from "./evidenceAuthority.js";
 export type { KnowledgeVectorStore } from "./vectorStore.js";
 export type {
   EmbeddedKnowledgeChunk,
