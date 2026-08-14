@@ -8,6 +8,12 @@ export type {
   EvidenceAuthority,
   KnowledgeAuthorityClass,
 } from "./evidenceAuthority.js";
+export type {
+  ApplicabilityStatus,
+  ConflictStatus,
+  RequirementApplicability,
+  RequirementConflict,
+} from "./requirementRelations.js";
 export type { KnowledgeVectorStore } from "./vectorStore.js";
 export type {
   EmbeddedKnowledgeChunk,
