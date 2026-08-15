@@ -4,6 +4,7 @@ export type { DecisionBasis } from "./decisionBasis.js";
 export type { DecisionRecord } from "./decisionRecord.js";
 export type { DecisionRecordKeyCodec } from "./decisionRecordKeyCodec.js";
 export type { DecisionSupersession } from "./decisionSupersession.js";
+export type { DecisionValueCodec } from "./decisionValueCodec.js";
 export type { Inference } from "./inference.js";
 export type {
   KnowledgeCodecs,
