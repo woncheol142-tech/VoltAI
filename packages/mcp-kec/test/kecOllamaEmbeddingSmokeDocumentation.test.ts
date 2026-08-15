@@ -14,6 +14,7 @@ import {
   task60PackageScriptName,
   task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
+import { assertKecDependencyAuthority } from "./helpers/kecDependencyAuthority.js";
 
 const testFile = fileURLToPath(import.meta.url);
 const packageRoot = join(dirname(testFile), "..");
@@ -24,7 +25,6 @@ const readmePath = join(workspaceRoot, "README.md");
 const environmentExamplePath = join(workspaceRoot, ".env.example");
 const dockerfilePath = join(workspaceRoot, "Dockerfile");
 const dockerComposePath = join(workspaceRoot, "docker-compose.yml");
-const lockfilePath = join(workspaceRoot, "pnpm-lock.yaml");
 const providerPath = join(packageRoot, "src", "knowledge", "embedding.ts");
 const packageIndexPath = join(packageRoot, "src", "index.ts");
 const defaultRuntimePath = join(packageRoot, "src", "index.ts");
@@ -154,7 +154,7 @@ describe("Ollama embedding smoke package command contract", () => {
     expect(current.scripts["start:hybrid"]).toBe("node dist/hybrid.js");
   });
 
-  it("adds no lifecycle hook, dependency, root command, or lockfile change", () => {
+  it("adds no lifecycle hook or root command and preserves approved dependency authority", () => {
     const current = readPackage(packageJsonPath);
     const baseline = JSON.parse(
       task60PackageLayers(readText(packageJsonPath)).preTask58,
@@ -171,11 +171,10 @@ describe("Ollama embedding smoke package command contract", () => {
     }
     expect(current.dependencies).toEqual(baseline.dependencies);
     expect(current.devDependencies).toEqual(baseline.devDependencies);
-    expect(readText(rootPackageJsonPath)).toBe(readHeadFile("package.json"));
+    assertKecDependencyAuthority(workspaceRoot);
     expect(readPackage(rootPackageJsonPath).scripts).not.toHaveProperty(
       "smoke:ollama",
     );
-    expect(readText(lockfilePath)).toBe(readHeadFile("pnpm-lock.yaml"));
     expect(current.scripts["smoke:ollama"] ?? "").not.toMatch(
       /&&|\||\$|KEC_|OLLAMA_|PROJECT_ROOT|KEC_DB_PATH/u,
     );
@@ -417,14 +416,14 @@ describe("Ollama embedding smoke public compatibility boundary", () => {
     expect(hybridRuntime).not.toContain("smoke:ollama");
   });
 
-  it("leaves provider, environment, Docker, root package, and lockfile byte-identical", () => {
+  it("leaves provider, environment, and Docker boundaries byte-identical while preserving approved dependency authority", () => {
+    assertKecDependencyAuthority(workspaceRoot);
+
     for (const [path, relativePath] of [
       [providerPath, "packages/mcp-kec/src/knowledge/embedding.ts"],
       [environmentExamplePath, ".env.example"],
       [dockerfilePath, "Dockerfile"],
       [dockerComposePath, "docker-compose.yml"],
-      [rootPackageJsonPath, "package.json"],
-      [lockfilePath, "pnpm-lock.yaml"],
     ] as const) {
       expect(readText(path)).toBe(readHeadFile(relativePath));
     }

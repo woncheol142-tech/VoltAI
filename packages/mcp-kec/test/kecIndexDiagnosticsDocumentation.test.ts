@@ -18,6 +18,7 @@ import {
   task60PackageScriptName,
   task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
+import { assertKecDependencyAuthority } from "./helpers/kecDependencyAuthority.js";
 
 const testFile = fileURLToPath(import.meta.url);
 const packageRoot = join(dirname(testFile), "..");
@@ -200,7 +201,7 @@ describe("KEC index diagnostics package script contract", () => {
   });
 
   it("adds no root command and leaves Docker and environment templates byte-identical", () => {
-    expect(readText(rootPackageJsonPath)).toBe(readHeadFile("package.json"));
+    assertKecDependencyAuthority(workspaceRoot);
     expect(readText(environmentExamplePath)).toBe(readHeadFile(".env.example"));
     expect(readText(dockerfilePath)).toBe(readHeadFile("Dockerfile"));
     expect(readText(dockerComposePath)).toBe(

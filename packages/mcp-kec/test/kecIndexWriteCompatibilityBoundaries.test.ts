@@ -15,6 +15,7 @@ import {
   task60PackageScriptName,
   task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
+import { assertKecDependencyAuthority } from "./helpers/kecDependencyAuthority.js";
 import {
   assertTask61KnowledgeSqliteCompatibility,
   readCompatibilityBaseline,
@@ -161,6 +162,8 @@ describe("KEC index write compatibility architecture boundaries", () => {
   });
 
   it("keeps package, README, runtime, environment, chunking, search, and storage boundaries protected", () => {
+    assertKecDependencyAuthority(workspaceRoot);
+
     for (const relativePath of [
       "packages/mcp-kec/package.json",
       "packages/mcp-kec/src/index.ts",
@@ -171,8 +174,6 @@ describe("KEC index write compatibility architecture boundaries", () => {
       "packages/mcp-kec/src/tools/searchKec.ts",
       "packages/mcp-kec/src/tools/searchKecHybrid.ts",
       "packages/knowledge-sqlite/src/sqliteKnowledgeStore.ts",
-      "package.json",
-      "pnpm-lock.yaml",
       "README.md",
       ".env.example",
     ]) {

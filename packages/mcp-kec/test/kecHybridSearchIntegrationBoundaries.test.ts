@@ -16,6 +16,7 @@ import {
   task60PackageScriptName,
   task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
+import { assertKecDependencyAuthority } from "./helpers/kecDependencyAuthority.js";
 import {
   assertTask61KnowledgeSqliteCompatibility,
   readCompatibilityBaseline,
@@ -252,8 +253,6 @@ const protectedProductionPaths = [
   join(workspaceRoot, "packages", "knowledge-sqlite", "src", "errors.ts"),
   join(workspaceRoot, "packages", "knowledge-sqlite", "src", "index.ts"),
   join(workspaceRoot, "packages", "knowledge-sqlite", "src", "schema.ts"),
-  join(workspaceRoot, "package.json"),
-  join(workspaceRoot, "pnpm-lock.yaml"),
 ];
 
 describe("KEC hybrid search integration architecture boundaries", () => {
@@ -405,6 +404,7 @@ describe("KEC hybrid search integration architecture boundaries", () => {
   });
 
   it("keeps Task 51 stable while allowing only the approved forward integration", () => {
+    assertKecDependencyAuthority(workspaceRoot);
     assertTask61KnowledgeSqliteCompatibility(
       readCompatibilityBaseline(workspaceRoot),
       readCompatibilityWorkingTree(workspaceRoot),

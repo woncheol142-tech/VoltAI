@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,8 +5,11 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
+import { assertKecDependencyAuthority } from "./helpers/kecDependencyAuthority.js";
+
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(testDirectory, "..");
+const workspaceRoot = join(packageRoot, "..", "..");
 const sourceRoot = join(packageRoot, "src", "searchFoundation");
 const packageIndex = join(packageRoot, "src", "index.ts");
 const runtimeFiles = [
@@ -107,12 +109,6 @@ describe("KEC search foundation dependency boundaries", () => {
   });
 
   it("does not add network-capable production dependencies", () => {
-    expect(() =>
-      execFileSync(
-        "git",
-        ["diff", "--exit-code", "--", "package.json", "pnpm-lock.yaml"],
-        { cwd: join(packageRoot, "..", ".."), stdio: "pipe" },
-      ),
-    ).not.toThrow();
+    assertKecDependencyAuthority(workspaceRoot);
   });
 });

@@ -16,6 +16,7 @@ import {
   task60PackageScriptName,
   task60PackageScriptValue,
 } from "./helpers/kecBatchIndexFixture.js";
+import { assertKecDependencyAuthority } from "./helpers/kecDependencyAuthority.js";
 import {
   assertTask61KnowledgeSqliteCompatibility,
   readCompatibilityBaseline,
@@ -74,8 +75,6 @@ const protectedProduction = [
   "packages/knowledge-sqlite/src/errors.ts",
   "packages/knowledge-sqlite/src/index.ts",
   "packages/knowledge-sqlite/src/schema.ts",
-  "package.json",
-  "pnpm-lock.yaml",
 ];
 
 function readSource(path: string): string {
@@ -505,6 +504,7 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
   });
 
   it("keeps Task 52 implementation and protected Task 46-51 production HEAD-stable", () => {
+    assertKecDependencyAuthority(workspaceRoot);
     assertTask61KnowledgeSqliteCompatibility(
       readCompatibilityBaseline(workspaceRoot),
       readCompatibilityWorkingTree(workspaceRoot),
@@ -700,16 +700,15 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
     expect(hybridTool).not.toMatch(/process\.cwd\s*\(/u);
   });
 
-  it("adds no manifest, dependency, lockfile, config, schema, or README change", () => {
+  it("preserves approved dependency authority and config, schema, and README boundaries", () => {
     const protectedFiles = [
-      "package.json",
-      "pnpm-lock.yaml",
       "packages/mcp-kec/tsconfig.json",
       "NEXT_STEPS.md",
       "CHANGELOG.md",
       "packages/knowledge-sqlite/src/schema.ts",
     ];
 
+    assertKecDependencyAuthority(workspaceRoot);
     expect(() =>
       execFileSync(
         "git",
