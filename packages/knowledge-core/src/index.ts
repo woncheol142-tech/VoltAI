@@ -1,5 +1,6 @@
 export type { AlternativeOption } from "./alternatives.js";
 export type { Decision } from "./decision.js";
+export type { DecisionRecord } from "./decisionRecord.js";
 export type { Inference } from "./inference.js";
 export type {
   KnowledgeCodecs,
