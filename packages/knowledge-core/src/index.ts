@@ -2,6 +2,7 @@ export type { AlternativeOption } from "./alternatives.js";
 export type { Decision } from "./decision.js";
 export type { DecisionBasis } from "./decisionBasis.js";
 export type { DecisionRecord } from "./decisionRecord.js";
+export type { DecisionSupersession } from "./decisionSupersession.js";
 export type { Inference } from "./inference.js";
 export type {
   KnowledgeCodecs,
