@@ -1,3 +1,5 @@
+export type { AlternativeOption } from "./alternatives.js";
+export type { Inference } from "./inference.js";
 export type {
   KnowledgeCodecs,
   KnowledgeLocatorCodec,
