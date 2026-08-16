@@ -6,6 +6,7 @@ export type DecisionStoreErrorCategory =
   | "codec-decode"
   | "identity-conflict"
   | "self-supersession"
+  | "query"
   | "schema"
   | "storage"
   | "closed";
@@ -18,6 +19,10 @@ export type DecisionStoreErrorField =
   | "basis"
   | "superseded-address"
   | "superseding-address"
+  | "query"
+  | "page-size"
+  | "cursor"
+  | "namespace-binding"
   | "schema"
   | "database";
 
@@ -29,6 +34,7 @@ const categoryMessages: Record<DecisionStoreErrorCategory, string> = {
   "codec-decode": "Decision store codec decoding failed",
   "identity-conflict": "Decision store identity conflict",
   "self-supersession": "Decision store self-supersession is not allowed",
+  query: "Decision store query validation failed",
   schema: "Decision store schema validation failed",
   storage: "Decision store storage operation failed",
   closed: "Decision store is closed",

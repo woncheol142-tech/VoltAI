@@ -3,6 +3,7 @@ export type {
   DecisionStoreErrorCategory,
   DecisionStoreErrorField,
 } from "./errors.js";
+export { decodeStoredDecision } from "./decodeStoredDecision.js";
 export {
   currentDecisionSchemaVersion,
   decisionApplicationId,
@@ -12,5 +13,6 @@ export type {
   DecisionIdentityNamespace,
   DecisionRecordValueCodecs,
   StoredDecisionAddress,
+  StoredDecisionRecord,
   StoredDecisionSupersession,
 } from "./types.js";

@@ -100,25 +100,41 @@ function validateWriteGraph(root: unknown): void {
   }
 }
 
+function physicalJsonText(value: unknown): string {
+  validateWriteGraph(value);
+  const text = JSON.stringify(value);
+  if (typeof text !== "string") {
+    failWrite();
+  }
+
+  const parsed = JSON.parse(text) as unknown;
+  if (JSON.stringify(parsed) !== text) {
+    failWrite();
+  }
+
+  return text;
+}
+
 export function encodePhysicalJson(
   value: unknown,
   field: DecisionStoreErrorField,
 ): string {
   try {
-    validateWriteGraph(value);
-    const text = JSON.stringify(value);
-    if (typeof text !== "string") {
-      failWrite();
-    }
-
-    const parsed = JSON.parse(text) as unknown;
-    if (JSON.stringify(parsed) !== text) {
-      failWrite();
-    }
-
-    return text;
+    return physicalJsonText(value);
   } catch {
     throw new DecisionStoreError("value-encode", field);
+  }
+}
+
+export function validatePhysicalJsonValue(
+  value: unknown,
+  field: DecisionStoreErrorField,
+): JsonValue {
+  try {
+    physicalJsonText(value);
+    return value as JsonValue;
+  } catch {
+    throw new DecisionStoreError("value-decode", field);
   }
 }
 
