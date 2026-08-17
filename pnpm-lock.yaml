@@ -249,6 +249,8 @@ importers:
         specifier: ^4.19.2
         version: 4.23.0
 
+  packages/source-core: {}
+
 packages:
 
   '@esbuild/aix-ppc64@0.21.5':
