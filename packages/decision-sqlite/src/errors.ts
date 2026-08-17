@@ -20,6 +20,7 @@ export type DecisionStoreErrorField =
   | "superseded-address"
   | "superseding-address"
   | "query"
+  | "bounds"
   | "page-size"
   | "cursor"
   | "namespace-binding"

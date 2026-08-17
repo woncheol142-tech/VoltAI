@@ -33,3 +33,43 @@ export type StoredDecisionSupersession = {
   readonly supersedingNamespace: string;
   readonly supersedingRecordKey: string;
 };
+
+export type StoredDecisionSupersessionDirection =
+  "toward-superseding" | "toward-superseded";
+
+export type StoredDecisionSupersessionSubgraphRequest = {
+  readonly seeds: readonly StoredDecisionAddress[];
+  readonly directions: readonly StoredDecisionSupersessionDirection[];
+  readonly bounds: {
+    readonly maxEdgeHops: number;
+    readonly maxNodes: number;
+    readonly maxEdges: number;
+  };
+};
+
+export type StoredDecisionSupersessionObservation =
+  | {
+      readonly address: StoredDecisionAddress;
+      readonly direction: StoredDecisionSupersessionDirection;
+      readonly state: "COMPLETE";
+      readonly reason?: never;
+    }
+  | {
+      readonly address: StoredDecisionAddress;
+      readonly direction: StoredDecisionSupersessionDirection;
+      readonly state: "NOT_STARTED";
+      readonly reason: "edge-hop-bound" | "node-bound" | "edge-bound";
+    }
+  | {
+      readonly address: StoredDecisionAddress;
+      readonly direction: StoredDecisionSupersessionDirection;
+      readonly state: "PARTIAL";
+      readonly reason: "node-bound" | "edge-bound";
+    };
+
+export type StoredDecisionSupersessionSubgraph = {
+  readonly seeds: readonly StoredDecisionAddress[];
+  readonly nodes: readonly StoredDecisionAddress[];
+  readonly edges: readonly StoredDecisionSupersession[];
+  readonly observations: readonly StoredDecisionSupersessionObservation[];
+};

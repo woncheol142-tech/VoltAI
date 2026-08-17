@@ -15,4 +15,8 @@ export type {
   StoredDecisionAddress,
   StoredDecisionRecord,
   StoredDecisionSupersession,
+  StoredDecisionSupersessionDirection,
+  StoredDecisionSupersessionObservation,
+  StoredDecisionSupersessionSubgraph,
+  StoredDecisionSupersessionSubgraphRequest,
 } from "./types.js";

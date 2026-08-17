@@ -25,6 +25,10 @@ import type {
   StoredDecisionAddress,
   StoredDecisionRecord,
   StoredDecisionSupersession,
+  StoredDecisionSupersessionDirection,
+  StoredDecisionSupersessionObservation,
+  StoredDecisionSupersessionSubgraph,
+  StoredDecisionSupersessionSubgraphRequest,
 } from "./types.js";
 
 type StoredDecisionRow = {
@@ -99,8 +103,26 @@ type NormalizedSupersessionQuery = {
   readonly limit: number;
 };
 
+type NormalizedSupersessionSubgraphRequest = {
+  readonly seeds: readonly StoredDecisionAddress[];
+  readonly directions: readonly StoredDecisionSupersessionDirection[];
+  readonly bounds: StoredDecisionSupersessionSubgraphRequest["bounds"];
+};
+
+type SupersessionTraversalNode = {
+  readonly address: StoredDecisionAddress;
+  readonly hop: number;
+};
+
+type SupersessionTraversalHaltReason = "node-bound" | "edge-bound";
+
 const defaultPageSize = 100;
 const maximumPageSize = 1000;
+const supersessionTraversalDirections = [
+  "toward-superseding",
+  "toward-superseded",
+] as const satisfies readonly StoredDecisionSupersessionDirection[];
+const utf8Encoder = new TextEncoder();
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -114,6 +136,61 @@ function queryObject(query: unknown): Record<string, unknown> {
     throw new DecisionStoreError("query", "query");
   }
   return query;
+}
+
+function compareUtf8Binary(left: string, right: string): number {
+  const leftBytes = utf8Encoder.encode(left);
+  const rightBytes = utf8Encoder.encode(right);
+  const sharedLength = Math.min(leftBytes.length, rightBytes.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    if (leftBytes[index] !== rightBytes[index]) {
+      return leftBytes[index] < rightBytes[index] ? -1 : 1;
+    }
+  }
+  if (leftBytes.length === rightBytes.length) {
+    return 0;
+  }
+  return leftBytes.length < rightBytes.length ? -1 : 1;
+}
+
+function compareStoredAddresses(
+  left: StoredDecisionAddress,
+  right: StoredDecisionAddress,
+): number {
+  return (
+    compareUtf8Binary(left.namespace, right.namespace) ||
+    compareUtf8Binary(left.recordKey, right.recordKey)
+  );
+}
+
+function compareStoredSupersessions(
+  left: StoredDecisionSupersession,
+  right: StoredDecisionSupersession,
+): number {
+  return (
+    compareUtf8Binary(left.supersededNamespace, right.supersededNamespace) ||
+    compareUtf8Binary(left.supersededRecordKey, right.supersededRecordKey) ||
+    compareUtf8Binary(left.supersedingNamespace, right.supersedingNamespace) ||
+    compareUtf8Binary(left.supersedingRecordKey, right.supersedingRecordKey)
+  );
+}
+
+function storedAddressIdentity(address: StoredDecisionAddress): string {
+  return JSON.stringify([address.namespace, address.recordKey]);
+}
+
+function storedSupersessionIdentity(edge: StoredDecisionSupersession): string {
+  return JSON.stringify([
+    edge.supersededNamespace,
+    edge.supersededRecordKey,
+    edge.supersedingNamespace,
+    edge.supersedingRecordKey,
+  ]);
+}
+
+function nonnegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function pageSize(value: unknown): number {
@@ -148,6 +225,60 @@ function storedAddress(
 
 function decisionAddress(value: unknown): StoredDecisionAddress {
   return storedAddress(value, "query", "namespace", "record-key");
+}
+
+function normalizeSupersessionSubgraphRequest(
+  request: unknown,
+): NormalizedSupersessionSubgraphRequest {
+  if (!isObjectRecord(request)) {
+    throw new DecisionStoreError("query", "query");
+  }
+  if (!Array.isArray(request.seeds) || request.seeds.length === 0) {
+    throw new DecisionStoreError("query", "query");
+  }
+
+  const seedByIdentity = new Map<string, StoredDecisionAddress>();
+  for (const seed of request.seeds) {
+    const normalizedSeed = decisionAddress(seed);
+    seedByIdentity.set(storedAddressIdentity(normalizedSeed), normalizedSeed);
+  }
+  const seeds = [...seedByIdentity.values()].sort(compareStoredAddresses);
+
+  if (!Array.isArray(request.directions) || request.directions.length === 0) {
+    throw new DecisionStoreError("query", "query");
+  }
+  const requestedDirections = new Set<StoredDecisionSupersessionDirection>();
+  for (const direction of request.directions) {
+    if (
+      direction !== "toward-superseding" &&
+      direction !== "toward-superseded"
+    ) {
+      throw new DecisionStoreError("query", "query");
+    }
+    requestedDirections.add(direction);
+  }
+  const directions = supersessionTraversalDirections.filter((direction) =>
+    requestedDirections.has(direction),
+  );
+
+  if (!isObjectRecord(request.bounds)) {
+    throw new DecisionStoreError("query", "bounds");
+  }
+  const { maxEdgeHops, maxNodes, maxEdges } = request.bounds;
+  if (
+    !nonnegativeSafeInteger(maxEdgeHops) ||
+    !nonnegativeSafeInteger(maxNodes) ||
+    !nonnegativeSafeInteger(maxEdges) ||
+    maxNodes < seeds.length
+  ) {
+    throw new DecisionStoreError("query", "bounds");
+  }
+
+  return {
+    seeds,
+    directions,
+    bounds: { maxEdgeHops, maxNodes, maxEdges },
+  };
 }
 
 function cursorAddress(value: unknown): StoredDecisionAddress {
@@ -841,6 +972,186 @@ export class SqliteDecisionStore {
         hasMore && supersessions.length > 0
           ? supersessions[supersessions.length - 1]
           : null,
+    };
+  }
+
+  deriveStoredDecisionSupersessionSubgraph(
+    request: StoredDecisionSupersessionSubgraphRequest,
+  ): StoredDecisionSupersessionSubgraph {
+    this.assertOpen();
+    const normalized = normalizeSupersessionSubgraphRequest(request);
+    const nodesByIdentity = new Map<string, SupersessionTraversalNode>();
+    const edgesByIdentity = new Map<string, StoredDecisionSupersession>();
+    const observationsByAddress = new Map<
+      string,
+      Map<
+        StoredDecisionSupersessionDirection,
+        StoredDecisionSupersessionObservation
+      >
+    >();
+    let haltReason: SupersessionTraversalHaltReason | undefined =
+      normalized.bounds.maxEdges === 0 ? "edge-bound" : undefined;
+
+    const setObservation = (
+      observation: StoredDecisionSupersessionObservation,
+    ): void => {
+      const identity = storedAddressIdentity(observation.address);
+      let byDirection = observationsByAddress.get(identity);
+      if (byDirection === undefined) {
+        byDirection = new Map();
+        observationsByAddress.set(identity, byDirection);
+      }
+      byDirection.set(observation.direction, observation);
+    };
+
+    let frontier = normalized.seeds.map((seed) => {
+      const node = { address: seed, hop: 0 };
+      nodesByIdentity.set(storedAddressIdentity(seed), node);
+      return node;
+    });
+
+    while (frontier.length > 0) {
+      frontier.sort((left, right) =>
+        compareStoredAddresses(left.address, right.address),
+      );
+      const nextFrontier = new Map<string, SupersessionTraversalNode>();
+
+      for (const node of frontier) {
+        for (const direction of normalized.directions) {
+          if (node.hop >= normalized.bounds.maxEdgeHops) {
+            setObservation({
+              address: node.address,
+              direction,
+              state: "NOT_STARTED",
+              reason: "edge-hop-bound",
+            });
+            continue;
+          }
+          if (haltReason !== undefined) {
+            setObservation({
+              address: node.address,
+              direction,
+              state: "NOT_STARTED",
+              reason: haltReason,
+            });
+            continue;
+          }
+
+          let after: StoredDecisionSupersession | undefined;
+          let expansionHaltReason: SupersessionTraversalHaltReason | undefined;
+
+          while (true) {
+            const page =
+              direction === "toward-superseding"
+                ? this.listStoredSupersessions({
+                    superseded: node.address,
+                    after,
+                  })
+                : this.listStoredSupersessions({
+                    superseding: node.address,
+                    after,
+                  });
+
+            for (const storedEdge of page.supersessions) {
+              const edgeIdentity = storedSupersessionIdentity(storedEdge);
+              if (edgesByIdentity.has(edgeIdentity)) {
+                continue;
+              }
+
+              const endpoints = [
+                {
+                  namespace: storedEdge.supersededNamespace,
+                  recordKey: storedEdge.supersededRecordKey,
+                },
+                {
+                  namespace: storedEdge.supersedingNamespace,
+                  recordKey: storedEdge.supersedingRecordKey,
+                },
+              ];
+              const unseenEndpoints = new Map<string, StoredDecisionAddress>();
+              for (const endpoint of endpoints) {
+                const endpointIdentity = storedAddressIdentity(endpoint);
+                if (!nodesByIdentity.has(endpointIdentity)) {
+                  unseenEndpoints.set(endpointIdentity, endpoint);
+                }
+              }
+
+              if (
+                nodesByIdentity.size + unseenEndpoints.size >
+                normalized.bounds.maxNodes
+              ) {
+                expansionHaltReason = "node-bound";
+                haltReason = expansionHaltReason;
+                break;
+              }
+              if (edgesByIdentity.size >= normalized.bounds.maxEdges) {
+                expansionHaltReason = "edge-bound";
+                haltReason = expansionHaltReason;
+                break;
+              }
+
+              for (const [endpointIdentity, endpoint] of unseenEndpoints) {
+                const discoveredNode = {
+                  address: endpoint,
+                  hop: node.hop + 1,
+                };
+                nodesByIdentity.set(endpointIdentity, discoveredNode);
+                nextFrontier.set(endpointIdentity, discoveredNode);
+              }
+              edgesByIdentity.set(edgeIdentity, storedEdge);
+            }
+
+            if (expansionHaltReason !== undefined) {
+              break;
+            }
+            if (page.nextCursor === null) {
+              break;
+            }
+            after = page.nextCursor;
+          }
+
+          setObservation(
+            expansionHaltReason === undefined
+              ? {
+                  address: node.address,
+                  direction,
+                  state: "COMPLETE",
+                }
+              : {
+                  address: node.address,
+                  direction,
+                  state: "PARTIAL",
+                  reason: expansionHaltReason,
+                },
+          );
+        }
+      }
+
+      frontier = [...nextFrontier.values()];
+    }
+
+    const nodes = [...nodesByIdentity.values()]
+      .map((node) => node.address)
+      .sort(compareStoredAddresses);
+    const observations: StoredDecisionSupersessionObservation[] = [];
+    for (const node of nodes) {
+      const byDirection = observationsByAddress.get(
+        storedAddressIdentity(node),
+      );
+      for (const direction of normalized.directions) {
+        const observation = byDirection?.get(direction);
+        if (observation === undefined) {
+          throw new DecisionStoreError("storage", "database");
+        }
+        observations.push(observation);
+      }
+    }
+
+    return {
+      seeds: normalized.seeds,
+      nodes,
+      edges: [...edgesByIdentity.values()].sort(compareStoredSupersessions),
+      observations,
     };
   }
 
