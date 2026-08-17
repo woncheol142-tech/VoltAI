@@ -43,6 +43,8 @@ importers:
         specifier: workspace:*
         version: link:../knowledge-core
 
+  packages/context-core: {}
+
   packages/decision-sqlite:
     dependencies:
       '@voltai/knowledge-core':
