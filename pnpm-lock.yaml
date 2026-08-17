@@ -49,6 +49,12 @@ importers:
         specifier: workspace:*
         version: link:../knowledge-core
 
+  packages/extraction-core:
+    dependencies:
+      '@voltai/source-core':
+        specifier: workspace:*
+        version: link:../source-core
+
   packages/knowledge-company:
     dependencies:
       '@voltai/knowledge-core':

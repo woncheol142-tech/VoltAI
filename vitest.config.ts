@@ -8,6 +8,9 @@ export default defineConfig({
       "@voltai/agent-review": fileURLToPath(
         new URL("./packages/agent-review/src/index.ts", import.meta.url),
       ),
+      "@voltai/source-core": fileURLToPath(
+        new URL("./packages/source-core/src/index.ts", import.meta.url),
+      ),
       "@voltai/decision-sqlite": fileURLToPath(
         new URL("./packages/decision-sqlite/src/index.ts", import.meta.url),
       ),
