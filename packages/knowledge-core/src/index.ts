@@ -12,10 +12,12 @@ export type {
   KnowledgeMetadataCodec,
 } from "./metadataCodec.js";
 export type { KnowledgeEmbeddingProvider } from "./embedding.js";
+export type { Evidence } from "./evidence.js";
 export type {
   EvidenceAuthority,
   KnowledgeAuthorityClass,
 } from "./evidenceAuthority.js";
+export type { Requirement } from "./requirement.js";
 export type {
   ApplicabilityStatus,
   ConflictStatus,
