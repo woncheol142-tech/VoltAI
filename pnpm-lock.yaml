@@ -263,6 +263,8 @@ importers:
         specifier: workspace:*
         version: link:../validation-core
 
+  packages/resolution-core: {}
+
   packages/source-core: {}
 
   packages/temporal-core: {}
