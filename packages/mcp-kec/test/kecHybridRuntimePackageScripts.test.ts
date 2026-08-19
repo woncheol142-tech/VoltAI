@@ -64,14 +64,16 @@ describe("explicit KEC hybrid runtime package scripts", () => {
     }
   });
 
-  it("uses the existing tsx tool without changing package dependencies", () => {
+  it("uses the existing tsx tool without unapproved dependency drift", () => {
     const packageJson = readPackageJson();
 
     expect(Object.keys(packageJson.dependencies ?? {}).sort()).toEqual([
       "@modelcontextprotocol/sdk",
+      "@voltai/extraction-core",
       "@voltai/knowledge-core",
       "@voltai/knowledge-sqlite",
       "@voltai/mcp-core",
+      "@voltai/source-core",
       "pdfjs-dist",
       "zod",
     ]);

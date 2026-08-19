@@ -184,6 +184,9 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@3.25.76)
+      '@voltai/extraction-core':
+        specifier: workspace:*
+        version: link:../extraction-core
       '@voltai/knowledge-core':
         specifier: workspace:*
         version: link:../knowledge-core
@@ -193,6 +196,9 @@ importers:
       '@voltai/mcp-core':
         specifier: workspace:*
         version: link:../mcp-core
+      '@voltai/source-core':
+        specifier: workspace:*
+        version: link:../source-core
       pdfjs-dist:
         specifier: ^6.1.200
         version: 6.1.200

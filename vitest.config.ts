@@ -11,6 +11,9 @@ export default defineConfig({
       "@voltai/source-core": fileURLToPath(
         new URL("./packages/source-core/src/index.ts", import.meta.url),
       ),
+      "@voltai/extraction-core": fileURLToPath(
+        new URL("./packages/extraction-core/src/index.ts", import.meta.url),
+      ),
       "@voltai/validation-core": fileURLToPath(
         new URL("./packages/validation-core/src/index.ts", import.meta.url),
       ),

@@ -18,9 +18,11 @@ const protectedManifests: readonly ProtectedManifest[] = [
   {
     relativePath: "packages/mcp-kec/package.json",
     dependencies: {
+      "@voltai/extraction-core": "workspace:*",
       "@voltai/mcp-core": "workspace:*",
       "@voltai/knowledge-core": "workspace:*",
       "@voltai/knowledge-sqlite": "workspace:*",
+      "@voltai/source-core": "workspace:*",
       "@modelcontextprotocol/sdk": "^1.29.0",
       "pdfjs-dist": "^6.1.200",
       zod: "^3.24.1",

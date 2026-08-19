@@ -524,6 +524,7 @@ describe("native KEC hybrid search entry-point architecture boundaries", () => {
       "kecKnowledgeAdapter.ts",
       "pdfPages.ts",
       "projectPath.ts",
+      "requirementExtraction.ts",
       "sqliteVectorStore.ts",
       "vectorStore.ts",
     ]);
