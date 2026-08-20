@@ -1,0 +1,32 @@
+export type KecRequirementSnapshotErrorCategory =
+  | "binding-mismatch"
+  | "unsupported-locator-space"
+  | "snapshot-conflict"
+  | "locator-encode"
+  | "locator-decode"
+  | "member-corruption"
+  | "schema"
+  | "storage"
+  | "closed";
+
+const messages: Record<KecRequirementSnapshotErrorCategory, string> = {
+  "binding-mismatch": "Requirement snapshot member binding mismatch",
+  "unsupported-locator-space": "Requirement snapshot locator space unsupported",
+  "snapshot-conflict": "Requirement snapshot conflicts with stored population",
+  "locator-encode": "Requirement snapshot locator encoding failed",
+  "locator-decode": "Requirement snapshot locator decoding failed",
+  "member-corruption": "Requirement snapshot member data is corrupt",
+  schema: "Requirement snapshot schema validation failed",
+  storage: "Requirement snapshot storage operation failed",
+  closed: "Requirement snapshot store is closed",
+};
+
+export class KecRequirementSnapshotStoreError extends Error {
+  readonly category: KecRequirementSnapshotErrorCategory;
+
+  constructor(category: KecRequirementSnapshotErrorCategory) {
+    super(messages[category]);
+    this.name = "KecRequirementSnapshotStoreError";
+    this.category = category;
+  }
+}

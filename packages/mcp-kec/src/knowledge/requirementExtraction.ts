@@ -59,6 +59,18 @@ export type KecRequirementExtraction = {
   };
 };
 
+export type KecRequirementExtractionBinding = {
+  readonly sourceRevision: SourceRevision;
+  readonly blobHash: SourceBlobHash;
+  readonly extractionContract: ExtractionContractId;
+  readonly locatorSpace: AnchorLocatorSpace;
+};
+
+export type KecRequirementExtractionSnapshot = {
+  readonly binding: KecRequirementExtractionBinding;
+  readonly requirements: readonly KecRequirementExtraction[];
+};
+
 // This ID names the parser, grouping, normative-detection, normalization, and
 // locator behaviour below. Future behavioural changes require a deliberate ID
 // bump; that process is intentionally not enforced by a registry in Task90.
@@ -355,11 +367,7 @@ function groupParagraphs(page: KecPdfTextPage): TextParagraph[] {
   }
 
   return groups.map((linesInParagraph, index) =>
-    paragraphFromLines(
-      page.pageNumber,
-      linesInParagraph,
-      groupRegions[index]!,
-    ),
+    paragraphFromLines(page.pageNumber, linesInParagraph, groupRegions[index]!),
   );
 }
 
@@ -520,9 +528,9 @@ function requirementId(
   return `kec-requirement:${digest}` as KecRequirementId;
 }
 
-export async function extractKecRequirements(
+export async function extractKecRequirementSnapshot(
   input: ExtractKecRequirementsInput,
-): Promise<readonly KecRequirementExtraction[]> {
+): Promise<KecRequirementExtractionSnapshot> {
   if (input.sourceLocator.scheme !== "file") {
     throw new Error("Task90 supports only file source locators");
   }
@@ -539,11 +547,11 @@ export async function extractKecRequirements(
     input: blobHash,
     contract: KEC_REQUIREMENT_EXTRACTION_CONTRACT_ID,
   };
-  const results: KecRequirementExtraction[] = [];
+  const requirements: KecRequirementExtraction[] = [];
 
   for (const page of pages) {
     for (const extracted of contextualRequirements(groupParagraphs(page))) {
-      results.push({
+      requirements.push({
         requirement: {
           id: requirementId(input.sourceRevision, blobHash, extracted.locators),
           statement: extracted.statement,
@@ -558,5 +566,19 @@ export async function extractKecRequirements(
     }
   }
 
-  return results;
+  const binding: KecRequirementExtractionBinding = {
+    sourceRevision: input.sourceRevision,
+    blobHash,
+    extractionContract: KEC_REQUIREMENT_EXTRACTION_CONTRACT_ID,
+    locatorSpace: KEC_REQUIREMENT_LOCATOR_SPACE,
+  };
+
+  return { binding, requirements };
+}
+
+export async function extractKecRequirements(
+  input: ExtractKecRequirementsInput,
+): Promise<readonly KecRequirementExtraction[]> {
+  const snapshot = await extractKecRequirementSnapshot(input);
+  return snapshot.requirements;
 }
