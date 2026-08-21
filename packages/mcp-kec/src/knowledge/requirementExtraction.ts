@@ -14,6 +14,19 @@ import type {
 } from "@voltai/source-core";
 
 import { assertProjectRoot, resolveKecPdfPath } from "./projectPath.js";
+import type {
+  KecCapturedRequirementSnapshot,
+  KecContextSearchTermination,
+  KecSourceCaptureDetector,
+  KecSourceCaptureFragment,
+  KecSourceCaptureObservation,
+  KecSuppressedAssemblyObservation,
+} from "./sourceCapture.js";
+import {
+  compareKecSourceCaptureObservations,
+  KEC_SOURCE_CAPTURE_CONTRACT_ID,
+  normalizeKecSourceText,
+} from "./sourceCapture.js";
 
 declare const kecRequirementIdBrand: unique symbol;
 
@@ -206,10 +219,6 @@ async function parseKecPdfTextItems(
   return pages;
 }
 
-function normalizeWhitespace(value: string): string {
-  return value.split(/\s+/u).filter(Boolean).join(" ");
-}
-
 function orderTextItems(items: readonly KecPdfTextItem[]): OrderedTextItem[] {
   const positioned = items.map((item, sourceIndex) => ({
     item,
@@ -268,7 +277,7 @@ function groupTextLines(items: readonly OrderedTextItem[]): TextLine[] {
 
 function hasSeparatedColumns(line: TextLine): boolean {
   const meaningfulItems = line.items.filter(
-    ({ item }) => normalizeWhitespace(item.str).length > 0,
+    ({ item }) => normalizeKecSourceText(item.str).length > 0,
   );
 
   for (let index = 1; index < meaningfulItems.length; index += 1) {
@@ -312,7 +321,9 @@ function tableLineIndexes(lines: readonly TextLine[]): ReadonlySet<number> {
 }
 
 function lineText(line: TextLine): string {
-  return normalizeWhitespace(line.items.map(({ item }) => item.str).join(" "));
+  return normalizeKecSourceText(
+    line.items.map(({ item }) => item.str).join(" "),
+  );
 }
 
 function paragraphFromLines(
@@ -329,26 +340,57 @@ function paragraphFromLines(
     lines,
     locator: { pageNumber, startItemIndex, endItemIndexExclusive },
     structuralRegion,
-    statement: normalizeWhitespace(lines.map(lineText).join(" ")),
+    statement: normalizeKecSourceText(lines.map(lineText).join(" ")),
   };
 }
 
-function groupParagraphs(page: KecPdfTextPage): TextParagraph[] {
+type GroupedPage = {
+  readonly paragraphs: readonly TextParagraph[];
+  readonly excludedObservations: readonly KecSourceCaptureObservation[];
+};
+
+function groupParagraphs(page: KecPdfTextPage): GroupedPage {
   const lines = groupTextLines(orderTextItems(page.items));
   const excluded = tableLineIndexes(lines);
   const groups: TextLine[][] = [];
   const groupRegions: number[] = [];
+  const excludedObservations: KecSourceCaptureObservation[] = [];
   let current: TextLine[] | undefined;
+  let excludedLines: TextLine[] = [];
   let structuralRegion = 0;
   let insideExcludedRegion = false;
+
+  const finishExcludedStretch = (): void => {
+    if (excludedLines.length === 0) return;
+    excludedObservations.push({
+      kind: "column-gap-region-excluded",
+      span: {
+        pageNumber: page.pageNumber,
+        startItemIndex: Math.min(
+          ...excludedLines.map(({ startItemIndex }) => startItemIndex),
+        ),
+        endItemIndexExclusive: Math.max(
+          ...excludedLines.map(
+            ({ endItemIndexExclusive }) => endItemIndexExclusive,
+          ),
+        ),
+      },
+      observedText: normalizeKecSourceText(
+        excludedLines.map(lineText).join(" "),
+      ),
+    });
+    excludedLines = [];
+  };
 
   for (const [lineIndex, line] of lines.entries()) {
     if (excluded.has(lineIndex)) {
       if (!insideExcludedRegion) structuralRegion += 1;
       insideExcludedRegion = true;
+      excludedLines.push(line);
       current = undefined;
       continue;
     }
+    finishExcludedStretch();
     insideExcludedRegion = false;
 
     const previous = current?.at(-1);
@@ -365,10 +407,18 @@ function groupParagraphs(page: KecPdfTextPage): TextParagraph[] {
 
     current.push(line);
   }
+  finishExcludedStretch();
 
-  return groups.map((linesInParagraph, index) =>
-    paragraphFromLines(page.pageNumber, linesInParagraph, groupRegions[index]!),
-  );
+  return {
+    paragraphs: groups.map((linesInParagraph, index) =>
+      paragraphFromLines(
+        page.pageNumber,
+        linesInParagraph,
+        groupRegions[index]!,
+      ),
+    ),
+    excludedObservations,
+  };
 }
 
 function isNormativeStatement(statement: string): boolean {
@@ -429,12 +479,25 @@ function isContextCandidate(
   );
 }
 
-function isAttachableContext(
+function contextCandidateEvaluation(
   context: TextParagraph,
   child: TextParagraph,
-): boolean {
-  const gap = paragraphGap(context, child);
-  return gap > 0 && gap <= 36 && isContextCandidate(context, child);
+  captureEnabled: boolean,
+): {
+  readonly candidate: boolean;
+  readonly detectors: readonly KecSourceCaptureDetector[];
+} {
+  if (!captureEnabled) {
+    return { candidate: isContextCandidate(context, child), detectors: [] };
+  }
+  const detectors: KecSourceCaptureDetector[] = [];
+  if (isExplicitContextLead(context.statement)) {
+    detectors.push("explicit-context-lead");
+  }
+  if (isObviousShortHeading(context, child)) {
+    detectors.push("short-heading-adjacent");
+  }
+  return { candidate: detectors.length > 0, detectors };
 }
 
 type ContextualRequirement = {
@@ -443,36 +506,86 @@ type ContextualRequirement = {
     KecRequirementLocator,
     ...KecRequirementLocator[],
   ];
+  readonly fragments: readonly [
+    KecSourceCaptureFragment,
+    ...KecSourceCaptureFragment[],
+  ];
+  readonly contextSearchTermination: KecContextSearchTermination;
 };
 
 function contextualRequirements(
   paragraphs: readonly TextParagraph[],
-): ContextualRequirement[] {
+  captureEnabled: boolean,
+): {
+  readonly requirements: readonly ContextualRequirement[];
+  readonly suppressed: readonly KecSuppressedAssemblyObservation[];
+} {
   const requirements: ContextualRequirement[] = [];
+  const suppressed: KecSuppressedAssemblyObservation[] = [];
 
   for (const [index, paragraph] of paragraphs.entries()) {
     if (!isNormativeStatement(paragraph.statement)) continue;
 
-    const fragments: TextParagraph[] = [paragraph];
+    const fragments: KecSourceCaptureFragment[] = [
+      {
+        role: "normative-pattern-fragment",
+        span: paragraph.locator,
+        observedText: paragraph.statement,
+        detectors: ["normative-sentence-ending"],
+      },
+    ];
     let child = paragraph;
     let contextIndex = index - 1;
     let unresolvedContextBarrier = false;
+    let contextSearchTermination: KecContextSearchTermination = "page-start";
 
     while (contextIndex >= 0) {
       const context = paragraphs[contextIndex]!;
-      if (context.structuralRegion !== child.structuralRegion) break;
-      if (
-        isNormativeStatement(context.statement) ||
-        !isContextCandidate(context, child)
-      ) {
+      if (context.structuralRegion !== child.structuralRegion) {
+        contextSearchTermination = "structural-region-boundary";
         break;
       }
-      if (!isAttachableContext(context, child)) {
+      if (isNormativeStatement(context.statement)) {
+        contextSearchTermination = "preceding-normative-paragraph";
+        break;
+      }
+      const evaluation = contextCandidateEvaluation(
+        context,
+        child,
+        captureEnabled,
+      );
+      if (!evaluation.candidate) {
+        contextSearchTermination = "preceding-non-context-candidate";
+        break;
+      }
+      const gap = paragraphGap(context, child);
+      if (gap <= 0 || gap > 36) {
         unresolvedContextBarrier = true;
+        if (captureEnabled) {
+          suppressed.push({
+            kind: "suppressed-assembly",
+            fragments: fragments as [
+              KecSourceCaptureFragment,
+              ...KecSourceCaptureFragment[],
+            ],
+            blockingCandidate: {
+              role: "unattached-context-candidate",
+              span: context.locator,
+              observedText: context.statement,
+              detectors: evaluation.detectors,
+            },
+            blockedBy: gap <= 0 ? "gap-not-positive" : "gap-above-window",
+          });
+        }
         break;
       }
 
-      fragments.unshift(context);
+      fragments.unshift({
+        role: "attached-context-fragment",
+        span: context.locator,
+        observedText: context.statement,
+        detectors: evaluation.detectors,
+      });
       child = context;
       contextIndex -= 1;
     }
@@ -480,17 +593,22 @@ function contextualRequirements(
     if (unresolvedContextBarrier) continue;
 
     requirements.push({
-      statement: normalizeWhitespace(
-        fragments.map(({ statement }) => statement).join(" "),
+      statement: normalizeKecSourceText(
+        fragments.map(({ observedText }) => observedText).join(" "),
       ),
-      locators: fragments.map(({ locator }) => locator) as [
+      locators: fragments.map(({ span }) => span) as [
         KecRequirementLocator,
         ...KecRequirementLocator[],
       ],
+      fragments: fragments as [
+        KecSourceCaptureFragment,
+        ...KecSourceCaptureFragment[],
+      ],
+      contextSearchTermination,
     });
   }
 
-  return requirements;
+  return { requirements, suppressed };
 }
 
 function sha256Hex(value: string | Uint8Array): string {
@@ -528,9 +646,10 @@ function requirementId(
   return `kec-requirement:${digest}` as KecRequirementId;
 }
 
-export async function extractKecRequirementSnapshot(
+async function extractKecRequirementPipeline(
   input: ExtractKecRequirementsInput,
-): Promise<KecRequirementExtractionSnapshot> {
+  captureEnabled: boolean,
+): Promise<KecCapturedRequirementSnapshot> {
   if (input.sourceLocator.scheme !== "file") {
     throw new Error("Task90 supports only file source locators");
   }
@@ -548,12 +667,25 @@ export async function extractKecRequirementSnapshot(
     contract: KEC_REQUIREMENT_EXTRACTION_CONTRACT_ID,
   };
   const requirements: KecRequirementExtraction[] = [];
+  const observations: KecSourceCaptureObservation[] = [];
 
   for (const page of pages) {
-    for (const extracted of contextualRequirements(groupParagraphs(page))) {
+    const grouped = groupParagraphs(page);
+    if (captureEnabled) observations.push(...grouped.excludedObservations);
+    const contextual = contextualRequirements(
+      grouped.paragraphs,
+      captureEnabled,
+    );
+    if (captureEnabled) observations.push(...contextual.suppressed);
+    for (const extracted of contextual.requirements) {
+      const id = requirementId(
+        input.sourceRevision,
+        blobHash,
+        extracted.locators,
+      );
       requirements.push({
         requirement: {
-          id: requirementId(input.sourceRevision, blobHash, extracted.locators),
+          id,
           statement: extracted.statement,
         },
         provenance: {
@@ -563,6 +695,14 @@ export async function extractKecRequirementSnapshot(
           locators: extracted.locators,
         },
       });
+      if (captureEnabled) {
+        observations.push({
+          kind: "requirement-assembly",
+          requirementId: id,
+          fragments: extracted.fragments,
+          contextSearchTermination: extracted.contextSearchTermination,
+        });
+      }
     }
   }
 
@@ -573,7 +713,33 @@ export async function extractKecRequirementSnapshot(
     locatorSpace: KEC_REQUIREMENT_LOCATOR_SPACE,
   };
 
-  return { binding, requirements };
+  const requirementSnapshot: KecRequirementExtractionSnapshot = {
+    binding,
+    requirements,
+  };
+  return {
+    requirementSnapshot,
+    captureSnapshot: {
+      binding,
+      captureContract: KEC_SOURCE_CAPTURE_CONTRACT_ID,
+      observations: captureEnabled
+        ? [...observations].sort(compareKecSourceCaptureObservations)
+        : [],
+    },
+  };
+}
+
+export async function extractKecRequirementSnapshot(
+  input: ExtractKecRequirementsInput,
+): Promise<KecRequirementExtractionSnapshot> {
+  const extracted = await extractKecRequirementPipeline(input, false);
+  return extracted.requirementSnapshot;
+}
+
+export async function extractKecRequirementSnapshotWithCapture(
+  input: ExtractKecRequirementsInput,
+): Promise<KecCapturedRequirementSnapshot> {
+  return extractKecRequirementPipeline(input, true);
 }
 
 export async function extractKecRequirements(

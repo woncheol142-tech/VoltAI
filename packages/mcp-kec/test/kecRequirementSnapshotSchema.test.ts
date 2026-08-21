@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,17 +12,24 @@ import {
   cleanupTempSnapshotDatabases,
   createTempSnapshotDatabase,
   DatabaseSync,
+  initializeExactTask91V1Database,
+  schemaObjects,
+  task91Snapshot,
   TASK91_APPLICATION_ID,
-  TASK91_USER_VERSION,
+  TASK91_V1_TABLES,
+  TASK91_V1_USER_VERSION,
+  TASK93_USER_VERSION,
+  TASK93_V2_TABLES,
 } from "./fixtures/requirementSnapshotContracts.js";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 const storePath = join(packageRoot, "src", "requirementSnapshot", "index.ts");
+const schemaPath = join(packageRoot, "src", "requirementSnapshot", "schema.ts");
 const storeExists = existsSync(storePath);
-const semanticTables = [
-  "kec_requirement_snapshots",
-  "kec_requirement_snapshot_members",
-] as const;
+const schemaSource = readFileSync(schemaPath, "utf8");
+const schemaV2Declared = /requirementSnapshotSchemaVersion\s*=\s*2\b/u.test(
+  schemaSource,
+);
 
 type Store = {
   storeSnapshot(snapshot: KecRequirementExtractionSnapshot): void;
@@ -72,178 +79,97 @@ function createCandidateSchema(
   }
 }
 
-describe.runIf(storeExists)("Task91 frozen SQLite schema", () => {
+describe("Task93 current SQLite schema RED gate", () => {
+  it("fails explicitly until the current schema version is v2", () => {
+    expect(
+      schemaV2Declared,
+      "Task93 requires requirementSnapshotSchemaVersion = 2",
+    ).toBe(true);
+  });
+});
+
+describe.runIf(storeExists)("Task91 v1 compatibility authority", () => {
   afterEach(cleanupTempSnapshotDatabases);
 
-  it("initializes only a pristine database with the frozen identity", async () => {
+  it("keeps the predecessor application id, v1 number, and exact two-table fixture", () => {
+    expect(TASK91_APPLICATION_ID).toBe(0x56524831);
+    expect(TASK91_V1_USER_VERSION).toBe(1);
+    expect(TASK91_V1_TABLES).toEqual([
+      "kec_requirement_snapshots",
+      "kec_requirement_snapshot_members",
+    ]);
+  });
+
+  it("opens an exact valid v1 database without migration or mutation", async () => {
     const { dbPath } = createTempSnapshotDatabase();
+    initializeExactTask91V1Database(dbPath);
+    const before = schemaObjects(dbPath);
     const Constructor = await StoreConstructor();
     new Constructor(dbPath).close();
 
+    expect(schemaObjects(dbPath)).toEqual(before);
     const database = new DatabaseSync(dbPath);
     try {
-      expect(TASK91_APPLICATION_ID).toBe(0x56524831);
-      expect(TASK91_USER_VERSION).toBe(1);
       expect(database.prepare("PRAGMA application_id").get()).toEqual({
-        application_id: 0x56524831,
+        application_id: TASK91_APPLICATION_ID,
       });
       expect(database.prepare("PRAGMA user_version").get()).toEqual({
-        user_version: 1,
+        user_version: TASK91_V1_USER_VERSION,
       });
-      const objects = database
-        .prepare(
-          `SELECT type, name FROM sqlite_schema
-           WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name`,
-        )
-        .all() as Array<{ readonly type: string; readonly name: string }>;
-      expect(objects.filter(({ type }) => type === "table")).toEqual(
-        semanticTables
-          .map((name) => ({ type: "table", name }))
-          .sort((left, right) => left.name.localeCompare(right.name)),
-      );
-      expect(objects.filter(({ type }) => type === "trigger")).toEqual([]);
     } finally {
       database.close();
     }
   });
 
-  it("freezes STRICT tables and exact semantic columns", async () => {
+  it("keeps the legacy store API readable and writable on exact v1", async () => {
+    const snapshot = task91Snapshot();
     const { dbPath } = createTempSnapshotDatabase();
+    initializeExactTask91V1Database(dbPath);
     const Constructor = await StoreConstructor();
-    new Constructor(dbPath).close();
+    const store = new Constructor(dbPath);
+    store.storeSnapshot(snapshot);
+    expect(store.loadSnapshot(snapshot.binding)).toEqual(snapshot);
+    store.close();
     const database = new DatabaseSync(dbPath);
-
-    try {
-      const tables = database.prepare("PRAGMA table_list").all() as Array<{
-        readonly name: string;
-        readonly strict: number;
-      }>;
-      for (const table of semanticTables) {
-        expect(tables.find(({ name }) => name === table)?.strict).toBe(1);
-      }
-      const snapshotColumns = database
-        .prepare("PRAGMA table_info(kec_requirement_snapshots)")
-        .all() as Array<{ readonly name: string }>;
-      expect(snapshotColumns.map(({ name }) => name)).toEqual([
-        "snapshot_id",
-        "source_identity",
-        "revision_key",
-        "blob_algorithm",
-        "blob_digest",
-        "extraction_contract",
-        "locator_space",
-      ]);
-      const memberColumns = database
-        .prepare("PRAGMA table_info(kec_requirement_snapshot_members)")
-        .all() as Array<{ readonly name: string }>;
-      expect(memberColumns.map(({ name }) => name)).toEqual([
-        "snapshot_id",
-        "population_index",
-        "requirement_id",
-        "statement",
-        "locators_json",
-      ]);
-    } finally {
-      database.close();
-    }
+    expect(database.prepare("PRAGMA user_version").get()).toEqual({
+      user_version: TASK91_V1_USER_VERSION,
+    });
+    database.close();
   });
 
-  it("freezes the natural key, member keys, BINARY identity, and no FK/CHECK", async () => {
+  it("retains the bounded Task91 orphan-member audit on v1", async () => {
     const { dbPath } = createTempSnapshotDatabase();
-    const Constructor = await StoreConstructor();
-    new Constructor(dbPath).close();
+    initializeExactTask91V1Database(dbPath);
     const database = new DatabaseSync(dbPath);
+    database
+      .prepare(
+        `INSERT INTO kec_requirement_snapshot_members
+           (snapshot_id, population_index, requirement_id, statement, locators_json)
+         VALUES (999, 0, 'orphan', 'orphan', '[[1,0,1]]')`,
+      )
+      .run();
+    database.close();
+    const Constructor = await StoreConstructor();
+    expect(categoryOf(() => new Constructor(dbPath))).toBe("member-corruption");
+  });
 
-    try {
-      const schemaRows = database
-        .prepare(
-          `SELECT name, sql FROM sqlite_schema
-           WHERE type = 'table' AND name IN (?, ?) ORDER BY name`,
-        )
-        .all(...semanticTables) as Array<{
-        readonly name: string;
-        readonly sql: string;
-      }>;
-      const sql = schemaRows.map(({ sql: source }) => source).join("\n");
-      expect(sql).not.toMatch(/\bCHECK\s*\(/iu);
-      expect(sql).not.toMatch(/\bFOREIGN\s+KEY\b/iu);
-      expect(sql).toMatch(/COLLATE\s+BINARY/iu);
-
-      for (const table of semanticTables) {
-        expect(
-          database.prepare(`PRAGMA foreign_key_list(${table})`).all(),
-        ).toEqual([]);
-      }
-
-      const snapshotIndexes = database
-        .prepare("PRAGMA index_list(kec_requirement_snapshots)")
-        .all() as Array<{ readonly name: string; readonly unique: number }>;
-      const snapshotKeys = snapshotIndexes
-        .filter(({ unique }) => unique === 1)
-        .map(({ name }) =>
-          (
-            database.prepare(`PRAGMA index_info('${name}')`).all() as Array<{
-              readonly name: string;
-            }>
-          ).map((column) => column.name),
-        );
-      expect(snapshotKeys).toContainEqual([
-        "source_identity",
-        "revision_key",
-        "blob_algorithm",
-        "blob_digest",
-        "extraction_contract",
-        "locator_space",
-      ]);
-      const naturalKeyIndex = snapshotIndexes.find(({ name, unique }) => {
-        if (unique !== 1) return false;
-        const columns = database
-          .prepare(`PRAGMA index_info('${name}')`)
-          .all() as Array<{ readonly name: string }>;
-        return (
-          JSON.stringify(columns.map((column) => column.name)) ===
-          JSON.stringify([
-            "source_identity",
-            "revision_key",
-            "blob_algorithm",
-            "blob_digest",
-            "extraction_contract",
-            "locator_space",
-          ])
-        );
-      });
-      expect(naturalKeyIndex).toBeDefined();
-      const naturalKeyCollations = database
-        .prepare(`PRAGMA index_xinfo('${naturalKeyIndex!.name}')`)
-        .all() as Array<{ readonly coll: string; readonly key: number }>;
-      expect(
-        naturalKeyCollations
-          .filter(({ key }) => key === 1)
-          .map(({ coll }) => coll),
-      ).toEqual(Array.from({ length: 6 }, () => "BINARY"));
-
-      const memberIndexes = database
-        .prepare("PRAGMA index_list(kec_requirement_snapshot_members)")
-        .all() as Array<{ readonly name: string; readonly unique: number }>;
-      const memberKeys = memberIndexes
-        .filter(({ unique }) => unique === 1)
-        .map(({ name }) =>
-          (
-            database.prepare(`PRAGMA index_info('${name}')`).all() as Array<{
-              readonly name: string;
-            }>
-          ).map((column) => column.name),
-        );
-      expect(memberKeys).toContainEqual(["snapshot_id", "population_index"]);
-      expect(memberKeys).toContainEqual(["snapshot_id", "requirement_id"]);
-    } finally {
-      database.close();
-    }
+  it("rejects drifted v1 without migration or repair", async () => {
+    const { dbPath } = createTempSnapshotDatabase();
+    initializeExactTask91V1Database(dbPath);
+    const database = new DatabaseSync(dbPath);
+    database.exec(
+      "ALTER TABLE kec_requirement_snapshots ADD COLUMN task93_drift TEXT",
+    );
+    database.close();
+    const before = schemaObjects(dbPath);
+    const Constructor = await StoreConstructor();
+    expect(categoryOf(() => new Constructor(dbPath))).toBe("schema");
+    expect(schemaObjects(dbPath)).toEqual(before);
   });
 
   it.each([
     ["foreign application id", { applicationId: 0x12345678 }],
-    ["unsupported version", { userVersion: 2 }],
+    ["unsupported future version", { userVersion: 3 }],
     ["unrelated nonempty database", { unrelated: true }],
   ])("rejects %s without adoption or repair", async (_name, options) => {
     const { dbPath } = createTempSnapshotDatabase();
@@ -251,55 +177,171 @@ describe.runIf(storeExists)("Task91 frozen SQLite schema", () => {
     const Constructor = await StoreConstructor();
     expect(categoryOf(() => new Constructor(dbPath))).toBe("schema");
   });
-
-  it("performs a bounded open-time orphan audit and keeps it", async () => {
-    const { dbPath } = createTempSnapshotDatabase();
-    const Constructor = await StoreConstructor();
-    new Constructor(dbPath).close();
-    const database = new DatabaseSync(dbPath);
-    database
-      .prepare(
-        `INSERT INTO kec_requirement_snapshot_members
-           (snapshot_id, population_index, requirement_id, statement, locators_json)
-         VALUES (?, ?, ?, ?, ?)`,
-      )
-      .run(999_999, 0, "orphan", "orphan", "[[1,0,1]]");
-    database.close();
-
-    expect(categoryOf(() => new Constructor(dbPath))).toBe("member-corruption");
-  });
-
-  it.each([
-    [
-      "unexpected column",
-      "ALTER TABLE kec_requirement_snapshots ADD COLUMN drift TEXT",
-    ],
-    [
-      "owned-table trigger",
-      `CREATE TRIGGER task91_drift AFTER INSERT ON kec_requirement_snapshots
-       BEGIN SELECT 1; END`,
-    ],
-  ])("rejects schema drift without repairing it: %s", async (_name, sql) => {
-    const { dbPath } = createTempSnapshotDatabase();
-    const Constructor = await StoreConstructor();
-    new Constructor(dbPath).close();
-    const before = new DatabaseSync(dbPath);
-    before.exec(sql);
-    const driftBefore = before
-      .prepare(
-        "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name",
-      )
-      .all();
-    before.close();
-
-    expect(categoryOf(() => new Constructor(dbPath))).toBe("schema");
-    const after = new DatabaseSync(dbPath);
-    const driftAfter = after
-      .prepare(
-        "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name",
-      )
-      .all();
-    after.close();
-    expect(driftAfter).toEqual(driftBefore);
-  });
 });
+
+describe.runIf(schemaV2Declared && storeExists)(
+  "Task93 exact SQLite schema v2",
+  () => {
+    afterEach(cleanupTempSnapshotDatabases);
+
+    it("initializes a pristine database directly as v2 with four tables", async () => {
+      const { dbPath } = createTempSnapshotDatabase();
+      const Constructor = await StoreConstructor();
+      new Constructor(dbPath).close();
+      const database = new DatabaseSync(dbPath);
+      try {
+        expect(database.prepare("PRAGMA application_id").get()).toEqual({
+          application_id: TASK91_APPLICATION_ID,
+        });
+        expect(database.prepare("PRAGMA user_version").get()).toEqual({
+          user_version: TASK93_USER_VERSION,
+        });
+        const tables = database
+          .prepare(
+            `SELECT name FROM sqlite_schema
+             WHERE type = 'table' ORDER BY name`,
+          )
+          .all() as Array<{ readonly name: string }>;
+        expect(tables.map(({ name }) => name)).toEqual(
+          [...TASK93_V2_TABLES].sort(),
+        );
+      } finally {
+        database.close();
+      }
+    });
+
+    it("reopens an exact valid v2 database without mutation", async () => {
+      const { dbPath } = createTempSnapshotDatabase();
+      const Constructor = await StoreConstructor();
+      new Constructor(dbPath).close();
+      const before = schemaObjects(dbPath);
+      new Constructor(dbPath).close();
+      expect(schemaObjects(dbPath)).toEqual(before);
+    });
+
+    it("keeps v1 columns unchanged and freezes exact capture columns", async () => {
+      const { dbPath } = createTempSnapshotDatabase();
+      const Constructor = await StoreConstructor();
+      new Constructor(dbPath).close();
+      const database = new DatabaseSync(dbPath);
+      try {
+        const expectedColumns = new Map<string, readonly string[]>([
+          [
+            "kec_requirement_snapshots",
+            [
+              "snapshot_id",
+              "source_identity",
+              "revision_key",
+              "blob_algorithm",
+              "blob_digest",
+              "extraction_contract",
+              "locator_space",
+            ],
+          ],
+          [
+            "kec_requirement_snapshot_members",
+            [
+              "snapshot_id",
+              "population_index",
+              "requirement_id",
+              "statement",
+              "locators_json",
+            ],
+          ],
+          [
+            "kec_requirement_snapshot_captures",
+            ["snapshot_id", "capture_contract"],
+          ],
+          [
+            "kec_requirement_snapshot_capture_observations",
+            [
+              "snapshot_id",
+              "capture_contract",
+              "observation_index",
+              "kind",
+              "payload_json",
+            ],
+          ],
+        ]);
+        const tableList = database.prepare("PRAGMA table_list").all() as Array<{
+          readonly name: string;
+          readonly strict: number;
+        }>;
+        for (const [table, columns] of expectedColumns) {
+          expect(tableList.find(({ name }) => name === table)?.strict).toBe(1);
+          const observed = database
+            .prepare(`PRAGMA table_info(${table})`)
+            .all() as Array<{ readonly name: string }>;
+          expect(observed.map(({ name }) => name)).toEqual(columns);
+        }
+      } finally {
+        database.close();
+      }
+    });
+
+    it("freezes capture keys with no FK, CHECK, or trigger", async () => {
+      const { dbPath } = createTempSnapshotDatabase();
+      const Constructor = await StoreConstructor();
+      new Constructor(dbPath).close();
+      const database = new DatabaseSync(dbPath);
+      try {
+        const headerColumns = database
+          .prepare("PRAGMA table_info(kec_requirement_snapshot_captures)")
+          .all() as Array<{ readonly name: string; readonly pk: number }>;
+        expect(
+          headerColumns
+            .filter(({ pk }) => pk > 0)
+            .sort((left, right) => left.pk - right.pk)
+            .map(({ name }) => name),
+        ).toEqual(["snapshot_id", "capture_contract"]);
+
+        const observationColumns = database
+          .prepare(
+            "PRAGMA table_info(kec_requirement_snapshot_capture_observations)",
+          )
+          .all() as Array<{ readonly name: string; readonly pk: number }>;
+        expect(
+          observationColumns
+            .filter(({ pk }) => pk > 0)
+            .sort((left, right) => left.pk - right.pk)
+            .map(({ name }) => name),
+        ).toEqual(["snapshot_id", "capture_contract", "observation_index"]);
+
+        const objects = database
+          .prepare("SELECT type, sql FROM sqlite_schema")
+          .all() as Array<{
+          readonly type: string;
+          readonly sql: string | null;
+        }>;
+        const tableSql = objects
+          .filter(({ type }) => type === "table")
+          .map(({ sql }) => sql ?? "")
+          .join("\n");
+        expect(tableSql).not.toMatch(/\bFOREIGN\s+KEY\b|\bCHECK\s*\(/iu);
+        expect(objects.filter(({ type }) => type === "trigger")).toEqual([]);
+        for (const table of TASK93_V2_TABLES) {
+          expect(
+            database.prepare(`PRAGMA foreign_key_list(${table})`).all(),
+          ).toEqual([]);
+        }
+      } finally {
+        database.close();
+      }
+    });
+
+    it("rejects v2 schema drift without repairing it", async () => {
+      const { dbPath } = createTempSnapshotDatabase();
+      const Constructor = await StoreConstructor();
+      new Constructor(dbPath).close();
+      const before = new DatabaseSync(dbPath);
+      before.exec(
+        "ALTER TABLE kec_requirement_snapshot_captures ADD COLUMN drift TEXT",
+      );
+      const driftBefore = schemaObjects(dbPath);
+      before.close();
+
+      expect(categoryOf(() => new Constructor(dbPath))).toBe("schema");
+      expect(schemaObjects(dbPath)).toEqual(driftBefore);
+    });
+  },
+);

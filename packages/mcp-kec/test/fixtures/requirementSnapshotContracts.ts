@@ -96,9 +96,20 @@ type LoadSnapshotSignatureIsExact = Expect<
 type CloseSignatureIsExact = Expect<
   Equal<KecRequirementSnapshotStore["close"], () => void>
 >;
-type ErrorCategoriesAreExact = Expect<
+type Task91ErrorCategoriesRemain = Expect<
   Equal<
-    KecRequirementSnapshotErrorCategory,
+    Extract<
+      KecRequirementSnapshotErrorCategory,
+      | "binding-mismatch"
+      | "unsupported-locator-space"
+      | "snapshot-conflict"
+      | "locator-encode"
+      | "locator-decode"
+      | "member-corruption"
+      | "schema"
+      | "storage"
+      | "closed"
+    >,
     | "binding-mismatch"
     | "unsupported-locator-space"
     | "snapshot-conflict"
@@ -120,7 +131,7 @@ export type RequirementSnapshotContractChecks =
   | StoreSnapshotSignatureIsExact
   | LoadSnapshotSignatureIsExact
   | CloseSignatureIsExact
-  | ErrorCategoriesAreExact;
+  | Task91ErrorCategoriesRemain;
 
 function assertReadonlyContracts(
   binding: KecRequirementExtractionBinding,
@@ -138,7 +149,10 @@ function assertReadonlyContracts(
 void assertReadonlyContracts;
 
 export const TASK91_APPLICATION_ID = 0x56524831;
-export const TASK91_USER_VERSION = 1;
+export const TASK91_V1_USER_VERSION = 1;
+export const TASK93_USER_VERSION = 2;
+// Retain the predecessor name for Task91 tests that intentionally freeze v1.
+export const TASK91_USER_VERSION = TASK91_V1_USER_VERSION;
 export const TASK91_EXTRACTION_CONTRACT_ID =
   "kec:pdfjs-structural-normative-paragraphs:v1";
 export const TASK91_LOCATOR_SPACE = "kec:pdf-text-item-span:v1";
@@ -152,6 +166,22 @@ export const TASK91_ERROR_CATEGORIES = [
   "schema",
   "storage",
   "closed",
+] as const;
+export const TASK93_ERROR_CATEGORIES = [
+  ...TASK91_ERROR_CATEGORIES,
+  "capture-invalid",
+  "capture-conflict",
+  "capture-corruption",
+  "capture-unsupported-schema",
+] as const;
+export const TASK91_V1_TABLES = [
+  "kec_requirement_snapshots",
+  "kec_requirement_snapshot_members",
+] as const;
+export const TASK93_V2_TABLES = [
+  ...TASK91_V1_TABLES,
+  "kec_requirement_snapshot_captures",
+  "kec_requirement_snapshot_capture_observations",
 ] as const;
 
 export const tempSnapshotRoots: string[] = [];
@@ -169,6 +199,104 @@ export function createTempSnapshotDatabase(prefix = "voltai-task91-red-"): {
 export function cleanupTempSnapshotDatabases(): void {
   for (const root of tempSnapshotRoots.splice(0)) {
     rmSync(root, { recursive: true, force: true });
+  }
+}
+
+export function initializeExactTask91V1Database(dbPath: string): void {
+  const database = new DatabaseSync(dbPath);
+  try {
+    database.exec(`
+      CREATE TABLE kec_requirement_snapshots (
+        snapshot_id INTEGER PRIMARY KEY,
+        source_identity TEXT COLLATE BINARY NOT NULL,
+        revision_key TEXT COLLATE BINARY NOT NULL,
+        blob_algorithm TEXT COLLATE BINARY NOT NULL,
+        blob_digest TEXT COLLATE BINARY NOT NULL,
+        extraction_contract TEXT COLLATE BINARY NOT NULL,
+        locator_space TEXT COLLATE BINARY NOT NULL,
+        UNIQUE (
+          source_identity,
+          revision_key,
+          blob_algorithm,
+          blob_digest,
+          extraction_contract,
+          locator_space
+        )
+      ) STRICT;
+
+      CREATE TABLE kec_requirement_snapshot_members (
+        snapshot_id INTEGER NOT NULL,
+        population_index INTEGER NOT NULL,
+        requirement_id TEXT COLLATE BINARY NOT NULL,
+        statement TEXT NOT NULL,
+        locators_json TEXT NOT NULL,
+        PRIMARY KEY (snapshot_id, population_index),
+        UNIQUE (snapshot_id, requirement_id)
+      ) STRICT;
+
+      PRAGMA application_id = ${TASK91_APPLICATION_ID};
+      PRAGMA user_version = ${TASK91_V1_USER_VERSION};
+    `);
+  } finally {
+    database.close();
+  }
+}
+
+export function seedTask91V1Snapshot(
+  dbPath: string,
+  snapshot = task91Snapshot(),
+  snapshotId = 41,
+): void {
+  const database = new DatabaseSync(dbPath);
+  try {
+    const binding = snapshot.binding;
+    database
+      .prepare(
+        `INSERT INTO kec_requirement_snapshots (
+           snapshot_id, source_identity, revision_key, blob_algorithm,
+           blob_digest, extraction_contract, locator_space
+         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        snapshotId,
+        binding.sourceRevision.sourceIdentity,
+        binding.sourceRevision.revisionKey,
+        binding.blobHash.algorithm,
+        binding.blobHash.digest,
+        binding.extractionContract,
+        binding.locatorSpace,
+      );
+    const insertMember = database.prepare(
+      `INSERT INTO kec_requirement_snapshot_members (
+         snapshot_id, population_index, requirement_id, statement, locators_json
+       ) VALUES (?, ?, ?, ?, ?)`,
+    );
+    for (const [populationIndex, member] of snapshot.requirements.entries()) {
+      insertMember.run(
+        snapshotId,
+        populationIndex,
+        member.requirement.id,
+        member.requirement.statement,
+        canonicalLocators(member.provenance.locators),
+      );
+    }
+  } finally {
+    database.close();
+  }
+}
+
+export function schemaObjects(
+  dbPath: string,
+): readonly Record<string, unknown>[] {
+  const database = new DatabaseSync(dbPath);
+  try {
+    return database
+      .prepare(
+        "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name",
+      )
+      .all() as Record<string, unknown>[];
+  } finally {
+    database.close();
   }
 }
 

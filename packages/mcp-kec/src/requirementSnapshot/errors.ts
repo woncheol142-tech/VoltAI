@@ -7,7 +7,11 @@ export type KecRequirementSnapshotErrorCategory =
   | "member-corruption"
   | "schema"
   | "storage"
-  | "closed";
+  | "closed"
+  | "capture-invalid"
+  | "capture-conflict"
+  | "capture-corruption"
+  | "capture-unsupported-schema";
 
 const messages: Record<KecRequirementSnapshotErrorCategory, string> = {
   "binding-mismatch": "Requirement snapshot member binding mismatch",
@@ -19,6 +23,11 @@ const messages: Record<KecRequirementSnapshotErrorCategory, string> = {
   schema: "Requirement snapshot schema validation failed",
   storage: "Requirement snapshot storage operation failed",
   closed: "Requirement snapshot store is closed",
+  "capture-invalid": "Source capture snapshot is invalid",
+  "capture-conflict": "Source capture snapshot conflicts with stored data",
+  "capture-corruption": "Stored source capture data is corrupt",
+  "capture-unsupported-schema":
+    "Source capture writes require Requirement snapshot schema v2",
 };
 
 export class KecRequirementSnapshotStoreError extends Error {

@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import * as ts from "typescript";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type {
@@ -18,11 +19,13 @@ import {
   task91Snapshot,
   task91SourceRevision,
   TASK91_ERROR_CATEGORIES,
+  TASK93_ERROR_CATEGORIES,
 } from "./fixtures/requirementSnapshotContracts.js";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 const snapshotRoot = join(packageRoot, "src", "requirementSnapshot");
 const snapshotIndex = join(snapshotRoot, "index.ts");
+const snapshotErrors = join(snapshotRoot, "errors.ts");
 const storeExists = existsSync(snapshotIndex);
 
 type Store = {
@@ -60,6 +63,43 @@ function categoryOf(action: () => unknown): string | undefined {
       ? String(error.category)
       : undefined;
   }
+}
+
+function exportedErrorCategoryLiterals(): readonly string[] {
+  const source = readFileSync(snapshotErrors, "utf8");
+  const sourceFile = ts.createSourceFile(
+    snapshotErrors,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const declarations = sourceFile.statements.filter(
+    (statement): statement is ts.TypeAliasDeclaration =>
+      ts.isTypeAliasDeclaration(statement) &&
+      statement.name.text === "KecRequirementSnapshotErrorCategory" &&
+      statement.modifiers?.some(
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+      ) === true,
+  );
+  expect(
+    declarations,
+    "errors.ts must export exactly one KecRequirementSnapshotErrorCategory type alias",
+  ).toHaveLength(1);
+  const declaration = declarations[0];
+  expect(declaration && ts.isUnionTypeNode(declaration.type)).toBe(true);
+  if (!declaration || !ts.isUnionTypeNode(declaration.type)) return [];
+
+  return declaration.type.types.map((member) => {
+    expect(
+      ts.isLiteralTypeNode(member) && ts.isStringLiteral(member.literal),
+      "every KecRequirementSnapshotErrorCategory union member must be a string literal type",
+    ).toBe(true);
+    if (!ts.isLiteralTypeNode(member) || !ts.isStringLiteral(member.literal)) {
+      return "<non-string-literal>";
+    }
+    return member.literal.text;
+  });
 }
 
 describe("Task91 requirementSnapshot production boundary RED gate", () => {
@@ -173,23 +213,26 @@ describe.runIf(storeExists)(
       );
     });
 
-    it("exports exactly the nine frozen error categories", () => {
-      const source = sourceFiles(snapshotRoot)
-        .map((path) => readFileSync(path, "utf8"))
-        .join("\n");
-      const categoryLiterals = new Set(
-        [
-          ...source.matchAll(
-            /"(binding-mismatch|unsupported-locator-space|snapshot-conflict|locator-encode|locator-decode|member-corruption|schema|storage|closed)"/gu,
-          ),
-        ].map((match) => match[1]),
+    it("retains all nine Task91 categories in the Task93 taxonomy", () => {
+      const exportedCategories = exportedErrorCategoryLiterals();
+      expect(
+        TASK91_ERROR_CATEGORIES.every((category) =>
+          exportedCategories.includes(category),
+        ),
+      ).toBe(true);
+      expect(new Set(exportedCategories).size).toBe(exportedCategories.length);
+      expect(exportedCategories).not.toEqual(
+        expect.arrayContaining(["query", "delete", "migration", "latest"]),
       );
-      expect([...categoryLiterals].sort()).toEqual(
-        [...TASK91_ERROR_CATEGORIES].sort(),
+    });
+
+    it("exports exactly the thirteen frozen Task93 error categories", () => {
+      const exportedCategories = exportedErrorCategoryLiterals();
+      expect([...exportedCategories].sort()).toEqual(
+        [...TASK93_ERROR_CATEGORIES].sort(),
       );
-      expect(source).not.toMatch(
-        /RequirementSnapshotErrorCategory[\s\S]*?\|\s*"(?:query|delete|migration|latest)"/u,
-      );
+      expect(new Set(exportedCategories).size).toBe(13);
+      expect(TASK93_ERROR_CATEGORIES).toHaveLength(13);
     });
 
     it("enforces query, governance, identity-creep, and acquisition firewalls", () => {
