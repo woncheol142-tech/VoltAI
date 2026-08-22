@@ -1,0 +1,10 @@
+# Reconstructable or near-verbatim evidence must remain local.
+/raw/
+/extracted/A-visible.txt
+/extracted/B1-visible.txt
+/extracted/*raw*
+/extracted/*verbatim*
+
+# Python execution residue is not evidence.
+/scripts/__pycache__/
+/tests/__pycache__/

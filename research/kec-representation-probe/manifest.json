@@ -1,0 +1,536 @@
+{
+  "schema": "kec-representation-pass0b-evidence-manifest/v1",
+  "result": "BLOCKED",
+  "stopped_at": "PHASE_1_STRUCTURAL_RECORD_GATE",
+  "pass_0a": "BLOCKED",
+  "option_1_available": "NO",
+  "block_reason_class": "STRUCTURAL_RECORD_ABSENCE",
+  "retryable": false,
+  "initial_attempt": {
+    "result": "INCONCLUSIVE",
+    "pass_0a": "UNVERIFIED",
+    "option_1_available": "UNVERIFIED",
+    "block_reason_class": "TRANSIENT_SERVICE_OUTAGE",
+    "reason": "The first diagnostic used OC=test during the announced maintenance window and did not reach the measurement gate."
+  },
+  "git_head": "53bbb9edd7d8a1ae6a1ffabc4795a351b33bbbe9",
+  "starting_branch": "main",
+  "starting_git_status_short": [],
+  "runtime_tool_versions": {
+    "python": "3.14.3",
+    "curl": "8.7.1",
+    "git": "git version 2.50.1 (Apple Git-155)",
+    "sqlite3": "3.51.0"
+  },
+  "research_script": "research/kec-representation-probe/scripts/pass0b_probe.py",
+  "sources": [
+    {
+      "source_role": "A",
+      "revision": "2024-749",
+      "requested_revision": "2024-749",
+      "issuer_or_source": "산업통상자원부 (official page now served by 산업통상부)",
+      "acquisition_method": "Browser download from the official ministry attachment link; file(1) media sniff only",
+      "source_url": "https://www.motir.go.kr/attach/down/c26df36c4f964b1523b31be51e734922/4079c5fb4c8fc7a5ebd69df068ba0993/9a9db098b587ee18b321c826f3707a49",
+      "source_page_url": "https://www.motir.go.kr/kor/article/ATCLc01b2801b/69793/view",
+      "canonical_local_path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/ministry-2024-749-kec-full.hwpx",
+      "sha256": "3d6d221208cc2b92d9f0206d0bbab807ab61274a41fed295a8d155a6afa9c375",
+      "size_bytes": 39796224,
+      "acquisition_timestamp": "2026-08-22T11:37:29+09:00",
+      "parser_or_script": "No document parser invoked; file(1) plus head -c 8 | xxd signature identification only",
+      "evidence_status": "OBSERVED",
+      "phase_context": "POST_PASS_0B_NEXT_ROUND_INPUT_ONLY",
+      "current_pass0b_result_changed": false,
+      "official_attachment_label": "한국전기설비규정 개정 전문.hwpx [37,953.1 KB]",
+      "advertised_extension": ".hwpx",
+      "detected_media_type": "application/x-hwp",
+      "detected_file_description": "Hangul (Korean) Word Processor File 5.x",
+      "format_mismatch_status": "OBSERVED",
+      "internal_format_identity_status": "OBSERVED",
+      "internal_format_identity": "CFB (Compound File Binary) container; HWP 5.x binary family",
+      "magic_bytes_hex": "d0 cf 11 e0 a1 b1 1a e1",
+      "magic_bytes_locator": "byte offsets 0x00-0x07",
+      "magic_signature_interpretation": "Matches the CFB signature and does not match the ZIP local-file-header signature required for an HWPX/OWPML package",
+      "structure_observation_status": "NOT_ATTEMPTED",
+      "reason": "The official attachment was acquired after the Pass 0b structural stop. Its advertised .hwpx extension conflicts with the directly observed CFB magic signature. Only byte offsets 0x00-0x07 were read; document contents and structures were not opened or parsed."
+    },
+    {
+      "source_role": "B1",
+      "revision": null,
+      "requested_revision": "2024-749",
+      "issuer_or_source": "National Law Information Center (law.go.kr)",
+      "acquisition_method": "Authenticated HTTPS GET with curl 8.7.1; credential redacted before retention",
+      "source_url": "https://www.law.go.kr/DRF/lawSearch.do?OC=REDACTED_OC&target=admrul&type=XML&nw=2&search=1&query=한국전기설비규정&display=100",
+      "canonical_local_path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/phase1-retry-history-list.response.xml",
+      "sha256": "8ba3b2ca7a124b66179bb950985f3c09d4c51d6d2a7bc821af940c2e5e8ab620",
+      "acquisition_timestamp": "2026-08-22T11:00:30+09:00",
+      "parser_or_script": "Python 3.14.3 xml.etree.ElementTree structural read; scripts/pass0b_probe.py gate",
+      "evidence_status": "NOT_ATTEMPTED",
+      "api_authentication_status": "OBSERVED",
+      "api_authentication_evidence": "raw/phase1-retry-history-list.response.xml /AdmRulSearch[resultCode='00' and resultMsg='success']",
+      "history_record_exists_status": "OBSERVED",
+      "history_record_exists_value": false,
+      "reason": "The successful complete 13-row history list contains no 2024-749 record, so no B1 revision-specific body source could be selected or retrieved."
+    },
+    {
+      "source_role": "B2",
+      "revision": "2025-227",
+      "requested_revision": "2025-227",
+      "issuer_or_source": "National Law Information Center (law.go.kr)",
+      "acquisition_method": "One authenticated HTTPS GET to lawService.do; OC and Set-Cookie values redacted before retention",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=XML",
+      "canonical_local_path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+      "sha256": "c16a0f4261149502b2175f21e6e0d9ec7afcb8d79e730eb37e5b414df0f75f56",
+      "size_bytes": 3120,
+      "acquisition_timestamp": "2026-08-22T11:52:05+09:00",
+      "parser_or_script": "Python 3.14.3 xml.etree.ElementTree top-level structure observation plus research/kec-representation-probe/scripts/pass0b_probe.py::observe_law_body revision/body-state regression",
+      "evidence_status": "OBSERVED",
+      "phase_context": "POST_PASS_0B_SINGLE_CURRENT_BODY_PROBE",
+      "current_pass0b_result_changed": false,
+      "request_count": 1,
+      "http_status": 200,
+      "http_content_type": "text/xml;charset=UTF-8",
+      "response_root": "AdmRulService",
+      "response_identity": {
+        "행정규칙일련번호": "2100000270772",
+        "행정규칙ID": "62165",
+        "행정규칙명": "한국전기설비규정",
+        "발령번호": "2025-227",
+        "발령일자": "20260105",
+        "시행일자": "20260105",
+        "현행여부": "Y"
+      },
+      "top_level_structure": {
+        "max_element_depth": 3,
+        "total_element_count": 31,
+        "children": [
+          "행정규칙기본정보",
+          "조문내용",
+          "부칙",
+          "제개정이유",
+          "첨부파일"
+        ],
+        "조문형식여부": "Y"
+      },
+      "clause_format_registration_observation": {
+        "status": "OBSERVED",
+        "value": "Y",
+        "observation": "The response self-declares 조문형식여부=Y even though its 조문내용 container is empty.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService/행정규칙기본정보/조문형식여부 (text='Y')"
+      },
+      "clause_content_observation": {
+        "status": "OBSERVED",
+        "value": false,
+        "observation": "The 조문내용 element exists but has zero child elements and zero non-whitespace text characters.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService/조문내용 (child_count=0; text_chars=0)"
+      },
+      "clause_content_absence_classification": {
+        "status": "OBSERVED",
+        "value": "RETRIEVAL_METHOD_MISMATCH",
+        "observation": "Using the approved three-way classification, 조문형식여부=Y rules out NOT_REGISTERED_AS_CLAUSES while this request still returns an empty 조문내용.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService/행정규칙기본정보/조문형식여부 (text='Y'); /AdmRulService/조문내용 (child_count=0; text_chars=0)",
+        "scope_boundary": "This classifies the XML flag/body mismatch only. A working alternate parameter or endpoint, and the public retrievability of registered clause content, remain UNVERIFIED."
+      },
+      "html_diagnostic_attempt": {
+        "status": "OBSERVED",
+        "value": "MEASUREMENT_NOT_ESTABLISHED",
+        "semantic_result": "APPLICATION_ERROR",
+        "reason_class": "API_SUBSCRIPTION_SCOPE_MISMATCH",
+        "requested_type": "HTML",
+        "request_count": 1,
+        "response_date_header_timestamp": "2026-08-22T12:14:26+09:00",
+        "http_status": 200,
+        "http_content_type": "text/html;charset=UTF-8",
+        "response_size_bytes": 1649,
+        "response_sha256": "4674fff600335111d6a362aaa8811f6ca1a7ac54fbe6a1a383ed2df2b460c077",
+        "response_class": "API_SUBSCRIPTION_SCOPE_MISMATCH",
+        "content_measurement_reached": false,
+        "body_retrieval_succeeds": false,
+        "http_200_is_semantic_success": false,
+        "retryability": "UNVERIFIED_UNTIL_CONFIGURATION_PERSISTS",
+        "persisted_html_approval_status": "UNVERIFIED",
+        "persisted_html_approval_reason": "The pre-request checked state and post-request unchecked state were observed in the browser but were not retained as evidence artifacts; the provider response independently establishes only that the requested API format was not registered at request time.",
+        "causal_relationship_to_xml_empty_body": "UNVERIFIED",
+        "credential_echo_detected": false,
+        "set_cookie_values_retained": false,
+        "observation": "The provider returned an HTML error page stating that an unrequested list/body format was accessed; no administrative-rule clause body was measured.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227-html.response.html",
+        "locator": "line 21 (application-error heading); line 22 (registration guidance)",
+        "scope_boundary": "This is an authorization-precondition result, not evidence that HTML clause content is present or absent. It does not explain the empty XML body, establish a working alternate endpoint or parameter, or establish public or historical body availability. No retry was made."
+      },
+      "html_authorized_retry_attempt": {
+        "status": "OBSERVED",
+        "value": "MEASUREMENT_NOT_ESTABLISHED",
+        "semantic_result": "APPLICATION_ERROR",
+        "reason_class": "PROVIDER_GENERIC_APPLICATION_ERROR",
+        "requested_type": "HTML",
+        "request_count": 1,
+        "response_date_header_timestamp": "2026-08-22T12:30:19+09:00",
+        "http_status": 200,
+        "http_content_type": "text/html;charset=UTF-8",
+        "response_headers_size_bytes": 413,
+        "response_size_bytes": 1657,
+        "response_sha256": "c57a3e8c11f0b414f430f54cda8874b32d4b495eb0ea33db4c33da7640cc58f8",
+        "response_class": "PROVIDER_GENERIC_APPLICATION_ERROR",
+        "content_measurement_reached": false,
+        "body_retrieval_succeeds": false,
+        "http_200_is_semantic_success": false,
+        "retryability": "UNVERIFIED",
+        "no_immediate_retry_made_at_this_step": true,
+        "persisted_html_approval_status": "UNVERIFIED_IN_EVIDENCE_PACK",
+        "persisted_html_approval_reason": "The checked state survived a fresh browser navigation before this request, but no sanitized DOM or screenshot artifact was retained; the generic provider error does not independently confirm authorization state.",
+        "causal_relationship_to_xml_empty_body": "UNVERIFIED",
+        "relationship_to_prior_html_error": "UNVERIFIED",
+        "response_class_change_observation": {
+          "status": "OBSERVED",
+          "observation": "Both HTML attempts were HTTP 200 semantic application errors, but the second response uses a generic access-failure heading and does not repeat the first response's unrequested-format heading.",
+          "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227-html-authorized.response.html",
+          "locator": "line 21; compared with research/kec-representation-probe/raw/body-probe-2025-227-html.response.html line 21",
+          "scope_boundary": "This establishes only that the provider returned a different error class. Approval propagation, backend progress, and causal change remain UNVERIFIED."
+        },
+        "credential_echo_detected": false,
+        "set_cookie_values_retained": false,
+        "observation": "The provider returned a generic access-failure HTML page and directed the caller to institutional support; no administrative-rule clause body was measured.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227-html-authorized.response.html",
+        "locator": "line 21 (generic access-failure heading); lines 22-23 (provider guidance)",
+        "scope_boundary": "The changed error page does not prove that subscription approval propagated, that the new credential was accepted for body HTML, or that clause content is present or absent. It does not explain the empty XML body. No immediate retry was made at this step; the later user-authorized final attempt is recorded separately."
+      },
+      "html_final_retry_attempt": {
+        "status": "OBSERVED",
+        "value": "MEASUREMENT_NOT_ESTABLISHED",
+        "semantic_result": "APPLICATION_ERROR",
+        "reason_class": "PROVIDER_GENERIC_APPLICATION_ERROR",
+        "requested_type": "HTML",
+        "request_count": 1,
+        "response_date_header_timestamp": "2026-08-22T13:21:24+09:00",
+        "retry_timing_class": "USER_AUTHORIZED_EARLY_FINAL_RETRY",
+        "planned_delay_satisfied": false,
+        "elapsed_between_response_date_headers_seconds": 3065,
+        "timing_evidence_paths": [
+          "research/kec-representation-probe/raw/body-probe-2025-227-html-authorized.headers.txt",
+          "research/kec-representation-probe/raw/body-probe-2025-227-html-final.headers.txt"
+        ],
+        "timing_locator": "prior authorized header line 2 (Date: Sat, 22 Aug 2026 03:30:19 GMT); final header line 2 (Date: Sat, 22 Aug 2026 04:21:24 GMT); difference=3065 seconds",
+        "http_status": 200,
+        "http_content_type": "text/html;charset=UTF-8",
+        "response_size_bytes": 1657,
+        "response_sha256": "c57a3e8c11f0b414f430f54cda8874b32d4b495eb0ea33db4c33da7640cc58f8",
+        "response_class": "PROVIDER_GENERIC_APPLICATION_ERROR",
+        "content_measurement_reached": false,
+        "body_retrieval_succeeds": false,
+        "http_200_is_semantic_success": false,
+        "body_identical_to_prior_authorized_attempt": true,
+        "remaining_authorized_requests": 0,
+        "credential_echo_detected": false,
+        "set_cookie_values_retained": false,
+        "transport_evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227-html-final.headers.txt",
+        "transport_locator": "line 1 (HTTP 200); line 2 (response Date header); lines 8-9 (Set-Cookie values redacted); line 13 (Content-Length 1657); line 14 (HTML Content-Type)",
+        "observation": "The user-authorized final HTML request returned the same 1,657-byte generic application-error body as the prior authorized attempt; no clause-content measurement was reached.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227-html-final.response.html",
+        "locator": "line 21 (generic access-failure heading); SHA-256 equals the prior authorized HTML response",
+        "scope_boundary": "The final response Date header is 51 minutes 5 seconds after the prior response Date header, not after the planned hours-long interval. Exact client request-start timing is UNVERIFIED. This attempt does not establish whether HTML clause content exists, distinguish propagation delay from provider instability, validate the endpoint parameters, or explain the successful XML response's empty clause body. No requests remain authorized."
+      },
+      "hierarchy_observation": {
+        "status": "OBSERVED",
+        "value": false,
+        "observation": "No clause, paragraph, item, subitem, table, or other body hierarchy elements occur in this response.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService element inventory (31 total elements; no 조/항/호/목/table body tags)"
+      },
+      "appendix_observation": {
+        "status": "OBSERVED",
+        "value": false,
+        "observation": "The 부칙 element is empty and no 별표 element occurs; no appendix hierarchy is exposed in the XML.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService/부칙 (child_count=0; text_chars=0); 별표 tag count=0"
+      },
+      "attachment_observation": {
+        "status": "OBSERVED",
+        "count": 2,
+        "advertised_formats": [
+          "HWP",
+          "PDF"
+        ],
+        "filenames": [
+          "[전문] 2026년 한국전기설비규정 일부개정 전문_제2025-227호(전기자동차 충전시설).hwp",
+          "[전문] 2026년 한국전기설비규정 일부개정 전문_제2025-227호(전기자동차 충전시설).pdf"
+        ],
+        "filename_scope_label": "PARTIAL_AMENDMENT_FULL_TEXT",
+        "complete_kec_corpus_status": "UNVERIFIED",
+        "advertised_format_basis": "filename_extension_only",
+        "size_metadata_present": false,
+        "media_type_metadata_present": false,
+        "metadata_element_names": [
+          "첨부파일명",
+          "첨부파일링크"
+        ],
+        "observation": "The XML exposes two attachment names and links instead of clause content. Both filenames label themselves as an 일부개정 전문 for the electric-vehicle-charging amendment. This does not establish that either file contains the complete KEC corpus. The XML has no attachment-size or media-type field; HWP/PDF are filename extensions only, and actual file contents remain unverified.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService/첨부파일/첨부파일명[1..2]; attachment child element inventory contains only 첨부파일명 and 첨부파일링크"
+      },
+      "clause_local_o2_o3_feasibility": {
+        "status": "OBSERVED",
+        "value": false,
+        "observation": "Clause-local O2/O3 observation is not feasible from this response because its clause-content and appendix containers are empty and no body hierarchy elements occur.",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService/조문내용 (child_count=0; text_chars=0); /AdmRulService/부칙 (child_count=0; text_chars=0); body hierarchy tag count=0",
+        "reason": "No clause content or hierarchy is present from which to select or observe a clause; this is not an O2 or O3 result."
+      },
+      "credential_echo_detected": false,
+      "set_cookie_values_retained": false,
+      "reason": "This single current-revision response self-identifies as 2025-227 but provides metadata, amendment-reason text, and attachment metadata only. The empty body fields prevent clause-local O2/O3 observation on this API surface."
+    },
+    {
+      "source_role": "C",
+      "revision": null,
+      "requested_revision": null,
+      "issuer_or_source": null,
+      "acquisition_method": null,
+      "source_url": null,
+      "canonical_local_path": null,
+      "sha256": null,
+      "acquisition_timestamp": null,
+      "parser_or_script": null,
+      "evidence_status": "NOT_ATTEMPTED",
+      "reason": "Phase 0 found no evidence binding an exact local PDF to the current Task90/93 baseline; C provenance was not established."
+    }
+  ],
+  "retained_http_artifacts": [
+    {
+      "role": "Phase 1 history-search response headers",
+      "source_url": "https://www.law.go.kr/DRF/lawSearch.do?OC=test&target=admrul&type=XML&nw=2&query=%ED%95%9C%EA%B5%AD%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B7%9C%EC%A0%95&nb=749&display=100",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/phase1-history-search.headers.txt",
+      "sha256": "f086cfdf8471d709f7fe9f4e556d79354b1321997ab1cf61d4ff050bdf56a8bc",
+      "locator": "lines 1-5"
+    },
+    {
+      "role": "Phase 1 history-search response body",
+      "source_url": "https://www.law.go.kr/DRF/lawSearch.do?OC=test&target=admrul&type=XML&nw=2&query=%ED%95%9C%EA%B5%AD%EC%A0%84%EA%B8%B0%EC%84%A4%EB%B9%84%EA%B7%9C%EC%A0%95&nb=749&display=100",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/phase1-history-search.response.html",
+      "sha256": "fbe4f05129de5d9eb613f8b1c74fc75fe7f62784591686616fe16978e283a422",
+      "locator": "lines 124-151"
+    },
+    {
+      "role": "Current-page diagnostic response headers",
+      "source_url": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000270772",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/phase1-current-page.headers.txt",
+      "sha256": "ba012e271c462cca4d1cd5eb2d5f3299b7768fe14e6fde74c38f99fc1f5f3dfb",
+      "locator": "lines 1-5"
+    },
+    {
+      "role": "Current-page diagnostic response body",
+      "source_url": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000270772",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/phase1-current-page.response.html",
+      "sha256": "fbe4f05129de5d9eb613f8b1c74fc75fe7f62784591686616fe16978e283a422",
+      "locator": "lines 124-151"
+    },
+    {
+      "role": "Authenticated Phase 1 retry response headers (credential and cookies redacted)",
+      "source_url": "https://www.law.go.kr/DRF/lawSearch.do?OC=REDACTED_OC&target=admrul&type=XML&nw=2&search=1&query=한국전기설비규정&display=100",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/phase1-retry-history-list.headers.txt",
+      "sha256": "0708aff1820e3ea4cdcbdeee0d431a9fec4c5c7a2d0dcd80cbd8c5ad76ddae65",
+      "locator": "line 1 (HTTP status); lines 8-9 (Set-Cookie values redacted); line 14 (Content-Type)"
+    },
+    {
+      "role": "Authenticated Phase 1 retry history-list XML (credential echoes redacted)",
+      "source_url": "https://www.law.go.kr/DRF/lawSearch.do?OC=REDACTED_OC&target=admrul&type=XML&nw=2&search=1&query=한국전기설비규정&display=100",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/phase1-retry-history-list.response.xml",
+      "sha256": "8ba3b2ca7a124b66179bb950985f3c09d4c51d6d2a7bc821af940c2e5e8ab620",
+      "locator": "/AdmRulSearch/resultCode; /AdmRulSearch/resultMsg; /AdmRulSearch/totalCnt; /AdmRulSearch/numOfRows; /AdmRulSearch/admrul/발령번호"
+    },
+    {
+      "role": "Authenticated 2025-227 body-probe response headers (cookies redacted)",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=XML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227.headers.txt",
+      "sha256": "9b7f004bb4a95dbe9ebaa42318dae6029e53ef322f0c89e74a6bc9f551ec72cc",
+      "locator": "line 1 (HTTP 200); lines 8-9 (Set-Cookie values redacted); line 13 (Content-Length 3120); line 14 (XML Content-Type)"
+    },
+    {
+      "role": "Authenticated 2025-227 administrative-rule body XML",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=XML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+      "sha256": "c16a0f4261149502b2175f21e6e0d9ec7afcb8d79e730eb37e5b414df0f75f56",
+      "locator": "/AdmRulService/행정규칙기본정보; /AdmRulService/조문내용; /AdmRulService/부칙; /AdmRulService/제개정이유; /AdmRulService/첨부파일"
+    },
+    {
+      "role": "Authenticated 2025-227 HTML diagnostic response headers (cookies redacted)",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=HTML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227-html.headers.txt",
+      "sha256": "d12d605f6ea7e60e6425eac3efd766be454114065910c2e3032c7aeeee8b1c40",
+      "locator": "line 1 (HTTP 200); lines 8-9 (Set-Cookie values redacted); line 13 (Content-Length 1649); line 14 (HTML Content-Type)"
+    },
+    {
+      "role": "2025-227 HTML diagnostic authorization error page",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=HTML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227-html.response.html",
+      "sha256": "4674fff600335111d6a362aaa8811f6ca1a7ac54fbe6a1a383ed2df2b460c077",
+      "locator": "lines 21-22"
+    },
+    {
+      "role": "Separately user-authorized retry: 2025-227 HTML response headers (cookies redacted)",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=HTML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227-html-authorized.headers.txt",
+      "sha256": "eed07aa79d075a457d0b2781187ac52428b1089bf0c9d0f06bf59abac84386a7",
+      "locator": "line 1 (HTTP 200); lines 8-9 (Set-Cookie values redacted); line 13 (Content-Length 1657); line 14 (HTML Content-Type)"
+    },
+    {
+      "role": "Separately user-authorized retry: 2025-227 generic HTML application-error page",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=HTML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227-html-authorized.response.html",
+      "sha256": "c57a3e8c11f0b414f430f54cda8874b32d4b495eb0ea33db4c33da7640cc58f8",
+      "locator": "lines 21-23"
+    },
+    {
+      "role": "User-authorized early final retry: 2025-227 HTML response headers (cookies redacted)",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=HTML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227-html-final.headers.txt",
+      "sha256": "e6c5241804d038440ba2ba4d5664ee0b5a36db213c0b6217e8b5fa4a9ee181fb",
+      "size_bytes": 413,
+      "locator": "line 1 (HTTP 200); line 2 (Date); lines 8-9 (Set-Cookie values redacted); line 13 (Content-Length 1657); line 14 (HTML Content-Type)"
+    },
+    {
+      "role": "User-authorized early final retry: byte-identical 2025-227 generic HTML application-error page",
+      "source_url": "https://www.law.go.kr/DRF/lawService.do?OC=REDACTED_OC&target=admrul&ID=2100000270772&type=HTML",
+      "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/raw/body-probe-2025-227-html-final.response.html",
+      "sha256": "c57a3e8c11f0b414f430f54cda8874b32d4b495eb0ea33db4c33da7640cc58f8",
+      "size_bytes": 1657,
+      "locator": "lines 21-23; byte-identical to body-probe-2025-227-html-authorized.response.html"
+    }
+  ],
+  "phase0_inventory": {
+    "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/extracted/phase0-inventory.json",
+    "sha256": "fb1354f96aa80098c8bfb97f7958ac7bf265405ae5bfcdb8f1550a80e3949940",
+    "evidence_status": "OBSERVED",
+    "locator": "extracted/phase0-inventory.json#/"
+  },
+  "phase1_retry_summary": {
+    "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/extracted/phase1-retry-summary.json",
+    "sha256": "fda984b630042fb330680e07e5cb9bdad0e98390b29f76948af8cf6a934fed30",
+    "evidence_status": "OBSERVED",
+    "locator": "extracted/phase1-retry-summary.json#/measurement_precondition; #/history_list; #/phase1_gate; #/real_input_boundary"
+  },
+  "phase0_c_pdf_candidates": [
+    {
+      "path": "/Users/woncheol/Documents/Volt ai/project-files/전기 결합_1_100.pdf",
+      "sha256": "94bd23c711bf289986fe20307e9243ddf85fa4e8c4106c4006b2c2a3f76dfbd1",
+      "artifact_identity_status": "OBSERVED",
+      "task90_93_binding_status": "UNVERIFIED",
+      "reason": "No Task90/93 snapshot or source-capture artifact identifies this PDF as the current baseline input."
+    },
+    {
+      "path": "/Users/woncheol/Documents/Volt ai/project-files/한국전기설비규정(기후에너지환경부공고)(제2025-227호)(20260105).pdf",
+      "sha256": "58ab5cabd9605bdd603db7b4b2b80db6004fd8e3162b5c57c6d824b358978d7a",
+      "artifact_identity_status": "OBSERVED",
+      "task90_93_binding_status": "UNVERIFIED",
+      "reason": "The local artifact exists, but no evidence binds it to the current Task90/93 baseline extraction."
+    }
+  ],
+  "provider_portal_approval_observation": {
+    "path": "/Users/woncheol/Documents/Volt ai/research/kec-representation-probe/extracted/open-api-approval-observation.json",
+    "sha256": "91ffbe075eda0fc4d577b851465c1336fa8f6fe083f4419916849c753a1bca6f",
+    "evidence_status": "OBSERVED",
+    "locator": "#/application_state; #/current_administrative_rule_formats",
+    "credential_value_recorded": false,
+    "personal_account_fields_recorded": false
+  },
+  "post_pass0b_closure": {
+    "closure_status": "CLOSED",
+    "pass0b_result_changed": false,
+    "oc_approval_status": {
+      "status": "OBSERVED",
+      "value": "APPROVED",
+      "observation": "The authenticated provider portal shows the application as approved and connected, with current-administrative-rule list XML, body XML, and body HTML selected after fresh navigation.",
+      "evidence_path": "research/kec-representation-probe/extracted/open-api-approval-observation.json",
+      "locator": "#/application_state; #/current_administrative_rule_formats"
+    },
+    "portal_ui_nonapproval_cause": {
+      "status": "OBSERVED",
+      "value": "EXCLUDED",
+      "observation": "A missing approval selection in the provider portal is excluded at the portal-configuration layer.",
+      "evidence_path": "research/kec-representation-probe/extracted/open-api-approval-observation.json",
+      "locator": "#/application_state/approval_status; #/current_administrative_rule_formats/body_html_checked",
+      "scope_boundary": "Backend approval propagation and credential acceptance at the DRF endpoint are not excluded."
+    },
+    "backend_permission_cause": {
+      "status": "UNVERIFIED",
+      "value": null,
+      "reason": "The portal configuration is approved, but none of the three HTML application-error responses confirms backend propagation or credential acceptance for body HTML."
+    },
+    "html_absence_cause_class": {
+      "status": "UNVERIFIED",
+      "value": "PROPAGATION_OR_PARAMETER_OR_INSTABILITY",
+      "candidate_set": [
+        "APPROVAL_PROPAGATION_DELAY",
+        "REQUEST_PARAMETER_OR_ENDPOINT_MISMATCH",
+        "PROVIDER_INSTABILITY"
+      ],
+      "reason": "The first HTML request returned a subscription-scope error and the next two returned byte-identical generic application-error pages; none reached body measurement, so the remaining candidates cannot be distinguished."
+    },
+    "next_action": {
+      "status": "COMPLETED",
+      "evidence_status": "OBSERVED",
+      "planned_action": "ONE_TIME_DELAYED_HTML_RETRY",
+      "action": "USER_AUTHORIZED_EARLY_FINAL_HTML_RETRY",
+      "purpose": "Test whether a semantically successful HTML representation exposes clause content absent from the already successful XML response; do not revalidate XML or treat mere endpoint access as the result.",
+      "planned_timing": "AFTER_A_TIME_GAP_OF_HOURS_OR_THE_NEXT_DAY",
+      "response_date_header_timestamp": "2026-08-22T13:21:24+09:00",
+      "planned_delay_satisfied": false,
+      "elapsed_between_response_date_headers_seconds": 3065,
+      "client_request_start_timestamp": "UNVERIFIED",
+      "max_additional_requests": 1,
+      "requests_consumed": 1,
+      "remaining_requests": 0,
+      "stop_after_attempt": true,
+      "result": "MEASUREMENT_NOT_ESTABLISHED",
+      "observation": "The one authorized final HTML request was executed and returned a byte-identical generic application-error body without reaching clause-content measurement.",
+      "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227-html-final.response.html",
+      "locator": "final response line 21 and SHA-256 c57a3e8c11f0b414f430f54cda8874b32d4b495eb0ea33db4c33da7640cc58f8; timing: prior authorized header line 2 (03:30:19 GMT) to final header line 2 (04:21:24 GMT) = 3065 seconds",
+      "reason": "At the user's explicit request, the final attempt was executed before the planned hours-long interval. Its response Date header is 3065 seconds after the prior response Date header, and it returned a byte-identical generic application-error body. Exact client request-start timing is UNVERIFIED; HTML clause content was not measured and propagation delay was not excluded."
+    },
+    "diagnostic_limit": "The final response Date header is only 51 minutes 5 seconds after the prior response Date header, and the response repeats the same generic application-error body. Exact client request-start timing is UNVERIFIED. The result does not distinguish approval propagation delay, request parameter or endpoint mismatch, or provider instability, and it does not measure HTML clause-content availability.",
+    "architecture_decision": {
+      "status": "NOT_ATTEMPTED",
+      "value": "DEFERRED",
+      "production_change_authorized": false,
+      "reason": "Structured law.go.kr body availability remains UNVERIFIED, so HWP-versus-PDF architecture selection is premature."
+    }
+  },
+  "harness_validation": {
+    "contract_verified": "YES (SYNTHETIC CONTRACTS PLUS ONE RETAINED-XML REGRESSION)",
+    "real_input_verified": "PARTIAL (AUTHENTICATED HISTORY LIST AND ONE CURRENT 2025-227 BODY RESPONSE)",
+    "real_input_gate_verified": "YES (AUTHENTICATED API HISTORY LIST)",
+    "real_input_body_response_verified": "YES (2025-227)",
+    "real_input_body_response_parsed": "YES (RESEARCH-ONLY observe_law_body)",
+    "real_input_body_parser_result": "OBSERVED value=False (EXPLICIT 조문내용 ELEMENT; child_count=0; text_chars=0)",
+    "real_input_body_content_available": "NO (OBSERVED FALSE)",
+    "real_input_clause_hierarchy_verified": "NO (NO CLAUSE CONTENT; O2/O3 REMAIN UNVERIFIED)",
+    "html_diagnostic": "MEASUREMENT_NOT_ESTABLISHED (FIRST ATTEMPT: SUBSCRIPTION-SCOPE ERROR; AUTHORIZED ATTEMPT: GENERIC ACCESS FAILURE; USER-AUTHORIZED EARLY FINAL RETRY: BYTE-IDENTICAL GENERIC ACCESS FAILURE; NO REQUESTS REMAIN)",
+    "packaged_real_response_parser": "YES (RESEARCH-ONLY observe_law_body; CURRENT AdmRulService SCHEMA ONLY)",
+    "harness_accuracy": "UNVERIFIED",
+    "first_real_input_breakage": "An angle-bracket redaction token initially made the retained XML unparsable; it was replaced with the XML-safe token REDACTED_OC before retention.",
+    "reason": "Actual authenticated history-list XML and the retained current 2025-227 body response traversed research-only Python stdlib parsers. The latter matched its revision and returned OBSERVED value=False for a present empty 조문내용 element. No historical B1 body or HWP/CFB structure traversed this path, only one current response schema is covered, and O2/O3 remain UNVERIFIED, so overall harness accuracy remains UNVERIFIED."
+  },
+  "observed_research_debts": [
+    {
+      "id": "C_BASELINE_INPUT_IDENTITY_UNRESOLVED",
+      "evidence_status": "OBSERVED",
+      "observation": "The bounded repository inventory cannot identify the exact PDF artifact used by the current Task90/93 baseline.",
+      "evidence_path": "research/kec-representation-probe/extracted/phase0-inventory.json",
+      "locator": "#/task90; #/task93; #/existing_pdf_extraction_artifacts",
+      "scope_boundary": "Research debt record only; no Task93 provenance-contract change is authorized."
+    }
+  ],
+  "observed_research_lessons": [
+    {
+      "id": "ADVERTISED_EXTENSION_NOT_FORMAT_EVIDENCE",
+      "evidence_status": "OBSERVED",
+      "observation": "The official ministry attachment is advertised with a .hwpx extension, while its first eight bytes are the CFB signature d0 cf 11 e0 a1 b1 1a e1 rather than the ZIP signature required for HWPX.",
+      "evidence_path": "research/kec-representation-probe/raw/ministry-2024-749-kec-full.hwpx",
+      "locator": "byte offsets 0x00-0x07",
+      "scope_boundary": "Format-family identification only; no decompression, document parsing, or structural observation was performed."
+    }
+  ],
+  "test_fixtures_are_evidence": false
+}

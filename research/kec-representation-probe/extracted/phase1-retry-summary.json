@@ -1,0 +1,126 @@
+{
+  "schema": "kec-representation-pass0b-phase1-retry/v1",
+  "acquired_at": "2026-08-22T11:00:30+09:00",
+  "request": {
+    "method": "HTTPS GET",
+    "source_url_redacted": "https://www.law.go.kr/DRF/lawSearch.do?OC=REDACTED_OC&target=admrul&type=XML&nw=2&search=1&query=한국전기설비규정&display=100",
+    "credential_value_retained": false,
+    "credential_echo_detected": true,
+    "credential_echo_replacement": "REDACTED_OC",
+    "set_cookie_values_retained": false
+  },
+  "measurement_precondition": {
+    "http_response": {
+      "status": "OBSERVED",
+      "observation": "The authenticated endpoint returned HTTP 200 with XML content.",
+      "evidence_path": "research/kec-representation-probe/raw/phase1-retry-history-list.headers.txt",
+      "locator": "line 1 (HTTP/1.1 200 OK); line 14 (Content-Type: text/xml;charset=UTF-8)"
+    },
+    "api_result": {
+      "status": "OBSERVED",
+      "observation": "The XML payload reports resultCode 00 and resultMsg success.",
+      "evidence_path": "research/kec-representation-probe/raw/phase1-retry-history-list.response.xml",
+      "locator": "/AdmRulSearch/resultCode; /AdmRulSearch/resultMsg"
+    },
+    "gate_reached": true
+  },
+  "history_list": {
+    "target": "admrul",
+    "query": "한국전기설비규정",
+    "section": "admRulNm",
+    "nw": 2,
+    "display": 100,
+    "page": 1,
+    "result_code": "00",
+    "result_message": "success",
+    "total_count": 13,
+    "returned_rows": 13,
+    "returned_revision_numbers": [
+      "2018-103",
+      "2020-738",
+      "2021-36",
+      "2021-509",
+      "2022-809",
+      "2023-364",
+      "2023-563",
+      "2023-768",
+      "2023-839",
+      "2023-875",
+      "2025-52",
+      "2025-198",
+      "2025-227"
+    ],
+    "target_revision": "2024-749",
+    "target_match_count": 0,
+    "historical_record_exists": {
+      "status": "OBSERVED",
+      "value": false,
+      "observation": "The successful complete returned history list contains no record whose 발령번호 is 2024-749.",
+      "evidence_path": "research/kec-representation-probe/raw/phase1-retry-history-list.response.xml",
+      "locator": "/AdmRulSearch[resultCode='00' and totalCnt='13' and numOfRows='13']/admrul[발령번호='2024-749'] count=0"
+    }
+  },
+  "phase1_gate": {
+    "failure_kind": "STRUCTURAL",
+    "block_reason_class": "STRUCTURAL_RECORD_ABSENCE",
+    "result": "BLOCKED",
+    "pass_0a": "BLOCKED",
+    "option_1_available": "NO",
+    "retryable": false,
+    "downstream_halted": true,
+    "revision_specific_id": "NOT_ATTEMPTED",
+    "body_retrieval": "NOT_ATTEMPTED",
+    "body_identity": "NOT_ATTEMPTED",
+    "body_content": "NOT_ATTEMPTED",
+    "silent_substitution_check": "NOT_ATTEMPTED"
+  },
+  "filter_diagnostics": {
+    "status": "UNVERIFIED",
+    "observation": "The nb/date positive-control and target requests both returned the same 13-row population rather than narrowed results; their filter effect was not established and they were not used for the structural conclusion.",
+    "control_response_path": "research/kec-representation-probe/raw/phase1-filter-control-2023-875.response.xml",
+    "target_response_path": "research/kec-representation-probe/raw/phase1-filter-target-2024-749.response.xml"
+  },
+  "real_input_boundary": {
+    "contract_verified": "YES (SYNTHETIC)",
+    "real_input_gate_verified": "YES (AUTHENTICATED API HISTORY LIST)",
+    "real_input_body_verified": "NO",
+    "packaged_real_response_parser": "NO",
+    "harness_accuracy": "UNVERIFIED",
+    "first_breakage": "An angle-bracket redaction token initially made the retained XML unparsable; it was replaced with the XML-safe token REDACTED_OC before retention.",
+    "reason": "The actual XML was parsed with Python stdlib and its located OBSERVED false claim passed through the gate, but the harness has no packaged AdmRulSearch response parser and no historical body or HWPX traversed it."
+  },
+  "retained_artifacts": [
+    {
+      "path": "research/kec-representation-probe/raw/phase1-retry-history-list.headers.txt",
+      "sha256": "0708aff1820e3ea4cdcbdeee0d431a9fec4c5c7a2d0dcd80cbd8c5ad76ddae65"
+    },
+    {
+      "path": "research/kec-representation-probe/raw/phase1-retry-history-list.response.xml",
+      "sha256": "8ba3b2ca7a124b66179bb950985f3c09d4c51d6d2a7bc821af940c2e5e8ab620"
+    },
+    {
+      "path": "research/kec-representation-probe/raw/phase1-retry-nb2024749.headers.txt",
+      "sha256": "918c2d560561adfd2b849daea24c1f907c277f6d871dfab264727c9541bebb7f"
+    },
+    {
+      "path": "research/kec-representation-probe/raw/phase1-retry-nb2024749.response.xml",
+      "sha256": "159dfbca5b7e1119c6a529c37759571e2b455f5c09a250284bd81b5d116866ea"
+    },
+    {
+      "path": "research/kec-representation-probe/raw/phase1-filter-control-2023-875.headers.txt",
+      "sha256": "2a344d671db8bb72ea80df84e29f2a53c3c3b191bf78b3dcfb8d6a2b736cc545"
+    },
+    {
+      "path": "research/kec-representation-probe/raw/phase1-filter-control-2023-875.response.xml",
+      "sha256": "e86cf777e7149c127914f4a02cda61e03f3c73c3caabf5150b5727491f0b0abb"
+    },
+    {
+      "path": "research/kec-representation-probe/raw/phase1-filter-target-2024-749.headers.txt",
+      "sha256": "0a34ea55349ac4abf1c1d98a77458d0ada7f0fa44c2713437321e48a1d6a070a"
+    },
+    {
+      "path": "research/kec-representation-probe/raw/phase1-filter-target-2024-749.response.xml",
+      "sha256": "fa86c8a2bf253f4d8cdaa3487e5b091b04aff1f0599c0f40649eef7053403ed3"
+    }
+  ]
+}

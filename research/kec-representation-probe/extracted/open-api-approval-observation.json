@@ -1,0 +1,23 @@
+{
+  "schema": "kec-open-api-approval-observation/v1",
+  "observed_at": "2026-08-22T12:41:31+09:00",
+  "observation_method": "Read-only inspection of the authenticated provider portal after a fresh navigation to the application list and detail pages",
+  "source_pages": [
+    "https://open.law.go.kr/LSO/openApi/cuAskList.do",
+    "https://open.law.go.kr/LSO/openApi/cuAskUpdate.do"
+  ],
+  "application_state": {
+    "usage_status": "연결",
+    "approval_status": "승인",
+    "locator": "OPEN API 신청 > 신청목록 > 활용상태; 승인여부"
+  },
+  "current_administrative_rule_formats": {
+    "list_xml_checked": true,
+    "body_xml_checked": true,
+    "body_html_checked": true,
+    "locator": "OPEN API 신청 상세 > 공동활용 법령종류 > 현행 행정규칙 > 목록 XML; 본문 XML; 본문 HTML"
+  },
+  "credential_value_recorded": false,
+  "personal_account_fields_recorded": false,
+  "scope_boundary": "This sanitized observation establishes the provider-portal configuration only. Backend propagation, credential acceptance at the DRF endpoint, and HTML clause-body availability remain UNVERIFIED."
+}

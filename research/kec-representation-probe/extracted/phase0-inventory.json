@@ -1,0 +1,161 @@
+{
+  "schema": "kec-representation-pass0b-phase0-inventory/v1",
+  "record_finalized_at": "2026-08-22T03:45:54+09:00",
+  "inventory_scope": {
+    "workspace_root": "/Users/woncheol/Documents/Volt ai",
+    "method": "Read-only git, filesystem, SHA-256, and SQLite structural inventory before evidence interpretation.",
+    "limitation": "Negative search results apply only to the named bounded workspace and git-history scopes; they do not prove global absence.",
+    "evidence_status": "OBSERVED"
+  },
+  "repository": {
+    "branch": "main",
+    "starting_head": "53bbb9edd7d8a1ae6a1ffabc4795a351b33bbbe9",
+    "starting_git_status_short": [],
+    "starting_status_observation": "No tracked or untracked changes were reported before research outputs were created.",
+    "evidence_status": "OBSERVED",
+    "locator": "extracted/phase0-inventory.json#/repository"
+  },
+  "task90": {
+    "implementation_paths": [
+      "packages/mcp-kec/src/knowledge/requirementExtraction.ts"
+    ],
+    "introduced_commit": "27940198dde747138268c3cf4927017da522ac05",
+    "current_inventory_head": "53bbb9edd7d8a1ae6a1ffabc4795a351b33bbbe9",
+    "artifact_binding_observation": "The implementation accepts caller-supplied source identity; no retained real-source Task90 output identified the current baseline PDF input.",
+    "artifact_binding_status": "UNVERIFIED",
+    "locator": "extracted/phase0-inventory.json#/task90"
+  },
+  "task93": {
+    "implementation_paths": [
+      "packages/mcp-kec/src/knowledge/sourceCapture.ts",
+      "packages/mcp-kec/src/requirementSnapshot/captureCodec.ts",
+      "packages/mcp-kec/src/requirementSnapshot/errors.ts",
+      "packages/mcp-kec/src/requirementSnapshot/index.ts",
+      "packages/mcp-kec/src/requirementSnapshot/locatorCodec.ts",
+      "packages/mcp-kec/src/requirementSnapshot/migrate.ts",
+      "packages/mcp-kec/src/requirementSnapshot/schema.ts",
+      "packages/mcp-kec/src/requirementSnapshot/store.ts"
+    ],
+    "current_inventory_head": "53bbb9edd7d8a1ae6a1ffabc4795a351b33bbbe9",
+    "required_storage_tables": [
+      "kec_requirement_snapshots",
+      "kec_requirement_snapshot_members",
+      "kec_requirement_snapshot_captures",
+      "kec_requirement_snapshot_capture_observations"
+    ],
+    "retained_real_source_capture_matches": [],
+    "artifact_binding_status": "UNVERIFIED",
+    "reason": "No retained Task93 snapshot/capture database or JSON output was found in the bounded workspace inventory.",
+    "locator": "extracted/phase0-inventory.json#/task93"
+  },
+  "available_kec_source_artifacts": [
+    {
+      "path": "/Users/woncheol/Documents/Volt ai/project-files/전기 결합_1_100.pdf",
+      "artifact_type": "PDF",
+      "size_bytes": 61087700,
+      "filesystem_modified_at": "2026-07-13T22:37:49+09:00",
+      "sha256": "94bd23c711bf289986fe20307e9243ddf85fa4e8c4106c4006b2c2a3f76dfbd1",
+      "artifact_identity_status": "OBSERVED",
+      "revision": null,
+      "origin": null,
+      "task90_93_binding_status": "UNVERIFIED",
+      "reason": "The local PDF identity is directly observed, but its KEC revision, origin, and current Task90/93 baseline relationship were not established."
+    },
+    {
+      "path": "/Users/woncheol/Documents/Volt ai/project-files/한국전기설비규정(기후에너지환경부공고)(제2025-227호)(20260105).pdf",
+      "artifact_type": "PDF",
+      "size_bytes": 35518,
+      "filesystem_modified_at": "2026-07-29T23:58:15+09:00",
+      "sha256": "58ab5cabd9605bdd603db7b4b2b80db6004fd8e3162b5c57c6d824b358978d7a",
+      "artifact_identity_status": "OBSERVED",
+      "revision": "UNVERIFIED",
+      "origin": "UNVERIFIED",
+      "task90_93_binding_status": "UNVERIFIED",
+      "reason": "The filename was not treated as independent proof of revision or origin, and no evidence binds this artifact to the current Task90/93 baseline."
+    }
+  ],
+  "existing_pdf_extraction_artifacts": [
+    {
+      "path": "/Users/woncheol/Documents/Volt ai/.volt-ai/kec/index.db",
+      "sha256": "a24b705e74872d64f492617011ed355154cae2cbd3a523153114e126bd67e43f",
+      "size_bytes": 9437184,
+      "filesystem_modified_at": "2026-08-09T10:33:36+09:00",
+      "tables": [
+        "index_metadata",
+        "kec_chunks"
+      ],
+      "chunk_source_paths": [
+        {
+          "source_path": "전기 결합_1_100.pdf",
+          "chunk_count": 536
+        }
+      ],
+      "index_metadata": {
+        "id": "kec",
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "dimensions": 768,
+        "indexed_at": "2026-08-09T01:33:36.899Z"
+      },
+      "task90_93_storage_tables_present": false,
+      "task90_93_binding_status": "UNVERIFIED",
+      "reason": "Only legacy chunk-index tables are present; no Task90/93 snapshot or capture table establishes the evaluated baseline input."
+    },
+    {
+      "path": "/Users/woncheol/Documents/Volt ai/.volt-ai/kec/task58-smoke.sqlite",
+      "sha256": "4426a54dd98d8670d6faa01c20a7570d26e5ca902ca0b78150f446185a9b49d0",
+      "size_bytes": 9437184,
+      "filesystem_modified_at": "2026-08-09T10:41:03+09:00",
+      "tables": [
+        "index_metadata",
+        "kec_chunks"
+      ],
+      "chunk_source_paths": [
+        {
+          "source_path": "전기 결합_1_100.pdf",
+          "chunk_count": 536
+        }
+      ],
+      "index_metadata": {
+        "id": "kec",
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "dimensions": 768,
+        "indexed_at": "2026-08-09T01:41:03.713Z"
+      },
+      "task90_93_storage_tables_present": false,
+      "task90_93_binding_status": "UNVERIFIED",
+      "reason": "Only legacy chunk-index tables are present; no Task90/93 snapshot or capture table establishes the evaluated baseline input."
+    }
+  ],
+  "bounded_hwpx_hwp_search": {
+    "root": "/Users/woncheol/Documents/Volt ai",
+    "method": "rg --files with *.hwpx and *.hwp globs, excluding the newly created research area",
+    "matches": [],
+    "search_result_status": "OBSERVED",
+    "interpretation_status": "UNVERIFIED",
+    "reason": "No HWPX/HWP path appeared in the bounded workspace search; this does not establish absence outside that scope.",
+    "locator": "extracted/phase0-inventory.json#/bounded_hwpx_hwp_search"
+  },
+  "preexisting_research_outputs": {
+    "working_tree_matches_at_inventory_start": [],
+    "git_history_matches": [],
+    "search_result_status": "OBSERVED",
+    "interpretation": "No preexisting research/kec-representation-probe output answered this probe within the bounded repository inventory.",
+    "locator": "extracted/phase0-inventory.json#/preexisting_research_outputs"
+  },
+  "c_provenance_gate": {
+    "path": null,
+    "revision": null,
+    "origin": null,
+    "sha256": null,
+    "status": "NOT_ATTEMPTED",
+    "reason": "No single PDF had directly established revision, origin, local identity, SHA-256, source relationship, and current Task90/93 baseline binding.",
+    "locator": "extracted/phase0-inventory.json#/c_provenance_gate"
+  },
+  "tool_versions": {
+    "git": "git version 2.50.1 (Apple Git-155)",
+    "sqlite3": "3.51.0",
+    "sha256": "macOS shasum -a 256"
+  }
+}
