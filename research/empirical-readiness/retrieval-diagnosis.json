@@ -1,0 +1,304 @@
+{
+  "schema": "voltai-retrieval-bottleneck-diagnosis/v1",
+  "recorded_at": "2026-08-24T00:07:07+09:00",
+  "mode": "READ_ONLY_DIAGNOSIS_NO_TUNING",
+  "label_correction": {
+    "status": "OBSERVED",
+    "applied": true,
+    "prior_field": "REGULATION_GROUNDED_EMPIRICAL_RUN_READY",
+    "prior_value": "YES",
+    "corrected_values": {
+      "INDEX_BUILT": "YES",
+      "RETRIEVAL_QUALITY": "INSUFFICIENT",
+      "EMPIRICAL_RUN_READY": "NO",
+      "RETRIEVAL_METRIC_UNINFORMATIVE": "OBSERVED"
+    },
+    "evidence_path": "research/empirical-readiness/enablement.json; research/empirical-readiness/regulation-index-enablement.md",
+    "locator": "enablement.json#/label_correction_history/0 and #/verdicts; regulation-index-enablement.md#Label-correction"
+  },
+  "correction_history": [
+    {
+      "correction_id": "HUMAN_BOUNDARY_DECISION",
+      "status": "OBSERVED",
+      "recorded_on": "2026-08-24",
+      "prior_value": "UNVERIFIED",
+      "new_value": "OBSERVED_FALSE",
+      "decision_source": "HUMAN_REVIEW",
+      "superseded_prior_statements": [
+        "ENDS_MID_CLAUSE was intentionally not auto-classified. Start/end/next-start material is provided for human review.",
+        "Human clause-boundary start/end judgments for the 20 supplied samples."
+      ],
+      "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json",
+      "locator": "/sample rowids 2,3,4,5,946,947,949,950"
+    },
+    {
+      "correction_id": "TABLE_SPLIT_ACROSS_CHUNKS_DEBT",
+      "status": "OBSERVED",
+      "recorded_on": "2026-08-24",
+      "prior_value": "NOT_RECORDED",
+      "new_value": "OBSERVED",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json",
+      "locator": "/sample entries with rowid 949 and rowid 950"
+    },
+    {
+      "correction_id": "NEXT_STEP_ELIGIBLE_EXPANSION",
+      "status": "OBSERVED",
+      "recorded_on": "2026-08-24",
+      "prior_value": ["LEXICAL_PATH_DESIGN"],
+      "new_value": ["CHUNKING_REVIEW", "LEXICAL_PATH_DESIGN"],
+      "evidence_path": "research/empirical-readiness/retrieval-diagnosis.json",
+      "locator": "/cause_separation/CHUNK_GRANULARITY_TOO_COARSE; /cause_separation/IDENTIFIER_NOT_SEMANTICALLY_RETRIEVABLE"
+    }
+  ],
+  "database_integrity": {
+    "header_mutation_event": {
+      "status": "OBSERVED",
+      "value": "READ_PATH_MUTATES_DATABASE",
+      "original_sha256_before": "5836cb4a540fffaa7d838a0e935b9f8ca5a24d7d92d8d02408b04641fe24f50a",
+      "original_sha256_after_three_search_opens": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "observation": "SqliteKnowledgeStore construction invokes migrateKnowledgeSchema. Three search calls caused three committed schema-validation transactions and incremented the SQLite header change counter and version-valid-for fields by three. An in-memory hypothetical decrement recovered the prior SHA exactly; no restoration was performed.",
+      "logical_content_changed": false,
+      "evidence_path": ".volt-ai/kec-regulation-provisional/index.db; packages/knowledge-sqlite/src/sqliteKnowledgeStore.ts; packages/knowledge-sqlite/src/schema.ts",
+      "locator": "SQLite header offsets 24-27 and 92-95; sqliteKnowledgeStore.ts:140-146; schema.ts:303-333; metadata row, all 1,896 chunk bytes, source group and NUL count"
+    },
+    "new_baseline": {
+      "status": "OBSERVED",
+      "sha256": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/index.db",
+      "locator": "SHA-256 after recorded header mutation event"
+    },
+    "copy_provenance": {
+      "status": "OBSERVED",
+      "original_path": ".volt-ai/kec-regulation-provisional/index.db",
+      "copy_path": ".volt-ai/kec-regulation-provisional/diagnostic-copy/index.db",
+      "original_sha256_before_and_after_accepted_vector_run": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "copy_sha256_before": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "copy_sha256_after": "2f383048b7df2bc34dbbaad54fa40151c5bccc19f491a3cce8e7f897048c84ce",
+      "copy_mutated_by_read_path": true,
+      "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json",
+      "locator": "/originalDatabaseSha256Before; /originalDatabaseSha256After; /diagnosticCopySha256Before; /diagnosticCopySha256After"
+    },
+    "cross_runtime_same_state": {
+      "status": "OBSERVED",
+      "python_execution": "2026-08-24T00:06:01+09:00",
+      "typescript_execution": "2026-08-24T00:03:43.053+09:00",
+      "shared_original_sha256": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json",
+      "locator": "Python /database_sha256_before and /database_sha256_after; TypeScript /originalDatabaseSha256Before and /originalDatabaseSha256After"
+    },
+    "drawing_index_a3_a4_open_check": {
+      "status": "OBSERVED",
+      "store_opened_during_a3_a4": false,
+      "sha256": "a24b705e74872d64f492617011ed355154cae2cbd3a523153114e126bd67e43f",
+      "observation": "A3/A4 hashes and path-compares the drawing DB but constructs SqliteKnowledgeStore only with the provisional target path. The protected-path rejection occurs before store construction.",
+      "evidence_path": "research/empirical-readiness/scripts/runRegulationIndex.ts; research/empirical-readiness/scripts/regulationIndex.ts; .volt-ai/kec-regulation-provisional/first-run-result.json; .volt-ai/kec/index.db",
+      "locator": "runRegulationIndex.ts:18-22,140-164,211-250; regulationIndex.ts:102-118,131-134,190-213,225-255; first-run-result.json#/drawingIndex"
+    }
+  },
+  "chunking": {
+    "status": "OBSERVED",
+    "total_chunk_count": 1896,
+    "source_page_count": 1207,
+    "indexed_distinct_page_count": 1198,
+    "unindexed_page_count": 9,
+    "unindexed_pages": [2, 30, 176, 372, 522, 545, 570, 1171, 1203],
+    "unindexed_page_explanation": {
+      "status": "OBSERVED",
+      "value": "EMPTY_OR_FILTERED_SHORT_SECTION_HEADINGS",
+      "details": [
+        {"page": 2, "characters": 0, "excerpt": ""},
+        {"page": 30, "characters": 7, "excerpt": "1. 공통사항"},
+        {"page": 176, "characters": 10, "excerpt": "2. 저압 전기설비"},
+        {"page": 372, "characters": 16, "excerpt": "3. 고압 ․ 특고압 전기설비"},
+        {"page": 522, "characters": 9, "excerpt": "4. 전기철도설비"},
+        {"page": 545, "characters": 10, "excerpt": "5. 분산형전원설비"},
+        {"page": 570, "characters": 11, "excerpt": "6. 발전용 화력설비"},
+        {"page": 1171, "characters": 11, "excerpt": "7. 발전용 수력설비"},
+        {"page": 1203, "characters": 5, "excerpt": "8. 보칙"}
+      ],
+      "scope_boundary": "Page 372 is 16 characters before sentence splitting; splitting at '3.' leaves sub-minimum pieces. These nine mappings do not establish loss of a substantive source page.",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf; packages/mcp-kec/src/knowledge/chunk.ts",
+      "locator": "readPdfPages pages 2,30,176,372,522,545,570,1171,1203; chunk.ts:3-5,61-75,97-132"
+    },
+    "chunks_per_all_source_page": {"min": 0, "max": 14, "median": 1, "mean": 1.5708367854183927},
+    "chunks_per_indexed_page": {"min": 1, "max": 14, "median": 1, "mean": 1.5826377295492486},
+    "chunk_character_length": {"min": 29, "max": 1200, "median": 938, "mean": 814.2995780590717, "p90_nearest_rank": 1199},
+    "page_mapping": {
+      "status": "OBSERVED",
+      "exactly_one_page": 1896,
+      "multi_page": 0,
+      "evidence_path": ".volt-ai/kec-regulation-provisional/index.db; research/empirical-readiness/scripts/regulationIndex.ts",
+      "locator": "all kec_chunks.page values; regulationIndex.ts:172-187"
+    },
+    "chunk_unit": {
+      "status": "OBSERVED",
+      "value": "FIXED_LENGTH",
+      "qualification": "PAGE_BOUNDED_FIXED_LENGTH_WITH_OVERLAP",
+      "evidence_path": "packages/mcp-kec/src/knowledge/chunk.ts; .volt-ai/kec-regulation-provisional/index.db",
+      "locator": "chunk.ts:3-5,78-132,135-155; observed max=1200 and p90=1199"
+    },
+    "sample_rule": "First 5, centered 5, last 5, plus 5 evenly spaced remaining rowids.",
+    "sample_rowids": [1, 2, 3, 4, 5, 318, 632, 946, 947, 948, 949, 950, 951, 1264, 1578, 1892, 1893, 1894, 1895, 1896],
+    "clause_identifiers_per_chunk_median": 4.5,
+    "boundary_review": {
+      "status": "OBSERVED",
+      "chunk_respects_clause_boundary": "OBSERVED_FALSE",
+      "decision_source": "HUMAN_REVIEW",
+      "observation": "The human reviewer found clause-boundary violations in the retained 20-chunk material. This is a sample-scoped decision and was not auto-derived.",
+      "cited_basis": [
+        "rowid 2 end / rowid 3 start   — same clause 113.2 split",
+        "rowid 4 end / rowid 5 start   — same clause 113.7 split",
+        "rowid 946 end / 947 start     — mid-sentence split",
+        "rowid 949 start / 950 start   — repeated table header"
+      ],
+      "boundary_decision_scope": "20 of 1,896 sampled chunks",
+      "population_boundary_rate": "UNVERIFIED",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json",
+      "locator": "/sample entries with rowid 2,3,4,5,946,947,949,950"
+    },
+    "sample_material": [
+      {"rowid":1,"page":1,"characters":625,"clause_ids":0,"start":"산업통상자원부 공고 제2024-749호…","end":"공고 제2024-749호…고압·특고압전기설비","next":"공통사항 (100 총칙) 101 목적…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":2,"page":3,"characters":1200,"clause_ids":3,"start":"공통사항 (100 총칙) 101 목적…","end":"…113.2 감전에 대한 보호…","next":"…113.2 감전에 대한 보호…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":3,"page":3,"characters":1200,"clause_ids":7,"start":"…113.2 감전에 대한 보호…","end":"113.6 전압외란…대책…","next":"…113.3 열 영향에 대한 보호…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":4,"page":3,"characters":690,"clause_ids":5,"start":"…113.3 열 영향에 대한 보호…","end":"113.7 전원공급 중단에 대한 보호…","next":"…113.7 전원공급 중단에 대한 보호…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":5,"page":3,"characters":1200,"clause_ids":7,"start":"…113.7 전원공급 중단에 대한 보호…","end":"121.2 전선의 식별…","next":"…121.2 전선의 식별…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":318,"page":46,"characters":113,"clause_ids":0,"start":"…록 시설할 것. 밀폐된 공간에서…","end":"KS C IEC 60454…적합한 것을 사용할 것.","next":"(130 전로의 절연) 131 전로의 절연 원칙…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":632,"page":307,"characters":1095,"clause_ids":10,"start":"235.3 옥측 또는 옥외의 먼지가 많은 장소…","end":"물이 고이지 아니하도록 시설한 것이어야 한다.","next":"하여 옥측 또는 옥외에 시설하는 경우…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":946,"page":527,"characters":977,"clause_ids":4,"start":"421 변전방식의 일반사항 421.1…","end":"급전계통에 적합하게 선정하여야 한다.","next":"차단기는 계통의 장래계획을 고려하여…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":947,"page":528,"characters":221,"clause_ids":0,"start":"차단기는 계통의 장래계획을 고려하여…","end":"디지털계전기방식을 원칙으로 하여야 한다.","next":"431 전차선로의 일반사항 431.1…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":948,"page":529,"characters":821,"clause_ids":6,"start":"431 전차선로의 일반사항 431.1…","end":"최소 절연간격보다 증가시켜야 한다.","next":"시스템 종류 공칭전압…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":949,"page":530,"characters":842,"clause_ids":4,"start":"시스템 종류 공칭전압(V) 동적…정적…","end":"팬터그래프의 최소 작동높이를 고려하여야 한다.","next":"시스템 종류 공칭전압(V)…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":950,"page":531,"characters":799,"clause_ids":5,"start":"시스템 종류 공칭전압(V)…","end":"집전장치의 집전범위를 벗어나지 않아야 한다.","next":"431.9 전차선로 지지물 설계…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":951,"page":532,"characters":1026,"clause_ids":5,"start":"431.9 전차선로 지지물 설계…","end":"감시는 전기관제실에서 이루어지도록 한다.","next":"원격감시제어시스템(SCADA)는…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":1264,"page":765,"characters":1102,"clause_ids":4,"start":"분기관 바깥지름 밖의 용착금속 면적…","end":"다만…초과해서는 안","next":"주관 및 헤더를 나타내는 아래 첨자…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":1578,"page":962,"characters":357,"clause_ids":4,"start":"645.16.10-2…645.16.11…","end":"사용하여야 하는 절차가 아래와 같다.","next":"순서 1…대단부 원통두께를 계산한다.","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":1892,"page":1202,"characters":851,"clause_ids":9,"start":"725 기타 시설 725.1 발전소 시설…","end":"자재선정 및 방지용 도장을 하여야 한다.","next":"801 (재검토기한)…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":1893,"page":1204,"characters":1124,"clause_ids":7,"start":"801 (재검토기한)…","end":"종전의 기준을 따를 수 있다.","next":"부칙…제1조(시행일)…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":1894,"page":1205,"characters":1020,"clause_ids":4,"start":"부칙(제2022-809호)…제1조…","end":"안전확인시험에 합격한 것으로 본다.","next":"부칙(제2023-563호)…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":1895,"page":1206,"characters":773,"clause_ids":6,"start":"부칙(제2023-563호)…제1조…","end":"신청하거나 신고한 신축건물에 적용한다.","next":"부칙(제2023-875호)…","starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"},
+      {"rowid":1896,"page":1207,"characters":419,"clause_ids":3,"start":"부칙(제2023-875호)…제1조…","end":"신청하거나 신고한 것에는 종전 기준을 따른다.","next":null,"starts_at_boundary":"INDETERMINATE","ends_mid_clause":"INDETERMINATE"}
+    ],
+    "sampling_limit": "The boundary material covers 20 of 1,896 chunks; no population-wide clause-boundary claim is made."
+  },
+  "debts": {
+    "TABLE_SPLIT_ACROSS_CHUNKS": {
+      "debt_id": "TABLE_SPLIT_ACROSS_CHUNKS",
+      "status": "OBSERVED",
+      "instance": "rowid 949 and rowid 950 both begin with the same table header text (\"시스템 종류 공칭전압…\"), indicating a table divided at a chunk boundary with the header repeated",
+      "scope": "single observed instance; population frequency UNVERIFIED",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json",
+      "locator": "/sample entries with rowid 949 and rowid 950",
+      "potential_impact": {
+        "status": "UNVERIFIED",
+        "observation": "KEC normative values for clearances, conductor sizes, and ratings are frequently expressed in tables. If tables are divided at fixed-length chunk boundaries, row-to-column correspondence may not survive into a single chunk.",
+        "reason": "Whether this actually degrades requirement lookup has NOT been measured."
+      }
+    },
+    "PIPELINE_DIVERGENCE": {
+      "status": "OBSERVED",
+      "observation": "The provisional regulation index was built with page-bounded fixed-length chunking (chunk.ts), not with the Task90/Task93 geometry-aware extraction path (requirementExtraction.ts / sourceCapture.ts). These are two different treatments of table structure. No claim is made here about which is correct.",
+      "evidence_path": "research/empirical-readiness/scripts/regulationIndex.ts; packages/mcp-kec/src/knowledge/chunk.ts; packages/mcp-kec/src/knowledge/requirementExtraction.ts; packages/mcp-kec/src/knowledge/sourceCapture.ts",
+      "locator": "regulationIndex.ts:9,153; chunk.ts:135-155; requirementExtraction.ts:651-749; sourceCapture.ts:78-125"
+    }
+  },
+  "ground_truth": {
+    "status": "OBSERVED",
+    "method": "Python full-string containment over all text values via sqlite3 mode=ro&immutable=1; SQLite LIKE/instr not used.",
+    "nul_chunk_count": 0,
+    "total_nul_count": 0,
+    "queries": [
+      {"query":"241.17.3","match_count":2,"examples":[{"rowid":681,"page":339,"excerpt":"시설하여야 한다. 241.17.3 전기자동차의 충전장치 시설"},{"rowid":1895,"page":1206,"excerpt":"241.17.3부터 241.17.5까지의 개정 규정"}]},
+      {"query":"접지","match_count":221,"examples":[{"rowid":12,"page":4,"excerpt":"(140 접지시스템) 141 접지시스템의 구분 및 종류"},{"rowid":13,"page":4,"excerpt":"142.4 전기수용가 접지"},{"rowid":14,"page":4,"excerpt":"변압기 중성점 접지"}]},
+      {"query":"다만","match_count":377,"examples":[{"rowid":312,"page":42,"excerpt":"다만, KS가 없는 경우에는…"},{"rowid":313,"page":43,"excerpt":"다만, 다음의 케이블을 사용하는 경우…"},{"rowid":314,"page":44,"excerpt":"다만, 물밑전선로의 시설에서…"}]}
+    ],
+    "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json",
+    "locator": "/ground_truth; /nul_chunk_count; /total_nul_count"
+  },
+  "vector_retrieval": {
+    "status": "OBSERVED",
+    "path": "searchProvisionalRegulationIndex",
+    "provider": "ollama",
+    "model": "nomic-embed-text",
+    "top_k": 10,
+    "query_retries": 0,
+    "queries": [
+      {
+        "query":"241.17.3","ground_truth_count":2,"ranked_rowids":[101,102,765,100,639,679,91,99,637,632],"contains_exact":[false,false,false,false,false,false,false,false,false,false],"exact_hits_at_10":0,"recall_at_10":"0/2","first_exact_match_rank":"NOT_IN_TOP_10",
+        "hits":[{"rank":1,"rowid":101,"page":11,"exact":false,"excerpt":"온천승온기…241.5 전기온상 등…"},{"rank":2,"rowid":102,"page":11,"exact":false,"excerpt":"241.8 놀이용 전차…"},{"rank":3,"rowid":765,"page":401,"exact":false,"excerpt":"331.13.1의 2…"},{"rank":4,"rowid":100,"page":11,"exact":false,"excerpt":"목차 점선…"},{"rank":5,"rowid":639,"page":312,"exact":false,"excerpt":"241.2.4 접지…"},{"rank":6,"rowid":679,"page":338,"exact":false,"excerpt":"241.16.5 개폐기 및 과전류 차단기…"},{"rank":7,"rowid":91,"page":10,"exact":false,"excerpt":"목차 점선…"},{"rank":8,"rowid":99,"page":11,"exact":false,"excerpt":"235.2 옥측 또는 옥외에 전열장치…"},{"rank":9,"rowid":637,"page":310,"exact":false,"excerpt":"(240 특수설비) 241 특수 시설…"},{"rank":10,"rowid":632,"page":307,"exact":false,"excerpt":"235.3 옥측 또는 옥외의 먼지가 많은 장소…"}]
+      },
+      {
+        "query":"다만","ground_truth_count":377,"ranked_rowids":[789,1146,611,1212,831,875,512,846,821,315],"contains_exact":[true,false,true,false,true,true,true,false,true,false],"exact_hits_at_10":6,"recall_at_10":"6/377","first_exact_match_rank":1,
+        "hits":[{"rank":1,"rowid":789,"page":416,"exact":true,"excerpt":"다만, 교류 전차선 등과 가공전선…"},{"rank":2,"rowid":1146,"page":673,"exact":false,"excerpt":"보강링 또는 보강링과 동체…"},{"rank":3,"rowid":611,"page":291,"exact":true,"excerpt":"다만, 단선을…접속하는 경우는 예외"},{"rank":4,"rowid":1212,"page":727,"exact":false,"excerpt":"핸드홀 또는 나사식 관마개 구멍…"},{"rank":5,"rowid":831,"page":448,"exact":true,"excerpt":"다만, 6 m를 넘지 아니하여도 된다."},{"rank":6,"rowid":875,"page":475,"exact":true,"excerpt":"다만, 다음 어느 하나에 의하여…"},{"rank":7,"rowid":512,"page":213,"exact":true,"excerpt":"다만, 전원측 전로에…과전류차단기…"},{"rank":8,"rowid":846,"page":457,"exact":false,"excerpt":"저고압 가공전선 등의 지지물…"},{"rank":9,"rowid":821,"page":442,"exact":true,"excerpt":"다만, 특고압 절연전선 또는 케이블…"},{"rank":10,"rowid":315,"page":44,"exact":false,"excerpt":"지선·가공지선·보호도체·보호망…"}]
+      },
+      {
+        "query":"접지","ground_truth_count":221,"ranked_rowids":[631,682,915,564,772,865,651,1498,921,320],"contains_exact":[false,false,false,false,false,false,false,false,false,true],"exact_hits_at_10":1,"recall_at_10":"1/221","first_exact_match_rank":10,
+        "hits":[{"rank":1,"rowid":631,"page":306,"exact":false,"excerpt":"적설 또는 빙결을 방지…전열 장치…"},{"rank":2,"rowid":682,"page":339,"exact":false,"excerpt":"충전장치를 시설한 장소…"},{"rank":3,"rowid":915,"page":502,"exact":false,"excerpt":"무효 전력 보상 장치…"},{"rank":4,"rowid":564,"page":257,"exact":false,"excerpt":"케이블, 전선관 또는 덕팅시스템…"},{"rank":5,"rowid":772,"page":405,"exact":false,"excerpt":"A종 철주 또는 철근 콘크리트주…"},{"rank":6,"rowid":865,"page":470,"exact":false,"excerpt":"지중함은 고인 물을 제거할 수 있는 구조…"},{"rank":7,"rowid":651,"page":319,"exact":false,"excerpt":"전기집진장치는 그 충전부에…"},{"rank":8,"rowid":1498,"page":901,"exact":false,"excerpt":"절차인정 시험판과 용기 시험판…"},{"rank":9,"rowid":921,"page":506,"exact":false,"excerpt":"무효 전력 보상 장치 내부…"},{"rank":10,"rowid":320,"page":47,"exact":true,"excerpt":"옥내직류 전기설비의 접지…"}]
+      }
+    ],
+    "vector_retrieval_misses_exact_match": {
+      "status": "OBSERVED",
+      "value": true,
+      "reason": "241.17.3 exists in two chunks and neither appears in the top 10.",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json",
+      "locator": "Python /ground_truth/0; TypeScript /queries/0/hits"
+    },
+    "random_baseline_boundary": {
+      "status": "UNVERIFIED",
+      "observation": "For 접지, random sampling without replacement has expected exact counts 0.350 at top 3 and 1.166 at top 10; the vector results were 0 and 1. A single query outcome does not establish that vector retrieval is below random or uses no signal.",
+      "reason": "No randomized baseline trial distribution or query set was run."
+    },
+    "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json",
+    "locator": "/queries"
+  },
+  "cause_separation": {
+    "EMBEDDING_MODEL_KOREAN_WEAKNESS": {"status":"UNVERIFIED","evidence_for":"접지 exact match first appears at rank 10 despite 221 ground-truth chunks.","evidence_against":"다만 appears in 6 of top 10.","reason":"No comparison model run was authorized; model effect cannot be isolated."},
+    "CHUNK_GRANULARITY_TOO_COARSE": {"status":"SUPPORTED","evidence_for":"Median chunk length is 938, p90 is 1199, the deterministic sample contains a median 4.5 clause identifiers per chunk, and human review found boundary violations in the retained sample.","scope_boundary":"Supported as a structural condition and possible contributor, not established as a sufficient cause; the human boundary decision covers 20 of 1,896 sampled chunks and the population boundary rate is UNVERIFIED.","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json","locator":"/chunk_character_length; /sample; /sample_clause_identifiers_per_chunk_median"},
+    "IDENTIFIER_NOT_SEMANTICALLY_RETRIEVABLE": {"status":"SUPPORTED","evidence_for":"241.17.3 occurs in only 2/1,896 chunks and neither appears in top 10; conditional phrase 다만 returns 6 exact hits while the identifier returns zero.","scope_boundary":"This supports identifier lookup as a distinct retrieval problem but does not isolate all causes of the miss.","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json","locator":"Python /ground_truth; TypeScript /queries"},
+    "QUERY_DOCUMENT_LENGTH_ASYMMETRY": {"status":"UNVERIFIED","evidence_for":"Queries are 2-8 characters while median chunks are 938 characters.","evidence_against":"The two-character query 다만 still yields 6 exact hits in top 10, so length asymmetry alone is not sufficient.","reason":"No controlled length comparison was run.","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json","locator":"/chunk_character_length; /queries"}
+  },
+  "lexical_path": {
+    "status": "OBSERVED",
+    "value": "OBSERVED_TRUE",
+    "reason": "Reliable exact clause-identifier lookup requires an exact/lexical path because both indexed 241.17.3 ground-truth chunks are absent from unchanged vector top-10 retrieval.",
+    "evidence_path": ".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json",
+    "locator": "Python /ground_truth/0; TypeScript /queries/0/hits"
+  },
+  "verdicts": {
+    "LABEL_CORRECTION_APPLIED": {"status":"OBSERVED","value":"YES","evidence_path":"research/empirical-readiness/enablement.json","locator":"/label_correction_history/0"},
+    "INDEX_BUILT": {"status":"OBSERVED","value":"YES","evidence_path":".volt-ai/kec-regulation-provisional/index.db","locator":"index_metadata id=kec-regulation-provisional; kec_chunks count=1896"},
+    "RETRIEVAL_QUALITY": {"status":"OBSERVED","value":"INSUFFICIENT","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json","locator":"ground truth counts and unchanged top-10 exact-match flags"},
+    "EMPIRICAL_RUN_READY": {"status":"OBSERVED","value":"NO","reason":"Retrieval failure would mask downstream empirical observations.","evidence_path":"research/empirical-readiness/enablement.json","locator":"/verdicts/EMPIRICAL_RUN_READY"},
+    "RETRIEVAL_METRIC_UNINFORMATIVE": {"status":"OBSERVED","value":"OBSERVED","reason":"Regulation-text hit classification does not discriminate retrieval quality within this overwhelmingly regulation-text index sample.","evidence_path":"research/empirical-readiness/enablement.json","locator":"/verdicts/RETRIEVAL_METRIC_UNINFORMATIVE"},
+    "CHUNK_UNIT": {"status":"OBSERVED","value":"FIXED_LENGTH","evidence_path":"packages/mcp-kec/src/knowledge/chunk.ts; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json","locator":"chunk.ts:3-5,78-132; /chunk_character_length"},
+    "CHUNK_RESPECTS_CLAUSE_BOUNDARY": {"status":"OBSERVED","value":"OBSERVED_FALSE","decision_source":"HUMAN_REVIEW","boundary_decision_scope":"20 of 1,896 sampled chunks","population_boundary_rate":"UNVERIFIED","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json","locator":"/sample entries with rowid 2,3,4,5,946,947,949,950"},
+    "CLAUSE_IDENTIFIERS_PER_CHUNK": {"status":"OBSERVED","value":"sample median 4.5","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json","locator":"/sample; /sample_clause_identifiers_per_chunk_median"},
+    "GROUND_TRUTH_PRESENT_241_17_3": {"status":"OBSERVED","value":"2 chunks","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json","locator":"/ground_truth/0"},
+    "GROUND_TRUTH_PRESENT_접지": {"status":"OBSERVED","value":"221 chunks","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json","locator":"/ground_truth/1"},
+    "GROUND_TRUTH_PRESENT_다만": {"status":"OBSERVED","value":"377 chunks","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json","locator":"/ground_truth/2"},
+    "VECTOR_RETRIEVAL_MISSES_EXACT_MATCH": {"status":"OBSERVED","value":true,"evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json","locator":"Python /ground_truth/0; TypeScript /queries/0/hits"},
+    "CAUSE_STATUS": {"status":"OBSERVED","value":{"a":"UNVERIFIED","b":"SUPPORTED","c":"SUPPORTED","d":"UNVERIFIED"},"evidence_path":"research/empirical-readiness/retrieval-diagnosis.json","locator":"/cause_separation"},
+    "LEXICAL_PATH_REQUIRED_FOR_IDENTIFIER_LOOKUP": {"status":"OBSERVED","value":"OBSERVED_TRUE","evidence_path":".volt-ai/kec-regulation-provisional/retrieval-diagnosis-python.json; .volt-ai/kec-regulation-provisional/retrieval-diagnosis-vector.json","locator":"Python /ground_truth/0; TypeScript /queries/0/hits"},
+    "NEXT_STEP_ELIGIBLE": {"status":"OBSERVED","value":["CHUNKING_REVIEW","LEXICAL_PATH_DESIGN"],"justification":{"CHUNKING_REVIEW":"cause (b) SUPPORTED","LEXICAL_PATH_DESIGN":"cause (c) SUPPORTED"},"suggested_order":"CHUNKING_REVIEW first","rationale":["Chunk granularity is a precondition for isolating cause (a); comparing embedding models before chunking is settled would not yield a single-variable comparison.","TABLE_SPLIT_ACROSS_CHUNKS sits at the same layer.","Identifier lookup (c) is a narrower need than topic retrieval, which the review use case depends on more."],"evidence_path":"research/empirical-readiness/retrieval-diagnosis.json","locator":"/cause_separation/CHUNK_GRANULARITY_TOO_COARSE; /cause_separation/IDENTIFIER_NOT_SEMANTICALLY_RETRIEVABLE; /debts/TABLE_SPLIT_ACROSS_CHUNKS","scope_boundary":"NEXT_STEP_ELIGIBLE names what the evidence justifies investigating. It does NOT authorize starting either. SUGGESTED_ORDER is a recommendation, not a decision."}
+  },
+  "unverified_items": [
+    "A population-wide clause-boundary rate beyond the 20 samples.",
+    "Embedding-model Korean weakness without a comparison run.",
+    "Causal contribution of query-document length asymmetry.",
+    "Whether retrieval is below random across a representative query set."
+  ],
+  "not_attempted_items": [
+    "Embedding model comparison.",
+    "Re-chunking or chunk parameter changes.",
+    "Query rewrite, expansion, or retry.",
+    "Reranking, lexical/FTS5/hybrid index construction, or design.",
+    "Empirical review pipeline, production changes, commit, or push."
+  ],
+  "scope_boundary": {
+    "production_files_modified": "NONE",
+    "existing_drawing_database_modified": "NO",
+    "provisional_database_header_mutation_event": "OBSERVED_AND_REBASELINED",
+    "original_provisional_database_modified_after_new_baseline": "NO",
+    "diagnostic_copy_modified": "YES_BY_OBSERVED_READ_PATH",
+    "stop_after_diagnosis": true
+  }
+}

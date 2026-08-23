@@ -1,0 +1,343 @@
+{
+  "schema": "voltai-empirical-readiness-enablement/v1",
+  "recorded_at": "2026-08-23T23:36:31+09:00",
+  "mode": "TWO_STAGE_DIAGNOSIS_THEN_ENABLEMENT",
+  "baseline": {
+    "status": "OBSERVED",
+    "branch": "main",
+    "starting_head": "a5f668ba7484c7f765f65ea3ef88f031eb0e7512",
+    "starting_git_status_short": [
+      "?? research/empirical-readiness/index-drawing-inventory.md",
+      "?? research/empirical-readiness/inventory.json"
+    ],
+    "evidence_path": "/Users/woncheol/Documents/Volt ai/.git",
+    "locator": "git branch --show-current; git rev-parse HEAD; initial git status --short --untracked-files=all"
+  },
+  "stage_b": {
+    "protected_database": {
+      "status": "OBSERVED",
+      "path": ".volt-ai/kec/index.db",
+      "sha256_before": "a24b705e74872d64f492617011ed355154cae2cbd3a523153114e126bd67e43f",
+      "sha256_after": "a24b705e74872d64f492617011ed355154cae2cbd3a523153114e126bd67e43f",
+      "size_bytes": 9437184,
+      "modified": false,
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "filesystem bytes; Python sqlite3 URI mode=ro&immutable=1; SHA-256 before and after A3/A4"
+    },
+    "contamination": {
+      "status": "OBSERVED",
+      "total_chunks": 536,
+      "affected_chunks": 312,
+      "affected_min_nul_count": 2,
+      "affected_max_nul_count": 376,
+      "affected_median_nul_count": 81.5,
+      "total_nul_count": 25064,
+      "position_counts": {
+        "leading": 16,
+        "trailing": 11,
+        "interior": 312,
+        "scattered": 312
+      },
+      "distribution": "Affected rows are rowid 1-351 and source pages 1-77; no affected rows occur at rowid 352-536 or pages 78-100. Within the affected prefix, contamination is broadly distributed.",
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "Python sqlite3 URI mode=ro&immutable=1; all kec_chunks text values; U+0000 counts and positions by rowid/page"
+    },
+    "origin": {
+      "status": "OBSERVED",
+      "value": "PDFJS_TEXT_ITEM_OUTPUT",
+      "observation": "On drawing PDF page 1, pdfjs getTextContent returned 6 text items; all 6 contained U+0000, totaling 16. readPdfPages preserved 16 U+0000 in 98 characters, createPageChunks preserved 16 in its single 99-character chunk, and stored rowid 1 has the same UTF-8 SHA-256.",
+      "one_page_reproduction": {
+        "page": 1,
+        "pdfjs_text_items": 6,
+        "items_with_nul": 6,
+        "nul_count": 16,
+        "read_pdf_pages_character_length": 98,
+        "chunk_character_length": 99,
+        "chunk_utf8_sha256": "9eda574445c8c49e4a9318dda0f8ddb8e8f689191ce646d77034fb5d1522e645",
+        "stored_rowid": 1,
+        "stored_utf8_byte_length": 221
+      },
+      "evidence_path": "project-files/전기 결합_1_100.pdf; .volt-ai/kec/index.db; packages/mcp-kec/src",
+      "locator": "PDF page 1 getTextContent().items[].str; kec_chunks.rowid=1:text; knowledge/pdfPages.ts:19-40; knowledge/chunk.ts:61-75,97-155; tools/indexKec.ts:237-291; knowledge/sqliteVectorStore.ts:48-60"
+    },
+    "impact": {
+      "status": "OBSERVED",
+      "value": "DOWNSTREAM_ONLY",
+      "observation": "SQLite stored TEXT bytes and Python/JavaScript strings retain the full values and every U+0000. SQLite length(text) and substr(text,...) stop at the first embedded NUL, so downstream SQL string operations are affected without storage truncation.",
+      "retrieval_harm": {
+        "status": "UNVERIFIED",
+        "reason": "No controlled same-chunk embedding comparison with and without U+0000 was authorized or run."
+      },
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "kec_chunks affected values read through Python sqlite3 versus SQLite length(text)/substr(text,...)"
+    },
+    "fix_surface": {
+      "status": "OBSERVED",
+      "value": "RESEARCH_CONTAINABLE",
+      "observation": "Stage A replaces U+0000 before createPageChunks from a research-only, import-free sanitizer and requires no production edit.",
+      "strategy": "REPLACE_WITH_U+0020",
+      "strategy_boundary": "Replacing rather than deleting preserves a token boundary; the strategy can change chunk text and therefore can influence retrieval.",
+      "evidence_path": "research/empirical-readiness/scripts/nulSanitizer.ts; research/empirical-readiness/scripts/regulationIndex.ts",
+      "locator": "nulSanitizer.ts:1-5; regulationIndex.ts:131-153"
+    },
+    "gate": {
+      "status": "OBSERVED",
+      "value": "RESEARCH_CONTAINABLE",
+      "stage_a_authorized": true,
+      "evidence_path": "research/empirical-readiness/enablement.json",
+      "locator": "/stage_b/fix_surface"
+    }
+  },
+  "stage_a": {
+    "artifact": {
+      "status": "OBSERVED",
+      "source_page_url": "https://kec.kea.kr/sub_tech/regulation_all.php?b_name=report2&mode=view&number=2381",
+      "direct_download_url": "https://kec.kea.kr/bbs_sun/download.v2.php?b_name=report2&bd_number=2381&seq=1",
+      "source_page_artifact": ".volt-ai/kec-regulation-provisional/raw/kea-2024-749-source-page.html",
+      "source_page_sha256": "0a4743f5370001c24959e41f2d079b7fa95018039d85822d0680f928eacc2314",
+      "source_page_size_bytes": 169573,
+      "path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "size_bytes": 22542443,
+      "page_count": 1207,
+      "revision": "2024-749",
+      "publication_layer": "OFFICIAL_REPUBLICATION",
+      "document_scope": "CONSOLIDATED_FULL_TEXT",
+      "source_provisional": true,
+      "provisional_reason": "KEC_CITABLE_SOURCE is undecided; this artifact is for empirical enablement only.",
+      "observation": "The official distribution page names announcement 2024-749 and offers a PDF attachment labelled 한국전기설비규정개정전문.pdf. The PDF itself identifies the announcement and exposes 1,207 pages including a contents sequence, clause prose, and closing provisions.",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/raw/kea-2024-749-source-page.html; .volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "locator": "source page lines 1447,1460,1469; PDF page 1; readPdfPages page count and sampled pages 3-5,602-606,1203-1207"
+    },
+    "future_discrepancy_pair": {
+      "status": "OBSERVED",
+      "same_revision": true,
+      "same_document_scope": true,
+      "issuer_artifact": "research/kec-representation-probe/raw/ministry-2024-749-kec-full.hwpx",
+      "issuer_publication_layer": "ISSUER_ATTACHMENT",
+      "republication_artifact": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "republication_layer": "OFFICIAL_REPUBLICATION",
+      "discrepancy_audit_eligible": true,
+      "audit_performed": false,
+      "evidence_path": ".volt-ai/kec-regulation-provisional/raw/kea-2024-749-source-page.html; research/kec-representation-probe/manifest.json; .volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "locator": "source page lines 1447,1460,1469 list the HWP and PDF as 2024-749 개정전문 attachments; representation manifest source A; PDF page 1 and sampled full-text coverage"
+    },
+    "readability": {
+      "status": "OBSERVED",
+      "value": "TEXT_NATIVE",
+      "sample_pages": [1, 2, 3, 4, 5, 602, 603, 604, 605, 606, 1203, 1204, 1205, 1206, 1207],
+      "text_present": 14,
+      "no_text": 1,
+      "no_text_pages": [2],
+      "clause_prose_observed": true,
+      "clause_identifier_example_observed": "241.17.3",
+      "pages_with_nul_in_full_extraction": 0,
+      "total_nul_in_full_extraction": 0,
+      "evidence_path": ".volt-ai/kec-regulation-provisional/a2-readability.json",
+      "locator": "/sample; /textPresentCount; /noTextCount; /pagesWithNul; /totalNul"
+    },
+    "embedding_policy": {
+      "status": "OBSERVED",
+      "embedding_model": "nomic-embed-text",
+      "embedding_provider": "OllamaEmbeddingProvider",
+      "embedding_model_choice": "PRODUCTION_DEFAULT_INTENTIONAL",
+      "known_limitation": "Korean retrieval performance is unverified for this model on regulation text",
+      "alternative_not_tested": "BGE-M3 (deferred to a separate run)",
+      "fallback_used": false,
+      "query_reformulation_used": false,
+      "chunk_or_retrieval_tuning_used": false,
+      "warm_check": "ollama ps showed nomic-embed-text:latest loaded on GPU before the run",
+      "dimensions": 768,
+      "evidence_path": ".volt-ai/kec-regulation-provisional/first-run-result.json; research/empirical-readiness/scripts/runRegulationIndex.ts",
+      "locator": "/embeddingPolicy; /index/metadata/0; runRegulationIndex.ts:135-180,232-238"
+    },
+    "red_green_contracts": {
+      "status": "OBSERVED",
+      "test_count": 3,
+      "passed": 3,
+      "failed": 0,
+      "contracts": [
+        "protected drawing database exists and its SHA-256 is unchanged",
+        "sanitizer is research-only, import-free, and replaces U+0000 with U+0020",
+        "collection id is distinct from kec, the protected drawing DB path is rejected, persisted chunk text contains no U+0000 and preserves the replacement boundary, and stored metadata binds sourceSha256"
+      ],
+      "scope_boundary": "Green proves these three synthetic contracts only; it does not prove real-input retrieval quality.",
+      "evidence_path": "research/empirical-readiness/tests/regulationIndex.test.ts",
+      "locator": "lines 24-110; node:test output 3 passed, 0 failed"
+    },
+    "index": {
+      "status": "OBSERVED",
+      "built": true,
+      "path": ".volt-ai/kec-regulation-provisional/index.db",
+      "sha256": "5836cb4a540fffaa7d838a0e935b9f8ca5a24d7d92d8d02408b04641fe24f50a",
+      "size_bytes": 34578432,
+      "collection_id": "kec-regulation-provisional",
+      "chunk_count": 1896,
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "nul_count_before_sanitization": 0,
+      "nul_count_after_sanitization": 0,
+      "metadata": {
+        "id": "kec-regulation-provisional",
+        "embedding_provider": "ollama",
+        "embedding_model": "nomic-embed-text",
+        "dimensions": 768,
+        "indexed_at": "2026-08-23T14:32:16.220Z"
+      },
+      "existing_drawing_index_modified": false,
+      "evidence_path": ".volt-ai/kec-regulation-provisional/index.db; .volt-ai/kec-regulation-provisional/first-run-result.json",
+      "locator": "index_metadata id=kec-regulation-provisional; kec_chunks collection count=1896; /sanitization; /index; /drawingIndex"
+    },
+    "sample": {
+      "status": "OBSERVED",
+      "method": "First 5, centered 5, last 5, plus 5 evenly spaced after removing those 15; ordered by rowid.",
+      "rowids": [1, 2, 3, 4, 5, 318, 632, 946, 947, 948, 949, 950, 951, 1264, 1578, 1892, 1893, 1894, 1895, 1896],
+      "classification_counts": {
+        "REGULATION_TEXT": 19,
+        "DRAWING_TEXT": 0,
+        "MIXED": 0,
+        "INDETERMINATE": 1
+      },
+      "automated_initial_counts": {
+        "REGULATION_TEXT": 18,
+        "DRAWING_TEXT": 0,
+        "MIXED": 0,
+        "INDETERMINATE": 2
+      },
+      "review_adjustment": "The first-run keyword classifier marked rowid 318 INDETERMINATE. Direct review of the stored chunk found prescriptive clause prose ('시설할 것', an applicable KS requirement), so the reported human-reviewed classification is REGULATION_TEXT.",
+      "samples": [
+        {"rowid": 1, "page": 1, "classification": "INDETERMINATE", "excerpt": "산업통상자원부 공고 제2024 - 749호 전기사업법 제67조 및 같은 ", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1"},
+        {"rowid": 2, "page": 3, "classification": "REGULATION_TEXT", "excerpt": "공통사항 (100 총칙) 101 목적 ···················", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=2"},
+        {"rowid": 3, "page": 3, "classification": "REGULATION_TEXT", "excerpt": "113.2 감전에 대한 보호…113.3 열 영향에 대한 보호", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=3"},
+        {"rowid": 4, "page": 3, "classification": "REGULATION_TEXT", "excerpt": "113.3 열 영향에 대한 보호…113.4 과전류에 대한 보호", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=4"},
+        {"rowid": 5, "page": 3, "classification": "REGULATION_TEXT", "excerpt": "113.7 전원공급 중단에 대한 보호…114 전기설비의 유지·보수", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=5"},
+        {"rowid": 318, "page": 46, "classification": "REGULATION_TEXT", "excerpt": "시설할 것…절연 피복은 KS C IEC 60454에 적합", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=318:text; direct reviewed classification"},
+        {"rowid": 632, "page": 307, "classification": "REGULATION_TEXT", "excerpt": "- 277 - 235.3 옥측 또는 옥외의 먼지가 많은 장소 등의 시설 ", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=632"},
+        {"rowid": 946, "page": 527, "classification": "REGULATION_TEXT", "excerpt": "- 497 - (420 전기철도의 변전방식) 421 변전방식의 일반사항 ", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=946"},
+        {"rowid": 947, "page": 528, "classification": "REGULATION_TEXT", "excerpt": "차단기는 계통의 장래계획을 고려하여 용량을 결정하고, 회로의 특성에 따라", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=947"},
+        {"rowid": 948, "page": 529, "classification": "REGULATION_TEXT", "excerpt": "- 499 - (430 전기철도의 전차선로) 431 전차선로의 일반사항 ", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=948"},
+        {"rowid": 949, "page": 530, "classification": "REGULATION_TEXT", "excerpt": "- 500 - 시스템 종류 공칭전압(V) 동적(㎜) 정적(㎜) 직류 75", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=949"},
+        {"rowid": 950, "page": 531, "classification": "REGULATION_TEXT", "excerpt": "- 501 - 시스템 종류 공칭전압(V) 동적(㎜) 정적(㎜) 직류 75", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=950"},
+        {"rowid": 951, "page": 532, "classification": "REGULATION_TEXT", "excerpt": "- 502 - 431.9 전차선로 지지물 설계 시 고려하여야 하는 하중 ", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=951"},
+        {"rowid": 1264, "page": 765, "classification": "REGULATION_TEXT", "excerpt": "- 735 - = 2 L 4 ( T b - t mb ) sin α A 3", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1264"},
+        {"rowid": 1578, "page": 962, "classification": "REGULATION_TEXT", "excerpt": "- 932 - [그림 645.16.10-2] 원뿔형 천이 접합부의 보강 ", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1578"},
+        {"rowid": 1892, "page": 1202, "classification": "REGULATION_TEXT", "excerpt": "- 1172 - (725 기타 시설) 725 기타 시설 725.1 발전소", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1892"},
+        {"rowid": 1893, "page": 1204, "classification": "REGULATION_TEXT", "excerpt": "- 1174 - 801 (재검토기한) 산업통상자원부장관은 「훈령 ․ 예규", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1893"},
+        {"rowid": 1894, "page": 1205, "classification": "REGULATION_TEXT", "excerpt": "- 1175 - 부 칙(제2022-809호, 2022. 08.) 제1조(", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1894"},
+        {"rowid": 1895, "page": 1206, "classification": "REGULATION_TEXT", "excerpt": "- 1176 - 부 칙(제2023-563호, 2023. 11) 제1조(시", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1895"},
+        {"rowid": 1896, "page": 1207, "classification": "REGULATION_TEXT", "excerpt": "- 1177 - 부 칙(제2023-875호, 2023. 14.) 제1조(", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "kec_chunks.rowid=1896"}
+      ],
+      "sampling_limit": "The deterministic sample covers 20 of 1,896 chunks. It does not establish the content of the remaining 1,876 chunks or the entire index.",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/first-run-result.json",
+      "locator": "/index/rowids; /index/sample"
+    },
+    "retrieval": {
+      "status": "OBSERVED",
+      "first_run_only": true,
+      "queries_retried": 0,
+      "top_k": 3,
+      "regulation_hits": 9,
+      "total_hits": 9,
+      "queries": [
+        {
+          "query": "241.17.3",
+          "query_class": "CLAUSE_IDENTIFIER",
+          "literal_present_in_hits": 0,
+          "hits": [
+            {"rowid": 101, "page": 11, "classification": "REGULATION_TEXT", "similarity": 0.6164172604590733, "excerpt": "(溫泉昇溫器) ································"},
+            {"rowid": 102, "page": 11, "classification": "REGULATION_TEXT", "similarity": 0.6123910892323754, "excerpt": "······ 287 241.8 놀이용 전차 ················"},
+            {"rowid": 765, "page": 401, "classification": "REGULATION_TEXT", "similarity": 0.6004425353626375, "excerpt": "- 371 - 우에는 그러하지 아니하다. 이 경우에 331.13.1의 2"}
+          ]
+        },
+        {
+          "query": "다만",
+          "query_class": "CONDITIONAL_PHRASE",
+          "literal_present_in_hits": 2,
+          "hits": [
+            {"rowid": 789, "page": 416, "classification": "REGULATION_TEXT", "similarity": 0.6754071878606597, "excerpt": "m 이상일 것. 다만, 교류 전차 선 등과 가공전선 사이의 간격이 2 m"},
+            {"rowid": 1146, "page": 673, "classification": "REGULATION_TEXT", "similarity": 0.6708410461733537, "excerpt": "단면이 사용될 때에는 보강링 또는 보강링과 동체 를 조합한 새로운 단면 "},
+            {"rowid": 611, "page": 291, "classification": "REGULATION_TEXT", "similarity": 0.6642930540330814, "excerpt": "선을 접속하는 경우는 터미널러그 등을 부착할 것. 다만, 단 선을 “다”"}
+          ]
+        },
+        {
+          "query": "접지",
+          "query_class": "TOPIC",
+          "literal_present_in_hits": 0,
+          "hits": [
+            {"rowid": 631, "page": 306, "classification": "REGULATION_TEXT", "similarity": 0.6885375599621788, "excerpt": "장치( 線路變換裝置 ) 등의 적설 또는 빙결을 방지하기 위하여 철도의 전"},
+            {"rowid": 682, "page": 339, "classification": "REGULATION_TEXT", "similarity": 0.646186581032161, "excerpt": "전장치 또는 충전장치를 시설한 장소에는 위험표시를 쉽게 보이 는 곳에 표"},
+            {"rowid": 915, "page": 502, "classification": "REGULATION_TEXT", "similarity": 0.6405173977068801, "excerpt": "- 472 - 정장치를 시설하여야 한다. 다만, 무효 전력 보상 장치의 "}
+          ]
+        }
+      ],
+      "quality_boundary": {
+        "status": "UNVERIFIED",
+        "reason": "All returned chunks are regulation text, but the fixed clause and topic queries returned no top-3 hit containing the query literal. The run does not isolate whether model behavior, chunking, source extraction, query characteristics, or another factor caused the poor relevance."
+      },
+      "evidence_path": ".volt-ai/kec-regulation-provisional/first-run-result.json; .volt-ai/kec-regulation-provisional/index.db",
+      "locator": "/retrieval; kec_chunks.rowid IN (101,102,765,789,1146,611,631,682,915)"
+    }
+  },
+  "label_correction_history": [
+    {
+      "status": "OBSERVED",
+      "applied_at": "2026-08-23T23:55:42+09:00",
+      "field": "REGULATION_GROUNDED_EMPIRICAL_RUN_READY",
+      "prior_value": "YES",
+      "prior_reason": "A separate source-bound provisional index contains regulation text and returns regulation chunks.",
+      "correction": {
+        "INDEX_BUILT": "YES",
+        "RETRIEVAL_QUALITY": "INSUFFICIENT",
+        "EMPIRICAL_RUN_READY": "NO",
+        "RETRIEVAL_METRIC_UNINFORMATIVE": "OBSERVED"
+      },
+      "reason": "The clause-identifier and topic queries returned 0/3 exact-string presence. Running end to end in that state would allow retrieval failure to mask downstream observations. Because the index is overwhelmingly regulation text in the bounded sample, regulation-text hit rate does not discriminate retrieval quality from a random in-index baseline.",
+      "evidence_path": ".volt-ai/kec-regulation-provisional/first-run-result.json; .volt-ai/kec-regulation-provisional/index.db",
+      "locator": "/retrieval queries 241.17.3 and 접지; deterministic sample rowids recorded at /index/rowids"
+    }
+  ],
+  "verdicts": {
+    "NUL_AFFECTED_CHUNK_COUNT": {"status": "OBSERVED", "value": "312 of 536", "evidence_path": ".volt-ai/kec/index.db", "locator": "all kec_chunks text values read by Python sqlite3 URI mode=ro&immutable=1"},
+    "NUL_ORIGIN": {"status": "OBSERVED", "value": "PDFJS_TEXT_ITEM_OUTPUT", "evidence_path": "project-files/전기 결합_1_100.pdf; packages/mcp-kec/src/knowledge/pdfPages.ts", "locator": "PDF page 1 getTextContent().items[].str; pdfPages.ts:32-39"},
+    "NUL_IMPACT": {"status": "OBSERVED", "value": "DOWNSTREAM_ONLY", "evidence_path": ".volt-ai/kec/index.db", "locator": "stored bytes/Python text versus SQLite length(text)/substr(text,...)"},
+    "FIX_SURFACE": {"status": "OBSERVED", "value": "RESEARCH_CONTAINABLE", "evidence_path": "research/empirical-readiness/scripts/nulSanitizer.ts", "locator": "lines 1-5"},
+    "REGULATION_ARTIFACT_ACQUIRED": {"status": "OBSERVED", "value": "OBSERVED", "evidence_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf", "locator": "filesystem bytes; SHA-256; PDF pages"},
+    "REGULATION_ARTIFACT_SCOPE": {"status": "OBSERVED", "value": "CONSOLIDATED_FULL_TEXT", "evidence_path": ".volt-ai/kec-regulation-provisional/raw/kea-2024-749-source-page.html; .volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf", "locator": "source page lines 1447,1460,1469; PDF page 1 and distributed clause/provision samples"},
+    "REGULATION_ARTIFACT_READABLE": {"status": "OBSERVED", "value": "TEXT_NATIVE", "evidence_path": ".volt-ai/kec-regulation-provisional/a2-readability.json", "locator": "/sample; /textPresentCount; /noTextCount"},
+    "SOURCE_PROVISIONAL": {"status": "OBSERVED", "value": "YES", "evidence_path": "research/empirical-readiness/enablement.json", "locator": "/stage_a/artifact/provisional_reason"},
+    "REGULATION_INDEX_BUILT": {"status": "OBSERVED", "value": "YES", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "index_metadata id=kec-regulation-provisional; kec_chunks count=1896"},
+    "REGULATION_INDEX_PATH": {"status": "OBSERVED", "value": ".volt-ai/kec-regulation-provisional/index.db", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "filesystem path"},
+    "EXISTING_DRAWING_INDEX_MODIFIED": {"status": "OBSERVED", "value": "NO", "evidence_path": ".volt-ai/kec/index.db; .volt-ai/kec-regulation-provisional/first-run-result.json", "locator": "SHA-256 before=after=a24b705e...; /drawingIndex"},
+    "REGULATION_TEXT_SAMPLE_COUNT": {"status": "OBSERVED", "value": "19 of 20", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db; .volt-ai/kec-regulation-provisional/first-run-result.json", "locator": "named 20 rowids; direct review of kec_chunks.rowid=318; /index/rowids"},
+    "RETRIEVAL_RETURNS_REGULATION": {"status": "OBSERVED", "value": "OBSERVED_TRUE", "evidence_path": ".volt-ai/kec-regulation-provisional/first-run-result.json", "locator": "/retrieval: 9 of 9 hits classified REGULATION_TEXT"},
+    "LABEL_CORRECTION_APPLIED": {"status": "OBSERVED", "value": "YES", "evidence_path": "research/empirical-readiness/enablement.json", "locator": "/label_correction_history/0"},
+    "INDEX_BUILT": {"status": "OBSERVED", "value": "YES", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db", "locator": "index_metadata id=kec-regulation-provisional; kec_chunks count=1896"},
+    "RETRIEVAL_QUALITY": {"status": "OBSERVED", "value": "INSUFFICIENT", "reason": "The clause-identifier and topic queries each returned 0/3 hits containing the exact query string.", "evidence_path": ".volt-ai/kec-regulation-provisional/first-run-result.json; .volt-ai/kec-regulation-provisional/index.db", "locator": "/retrieval queries 241.17.3 and 접지; full text of their six named hit rowids"},
+    "EMPIRICAL_RUN_READY": {"status": "OBSERVED", "value": "NO", "reason": "Retrieval failure could mask downstream observation in an end-to-end run.", "evidence_path": ".volt-ai/kec-regulation-provisional/first-run-result.json; research/empirical-readiness/enablement.json", "locator": "/retrieval; /verdicts/RETRIEVAL_QUALITY"},
+    "RETRIEVAL_METRIC_UNINFORMATIVE": {"status": "OBSERVED", "value": "OBSERVED", "reason": "The bounded index sample is 19/20 regulation text, so returning regulation text does not discriminate retrieval quality from an in-index baseline.", "evidence_path": ".volt-ai/kec-regulation-provisional/index.db; .volt-ai/kec-regulation-provisional/first-run-result.json", "locator": "named deterministic 20-row sample; /retrieval"},
+    "REGULATION_GROUNDED_EMPIRICAL_RUN_READY": {"status": "OBSERVED", "value": "NO", "supersedes_prior_value": "YES", "reason": "Corrected: index construction succeeded, but retrieval quality is insufficient for an empirical end-to-end run.", "evidence_path": "research/empirical-readiness/enablement.json", "locator": "/label_correction_history/0; /verdicts/RETRIEVAL_QUALITY; /verdicts/EMPIRICAL_RUN_READY"}
+  },
+  "unverified_items": [
+    "The effect of embedded U+0000 on embedding or retrieval quality in the drawing index.",
+    "Korean retrieval performance of nomic-embed-text on regulation text beyond this first run.",
+    "A single causal explanation for poor clause-identifier and topic-query relevance.",
+    "KEC_CITABLE_SOURCE and whether this republication is the citable source of record.",
+    "The content of the 1,876 unsampled regulation-index chunks.",
+    "HWP 5.x internal semantic structure and PDF rendition lineage."
+  ],
+  "not_attempted_items": [
+    "BGE-M3 or any other embedding model.",
+    "FTS5, placeholder embeddings, query reformulation, chunk-size tuning, or retrieval-parameter tuning.",
+    "A discrepancy audit between the 2024-749 issuer CFB and republication PDF.",
+    "The empirical review pipeline end to end.",
+    "Task94 reopening or Task90/93/94/95 production changes.",
+    "Commit or push."
+  ],
+  "scope_boundary": {
+    "production_files_modified": "NONE",
+    "existing_databases_modified": "NONE",
+    "acquired_pdf_committed": false,
+    "new_dependency_added": false,
+    "stop_after_verdicts": true
+  }
+}

@@ -1,0 +1,713 @@
+{
+  "schema": "voltai-empirical-readiness-index-drawing-inventory/v1",
+  "recorded_at": "2026-08-23T22:23:20+09:00",
+  "mode": "READ_ONLY_INVENTORY_AND_OBSERVATION",
+  "request_boundary": {
+    "status": "OBSERVED",
+    "observation": "The supplied request artifact ends immediately after the label 'Required verdicts:'; no verdict list follows it.",
+    "evidence_path": "/Users/woncheol/.codex/attachments/549c14ef-0bb5-4f3f-a842-42e92d88152e/pasted-text.txt",
+    "locator": "line 192 and EOF",
+    "handling": "Only verdicts directly required by Phases 1-3 are emitted; missing names are not inferred."
+  },
+  "phase0_baseline": {
+    "repository": {
+      "status": "OBSERVED",
+      "branch": "main",
+      "head": "a5f668ba7484c7f765f65ea3ef88f031eb0e7512",
+      "git_status_short": [],
+      "evidence_path": "/Users/woncheol/Documents/Volt ai/.git",
+      "locator": "git branch --show-current; git rev-parse HEAD; git status --short --untracked-files=all"
+    },
+    "pdf_reading_capabilities": [
+      {
+        "status": "OBSERVED",
+        "id": "KEC_INDEX_PAGE_TEXT_READER",
+        "module_path": "packages/mcp-kec/src/knowledge/pdfPages.ts",
+        "entry_point": "readPdfPages(absolutePath)",
+        "library": "pdfjs-dist 6.1.200, legacy/build/pdf.mjs",
+        "production_invocation": true,
+        "production_path": "readPdfPages -> indexKec -> createIndexKecTool(name=index_kec) -> createServer",
+        "test_invocation": true,
+        "evidence_path": "packages/mcp-kec/src",
+        "locator": "knowledge/pdfPages.ts:3,19-46; tools/indexKec.ts:237-246,301-333; index.ts:35-65; packages/mcp-kec/package.json:21-29"
+      },
+      {
+        "status": "OBSERVED",
+        "id": "TASK90_93_STRUCTURAL_REQUIREMENT_READER",
+        "module_path": "packages/mcp-kec/src/knowledge/requirementExtraction.ts",
+        "entry_points": [
+          "extractKecRequirementSnapshot(input)",
+          "extractKecRequirementSnapshotWithCapture(input)",
+          "extractKecRequirements(input)"
+        ],
+        "library": "pdfjs-dist 6.1.200, legacy/build/pdf.mjs",
+        "production_entry_point_invocation": false,
+        "bounded_usage_class": "DIRECTLY_INVOKED_BY_TESTS_ONLY",
+        "observation": "The bounded src search found no call to these exported functions outside their defining module; production modules import only related types/constants, while tests invoke the functions directly. They are not exported by packages/mcp-kec/src/index.ts.",
+        "evidence_path": "packages/mcp-kec",
+        "locator": "src/knowledge/requirementExtraction.ts:141-142,170-220,649-664,732-749; src/index.ts:16-33; rg calls in src versus test/requirementExtraction.test.ts and test/kecSourceCaptureExtraction.test.ts"
+      }
+    ],
+    "tool_versions": {
+      "status": "OBSERVED",
+      "git": "git version 2.50.1 (Apple Git-155)",
+      "sqlite3": "3.51.0",
+      "node": "v25.6.1",
+      "pdfjs_dist": "6.1.200",
+      "evidence_path": "packages/mcp-kec/node_modules/pdfjs-dist/package.json",
+      "locator": "version; local command version outputs"
+    }
+  },
+  "phase1_index": {
+    "database": {
+      "status": "OBSERVED",
+      "path": ".volt-ai/kec/index.db",
+      "sha256": "a24b705e74872d64f492617011ed355154cae2cbd3a523153114e126bd67e43f",
+      "size_bytes": 9437184,
+      "open_mode": "sqlite3 -readonly URI mode=ro&immutable=1",
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "filesystem bytes; sqlite_master"
+    },
+    "tables": {
+      "status": "OBSERVED",
+      "values": [
+        {
+          "name": "index_metadata",
+          "row_count": 1
+        },
+        {
+          "name": "kec_chunks",
+          "row_count": 536
+        }
+      ],
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "sqlite_master WHERE type='table'; SELECT COUNT(*) for each table"
+    },
+    "index_metadata": {
+      "status": "OBSERVED",
+      "rows": [
+        {
+          "id": "kec",
+          "embedding_provider": "ollama",
+          "embedding_model": "nomic-embed-text",
+          "dimensions": 768,
+          "indexed_at": "2026-08-09T01:33:36.899Z"
+        }
+      ],
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "SELECT * FROM index_metadata ORDER BY id"
+    },
+    "distinct_chunk_source_paths": {
+      "status": "OBSERVED",
+      "values": [
+        {
+          "source_path": "전기 결합_1_100.pdf",
+          "chunk_count": 536
+        }
+      ],
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "SELECT source_path, COUNT(*) FROM kec_chunks GROUP BY source_path"
+    },
+    "total_chunk_count": {
+      "status": "OBSERVED",
+      "value": 536,
+      "min_rowid": 1,
+      "max_rowid": 536,
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "SELECT COUNT(*), MIN(rowid), MAX(rowid) FROM kec_chunks"
+    },
+    "sampling_rule": {
+      "status": "OBSERVED",
+      "method": "Order all chunks by rowid. Select rowids 1-5; centered rowids 266-270; rowids 532-536; then remove those 15 and select ranks floor(k*(521+1)/6), k=1..5, from the remaining ordered 521 rowids.",
+      "evenly_spaced_remaining_rowids": [
+        92,
+        179,
+        271,
+        358,
+        445
+      ],
+      "sample_rowids": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        92,
+        179,
+        266,
+        267,
+        268,
+        269,
+        270,
+        271,
+        358,
+        445,
+        532,
+        533,
+        534,
+        535,
+        536
+      ],
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "kec_chunks ordered rowid population 1..536"
+    },
+    "text_measurement_method": {
+      "status": "OBSERVED",
+      "method": "Read text through Python sqlite3 URI mode=ro&immutable=1; character_length is Python Unicode code-point length. Embedded NUL and extraction-layout whitespace are normalized only for the short human classification previews.",
+      "embedded_nul_sample_count": 10,
+      "observation": "SQLite length(text) and substr(text,...) stopped at the first embedded NUL for 10 sampled chunks, so those SQL-derived lengths/previews were rejected and replaced by full returned-string observations.",
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "sample rowids 1,3,4,5,266,267,268,269,270,271; Python sqlite3 text values and NUL counts"
+    },
+    "samples": [
+      {
+        "status": "OBSERVED",
+        "rowid": 1,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 99,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "주택건설사업계획(변경)승인…신축공사",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=1:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 2,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 165,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "여수 신기주공…아파트 신축공사",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=2:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 3,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 1200,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "도면…목록표-1…전기부분",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=3:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 4,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 690,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "옥외…조경등설비…배치도",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=4:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 5,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 1200,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "범례…주기사항…단선결선도",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=5:text (full Python sqlite3 value; embedded NUL present)"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 92,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 165,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "전기컨설턴트…아파트 신축공사",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=92:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 179,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 1172,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "18kV 100A…L.B.S…MOF",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=179:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 266,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 791,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "기기명칭…회로번호…차단기규격",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=266:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 267,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 923,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "1단지…MCC…결선도-5",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=267:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 268,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 815,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "MCCB…MCB…CBR…RCBO…옥외…분전반",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=268:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 269,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 948,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "유도휀 주차장",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=269:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 270,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 883,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "기기명칭…회로번호…차단기규격",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=270:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 271,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 923,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "1단지…MCC…결선도-6",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=271:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 358,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 690,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "MAIN…SPD…MCCB…단위세대",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=358:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 445,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 668,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "SPARE…CBR…MCCB…태양광",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=445:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 532,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 690,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "통신장비전원…BREAKER SIZE",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=532:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 533,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 1200,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "주차유도…무선통신 RACK",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=533:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 534,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 689,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "실내외기전원…CBR",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=534:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 535,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 1200,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "전열교환기전원…BREAKER SIZE",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=535:text"
+      },
+      {
+        "status": "OBSERVED",
+        "rowid": 536,
+        "source_path": "전기 결합_1_100.pdf",
+        "character_length": 661,
+        "classification": "DRAWING_TEXT",
+        "excerpt": "SPD Class Ⅱ…MCCB…RCBO",
+        "evidence_path": ".volt-ai/kec/index.db",
+        "locator": "kec_chunks.rowid=536:text"
+      }
+    ],
+    "classification_counts": {
+      "status": "OBSERVED",
+      "REGULATION_TEXT": 0,
+      "DRAWING_TEXT": 20,
+      "MIXED": 0,
+      "INDETERMINATE": 0,
+      "sample_size": 20,
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "the 20 rowids in phase1_index.sampling_rule"
+    },
+    "any_regulation_text_observed": {
+      "status": "OBSERVED",
+      "value": false,
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "classification=REGULATION_TEXT count=0 among the named 20 rowids"
+    },
+    "sampling_limit": {
+      "status": "OBSERVED",
+      "observation": "The deterministic 20-row sample is 20 of 536 chunks and does not establish the composition of the other 516 chunks or of the index as a whole.",
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "sample size 20; total count 536"
+    }
+  },
+  "phase2_drawing_artifact": {
+    "identity": {
+      "status": "OBSERVED",
+      "path": "project-files/전기 결합_1_100.pdf",
+      "sha256": "94bd23c711bf289986fe20307e9243ddf85fa4e8c4106c4006b2c2a3f76dfbd1",
+      "size_bytes": 61087700,
+      "pdf_version": "1.3",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "filesystem bytes; PDF header"
+    },
+    "reader": {
+      "status": "OBSERVED",
+      "entry_point": "packages/mcp-kec/src/knowledge/pdfPages.ts::readPdfPages",
+      "library": "pdfjs-dist 6.1.200",
+      "execution": "Existing installed packages/mcp-kec/node_modules/.bin/tsx; no dependency installation",
+      "evidence_path": "packages/mcp-kec/src/knowledge/pdfPages.ts",
+      "locator": "lines 3 and 19-46"
+    },
+    "page_count": {
+      "status": "OBSERVED",
+      "value": 100,
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs document.numPages"
+    },
+    "metadata": {
+      "status": "OBSERVED",
+      "Producer": "macOS 버전 26.5.1(빌드 25F80) Quartz PDFContext",
+      "Creator": "미리보기",
+      "Title": "전기 결합",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs getMetadata().info"
+    },
+    "page_sampling_rule": {
+      "status": "OBSERVED",
+      "pages": [
+        1,
+        2,
+        3,
+        49,
+        50,
+        51,
+        98,
+        99,
+        100
+      ],
+      "method": "First 3, center-adjacent 3 using start=floor((100-3)/2)+1, and last 3.",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs pages 1-3,49-51,98-100"
+    },
+    "sampled_pages": [
+      {
+        "status": "OBSERVED",
+        "page": 1,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 98,
+        "text_characterization": "project cover/title fields",
+        "excerpt": "주택건설사업계획(변경)승인…신축공사",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 1 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 2,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 4151,
+        "text_characterization": "drawing title-block fields",
+        "excerpt": "등록번호…전기컨설턴트…신축공사",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 2 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 3,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 5104,
+        "text_characterization": "drawing title-block fields",
+        "excerpt": "전기컨설턴트…아파트 신축공사",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 3 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 49,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 4693,
+        "text_characterization": "electrical block-diagram labels",
+        "excerpt": "1단지 전력간선설비 BLOCK DIAGRAM",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 49 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 50,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 2743,
+        "text_characterization": "drawing title-block fields",
+        "excerpt": "등록번호…전기컨설턴트…신축공사",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 50 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 51,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 3197,
+        "text_characterization": "MCC wiring-diagram labels",
+        "excerpt": "1단지 MCC 결선도-1 SCALE:A1",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 51 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 98,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 3029,
+        "text_characterization": "panel/load schedule labels and ratings",
+        "excerpt": "부하명 BREAKER SIZE…3Ø4W 380/220V",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 98 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 99,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 1412,
+        "text_characterization": "distribution-board wiring-diagram labels",
+        "excerpt": "1단지 분전반 결선도-22",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 99 textContent and viewport(scale=1)"
+      },
+      {
+        "status": "OBSERVED",
+        "page": 100,
+        "text_layer_status": "TEXT_PRESENT",
+        "character_length": 3940,
+        "text_characterization": "drawing title-block and schedule fields",
+        "excerpt": "등록번호…전기컨설턴트…신축공사",
+        "width_points": 595,
+        "height_points": 842,
+        "orientation": "PORTRAIT",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs page 100 textContent and viewport(scale=1)"
+      }
+    ],
+    "sample_text_layer_summary": {
+      "status": "OBSERVED",
+      "TEXT_PRESENT": 9,
+      "NO_TEXT": 0,
+      "UNDETERMINED": 0,
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs sampled pages 1-3,49-51,98-100"
+    },
+    "geometry_observation": {
+      "status": "OBSERVED",
+      "value": "A4_PORTRAIT_IN_ALL_9_SAMPLED_PAGES",
+      "large_format_landscape_observed": false,
+      "observation": "Every sampled viewport is 595 by 842 points, portrait. Page geometry does not support a large-format landscape-sheet claim.",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs sampled page viewports at scale=1"
+    },
+    "drawing_set_classification": {
+      "status": "OBSERVED",
+      "value": "DRAWING",
+      "observation": "The distributed page sample contains a project cover, title blocks, block/wiring diagram labels, panel/load schedules, equipment tags, and electrical ratings rather than KEC clause prose.",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs pages 1-3,49-51,98-100; getMetadata().info.Title",
+      "scope_boundary": "This classifies the artifact as a drawing set from the named deterministic page sample and metadata; it does not classify each unsampled page."
+    },
+    "machine_readability": {
+      "sample_status": "OBSERVED",
+      "sample_value": "TEXT_LAYER_PRESENT_9_OF_9",
+      "whole_document_status": "UNVERIFIED",
+      "reason": "Only the required nine pages were retained as page-level text-layer observations; no claim is made that every one of 100 pages has usable text.",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs pages 1-3,49-51,98-100"
+    }
+  },
+  "phase3_source_recount": {
+    "bounded_candidate_method": {
+      "status": "OBSERVED",
+      "observation": "The bounded workspace candidate set contains the two project-files PDFs, the retained official 2024-749 CFB artifact advertised as .hwpx, and the retained successful current 2025-227 law.go.kr XML body response. History/filter/error responses and SQLite indexes are diagnostics or derived stores, not candidate source texts.",
+      "evidence_path": "/Users/woncheol/Documents/Volt ai",
+      "locator": "bounded find under project-files, .volt-ai/kec, and research/kec-representation-probe/raw for PDF/HWP/HWPX/XML"
+    },
+    "candidates": [
+      {
+        "path": "project-files/전기 결합_1_100.pdf",
+        "sha256": "94bd23c711bf289986fe20307e9243ddf85fa4e8c4106c4006b2c2a3f76dfbd1",
+        "size_bytes": 61087700,
+        "identity_status": "OBSERVED",
+        "artifact_type": "DRAWING",
+        "artifact_type_status": "OBSERVED",
+        "document_scope": "UNKNOWN",
+        "document_scope_status": "NOT_ATTEMPTED",
+        "usable_consolidated_kec_source": false,
+        "usability_status": "OBSERVED",
+        "evidence_path": "project-files/전기 결합_1_100.pdf",
+        "locator": "pdfjs pages 1-3,49-51,98-100; SHA-256 and filesystem size",
+        "scope_boundary": "Document scope is not applicable to a drawing and is left UNKNOWN."
+      },
+      {
+        "path": "project-files/한국전기설비규정(기후에너지환경부공고)(제2025-227호)(20260105).pdf",
+        "sha256": "58ab5cabd9605bdd603db7b4b2b80db6004fd8e3162b5c57c6d824b358978d7a",
+        "size_bytes": 35518,
+        "identity_status": "OBSERVED",
+        "artifact_type": "REGULATION",
+        "artifact_type_status": "OBSERVED",
+        "document_scope": "NOTICE_ONLY",
+        "document_scope_status": "OBSERVED",
+        "usable_consolidated_kec_source": false,
+        "usability_status": "OBSERVED",
+        "evidence_path": "project-files/한국전기설비규정(기후에너지환경부공고)(제2025-227호)(20260105).pdf",
+        "locator": "pdfjs page count=1; page 1 text chars=129 and header text; viewport 595x842; Producer=iText 2.1.7 by 1T3XT",
+        "scope_boundary": "The one-page PDF exposes a law.go.kr KEC header and amendment notice metadata, not consolidated clause text."
+      },
+      {
+        "path": "research/kec-representation-probe/raw/ministry-2024-749-kec-full.hwpx",
+        "sha256": "3d6d221208cc2b92d9f0206d0bbab807ab61274a41fed295a8d155a6afa9c375",
+        "size_bytes": 39796224,
+        "identity_status": "OBSERVED",
+        "artifact_type": "UNKNOWN",
+        "artifact_type_status": "UNVERIFIED",
+        "document_scope": "UNKNOWN",
+        "document_scope_status": "UNVERIFIED",
+        "usable_consolidated_kec_source": null,
+        "usability_status": "UNVERIFIED",
+        "evidence_path": "research/kec-representation-probe/raw/ministry-2024-749-kec-full.hwpx",
+        "locator": "byte offsets 0x00-0x07 = d0 cf 11 e0 a1 b1 1a e1; research/kec-representation-probe/manifest.json#/sources/0",
+        "reason": "The artifact is directly identified as CFB/HWP-family bytes, but its internal content and document scope were not opened or parsed. The advertised filename and source-role record are not treated as content proof."
+      },
+      {
+        "path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "sha256": "c16a0f4261149502b2175f21e6e0d9ec7afcb8d79e730eb37e5b414df0f75f56",
+        "size_bytes": 3120,
+        "identity_status": "OBSERVED",
+        "artifact_type": "REGULATION",
+        "artifact_type_status": "OBSERVED",
+        "document_scope": "UNKNOWN",
+        "document_scope_status": "UNVERIFIED",
+        "usable_consolidated_kec_source": false,
+        "usability_status": "OBSERVED",
+        "evidence_path": "research/kec-representation-probe/raw/body-probe-2025-227.response.xml",
+        "locator": "/AdmRulService/행정규칙기본정보/행정규칙명 and /발령번호; /AdmRulService/조문내용 (child_count=0; text_chars=0)",
+        "scope_boundary": "The response self-identifies as KEC revision 2025-227, but its clause-body element is present and empty. The scope of clause content available by another method remains UNVERIFIED."
+      }
+    ],
+    "usable_consolidated_kec_source_count": {
+      "status": "OBSERVED",
+      "value": 0,
+      "count_definition": "Confirmed candidates with artifact_type=REGULATION, document_scope=CONSOLIDATED_FULL_TEXT, and content readable by the currently approved existing capability.",
+      "evidence_path": "research/empirical-readiness/inventory.json",
+      "locator": "phase3_source_recount.candidates",
+      "scope_boundary": "This is a count of confirmed usable sources in the bounded workspace, not proof that the UNKNOWN CFB artifact lacks consolidated KEC content."
+    }
+  },
+  "phase_derived_verdicts": {
+    "index_sample_content": {
+      "status": "OBSERVED",
+      "value": "DRAWING_TEXT_OBSERVED",
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "20 DRAWING_TEXT, 0 INDETERMINATE, 0 REGULATION_TEXT among the named 20 rowids"
+    },
+    "regulation_text_chunk_observed": {
+      "status": "OBSERVED",
+      "value": false,
+      "evidence_path": ".volt-ai/kec/index.db",
+      "locator": "REGULATION_TEXT count=0 among the named 20 rowids",
+      "scope_boundary": "The unsampled 516 chunks remain unclassified."
+    },
+    "drawing_artifact": {
+      "status": "OBSERVED",
+      "value": "DRAWING",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs pages 1-3,49-51,98-100 and metadata Title"
+    },
+    "drawing_artifact_sampled_text_layer": {
+      "status": "OBSERVED",
+      "value": "TEXT_PRESENT_9_OF_9",
+      "evidence_path": "project-files/전기 결합_1_100.pdf",
+      "locator": "pdfjs sampled pages 1-3,49-51,98-100"
+    },
+    "drawing_artifact_whole_document_machine_readable": {
+      "status": "UNVERIFIED",
+      "value": null,
+      "reason": "The required page-level observation sampled nine of 100 pages."
+    },
+    "usable_consolidated_kec_source_count": {
+      "status": "OBSERVED",
+      "value": 0,
+      "evidence_path": "research/empirical-readiness/inventory.json",
+      "locator": "phase3_source_recount.candidates and usable_consolidated_kec_source_count",
+      "scope_boundary": "Count of confirmed usable sources only; one CFB candidate remains internally UNVERIFIED."
+    },
+    "regulation_grounded_empirical_run_readiness": {
+      "status": "OBSERVED",
+      "value": "NOT_READY",
+      "observation": "No confirmed readable consolidated KEC regulation source exists in the bounded candidate set, and the 20 sampled index chunks contain no observed regulation text.",
+      "evidence_path": "research/empirical-readiness/inventory.json",
+      "locator": "phase1_index.classification_counts; phase3_source_recount.usable_consolidated_kec_source_count",
+      "scope_boundary": "This is a readiness result for the current workspace and approved capability, not a claim that no KEC source exists elsewhere or inside the unparsed CFB artifact."
+    }
+  }
+}
