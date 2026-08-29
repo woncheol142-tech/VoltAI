@@ -1,0 +1,408 @@
+{
+  "schema": "voltai-retrieval-baseline-v1/v1",
+  "benchmark": "RETRIEVAL_BASELINE_V1",
+  "constructed_at": "2026-08-24T13:59:28Z",
+  "starting_repository_head": "d305f08cbf19c7f0c5aa8b1abda456a577ea3558",
+  "ending_repository_head": "d305f08cbf19c7f0c5aa8b1abda456a577ea3558",
+  "epistemic_rules": [
+    "KNOWN_RELEVANT != EXHAUSTIVE_TRUTH",
+    "UNKNOWN != FALSE",
+    "NOT_IN_KNOWN_SET != WRONG",
+    "QUERY INTENT must be frozen before retrieval results are inspected",
+    "Ground-truth anchors come from the ORIGINAL SOURCE, not the provisional retrieval index",
+    "IMPLEMENTED != REAL_SOURCE_OBSERVED",
+    "RETRIEVAL_QUALITY != KNOWLEDGE_AUTHORITY",
+    "SOURCE_PROVISIONAL results are evaluation material, not verified knowledge"
+  ],
+  "source_discovery_inputs": {
+    "regenerated": false,
+    "candidate_json": {
+      "path": "research/empirical-readiness/retrieval-baseline-v1-candidates.json",
+      "sha256": "eebce4747655293534b1ccf436969cc13b23bc124f313b658e027094743986cb"
+    },
+    "candidate_markdown": {
+      "path": "research/empirical-readiness/retrieval-baseline-v1-candidates.md",
+      "sha256": "c708da613fead1fc4f8edb669481d926e74b2e7e2860ece978a96f4b487b871b"
+    },
+    "anchor_identity_contract": "Each candidate_ref resolves through the SHA-256-pinned candidate JSON to source document, clause/section, PDF page, normalized excerpt, and exact source locator. SQLite rowid is not ground-truth identity."
+  },
+  "source": {
+    "path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+    "sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+    "page_count": 1207,
+    "status": "SOURCE_PROVISIONAL",
+    "authority_boundary": "Evaluation material only; not verified knowledge authority"
+  },
+  "query_set": {
+    "status": "QUERY_SET_V1_FROZEN",
+    "fingerprint": {
+      "algorithm": "SHA-256 of UTF-8 JSON.stringify(ordered query string array)",
+      "sha256": "70894f5f8409d6a758d4594bd423aaf28b84a744b6df493723b411146a8a5277"
+    },
+    "count": 14,
+    "queries": [
+      { "id": "Q01", "text": "241.17.3", "role": "identifier lookup" },
+      { "id": "Q02", "text": "접지선 굵기는 어떤 기준으로 정하나", "role": "topic / criterion lookup" },
+      { "id": "Q03", "text": "전기자동차 충전설비의 이격거리 기준", "role": "numeric / condition-oriented facility query" },
+      { "id": "Q04", "text": "저압 옥내배선의 공사 방법과 허용 조건", "role": "general regulatory requirement" },
+      { "id": "Q05", "text": "케이블트레이에 서로 다른 회로를 같이 포설할 수 있는 조건", "role": "conditional coexistence / installation query" },
+      { "id": "Q06", "text": "변압기 2차측 과전류보호장치 설치 기준", "role": "protection-device installation condition" },
+      { "id": "Q07", "text": "피뢰설비 접지와 전기설비 접지를 공용할 수 있는 조건", "role": "multi-condition / applicability query" },
+      { "id": "Q08", "text": "다만 지중에 시설하는 경우 적용되는 예외 조건", "role": "broad context-pattern diagnostic query" },
+      { "id": "Q09", "text": "저압 절연전선의 최소 굵기", "role": "table/numeric-value-sensitive query" },
+      { "id": "Q10", "text": "접지극", "role": "short technical-term query" },
+      { "id": "Q11", "text": "특고압 가공전선로의 상시 상정하중", "role": "clause-boundary-sensitive query" },
+      { "id": "Q12", "text": "태양광 발전설비와 풍력 발전설비의 시설 기준 차이", "role": "multi-source-section / multi-anchor synthesis query" },
+      { "id": "Q13", "text": "누전차단기와 누전경보기의 설치 조건", "role": "similar-term discrimination query" },
+      { "id": "Q14", "text": "KEC에 규정된 태양광 패널 제조사별 인증 기준", "role": "negative candidate / unsupported-answer detection" }
+    ]
+  },
+  "ground_truth": {
+    "status": "GROUND_TRUTH_V1_FROZEN",
+    "frozen_before_retrieval_measurement": true,
+    "anchor_match_rule_v1": "A retrieved chunk matches an anchor only when PDF page is equal and whitespace-normalized chunk text contains the anchor's whitespace-normalized source excerpt. Clause metadata alone is diagnostic and is not sufficient.",
+    "queries": [
+      {
+        "id": "Q01",
+        "status": "FROZEN_PRIMARY",
+        "primary_anchor_ref": "/queries/0/primary_candidate",
+        "acceptable_anchor_refs": [],
+        "reject_anchor_refs": ["/queries/0/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE"
+      },
+      {
+        "id": "Q02",
+        "status": "FROZEN_PRIMARY_HUMAN_APPROVED",
+        "primary_anchor_ref": "/queries/1/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/1/acceptable_candidates/0"],
+        "reject_anchor_refs": ["/queries/1/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE",
+        "human_decision": "PRIMARY 142.3.1 APPROVED"
+      },
+      {
+        "id": "Q03",
+        "status": "FROZEN_NOT_IN_THIS_REVISION_CANDIDATE",
+        "primary_anchor_ref": null,
+        "acceptable_anchor_refs": [],
+        "reject_anchor_refs": ["/queries/2/reject_candidates/0", "/queries/2/reject_candidates/1"],
+        "relevance_set_status": "CURRENT_CORPUS_NEGATIVE_WITH_LATER_REVISION_UNVERIFIED",
+        "scope": "2024-749 corpus only; re-measure after any corpus revision change"
+      },
+      {
+        "id": "Q04",
+        "status": "FROZEN_PRIMARY",
+        "primary_anchor_ref": "/queries/3/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/3/acceptable_candidates/0", "/queries/3/acceptable_candidates/1"],
+        "reject_anchor_refs": ["/queries/3/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE"
+      },
+      {
+        "id": "Q05",
+        "status": "FROZEN_PRIMARY",
+        "primary_anchor_ref": "/queries/4/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/4/acceptable_candidates/0"],
+        "reject_anchor_refs": ["/queries/4/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE"
+      },
+      {
+        "id": "Q06",
+        "status": "FROZEN_PRIMARY_HUMAN_CORRECTED",
+        "primary_anchor_ref": "/queries/5/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/5/acceptable_candidates/0", "/queries/5/acceptable_candidates/1"],
+        "reject_anchor_refs": ["/queries/5/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE",
+        "human_decision": "PRIMARY 212.4.2; prior machine choice 341.2 retained as ACCEPTABLE"
+      },
+      {
+        "id": "Q07",
+        "status": "FROZEN_PRIMARY",
+        "primary_anchor_ref": "/queries/6/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/6/acceptable_candidates/0"],
+        "reject_anchor_refs": ["/queries/6/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE"
+      },
+      {
+        "id": "Q08",
+        "status": "FROZEN_DIAGNOSTIC_MULTI_MATCH_HUMAN_APPROVED",
+        "ground_truth_mode": "MULTI_MATCH_EXPECTED",
+        "scoring_mode": "DIAGNOSTIC_COVERAGE",
+        "primary_anchor_ref": null,
+        "known_relevant_anchor_refs": [
+          "/queries/7/acceptable_candidates/0",
+          "/queries/7/acceptable_candidates/1",
+          "/queries/7/acceptable_candidates/2",
+          "/queries/7/acceptable_candidates/3",
+          "/queries/7/acceptable_candidates/4",
+          "/queries/7/acceptable_candidates/5",
+          "/queries/7/acceptable_candidates/6",
+          "/queries/7/acceptable_candidates/7",
+          "/queries/7/acceptable_candidates/8",
+          "/queries/7/acceptable_candidates/9",
+          "/queries/7/acceptable_candidates/10",
+          "/queries/7/acceptable_candidates/11"
+        ],
+        "known_relevant_clause_ids": ["142.2", "232.3.7", "241.5", "241.9.1", "241.13", "241.14.3", "241.16.4", "331.11", "334.1", "334.4", "334.6", "334.7"],
+        "reject_anchor_refs": [],
+        "pass_fail": null,
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE",
+        "metrics": ["known_relevant_hit_count@10", "known_relevant_coverage@10", "rank_of_each_known_relevant_anchor", "outside_known_relevant_count@10"]
+      },
+      {
+        "id": "Q09",
+        "status": "FROZEN_PRIMARY",
+        "primary_anchor_ref": "/queries/8/primary_candidate",
+        "acceptable_anchor_refs": [],
+        "reject_anchor_refs": ["/queries/8/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE"
+      },
+      {
+        "id": "Q10",
+        "status": "FROZEN_PRIMARY",
+        "primary_anchor_ref": "/queries/9/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/9/acceptable_candidates/0"],
+        "reject_anchor_refs": ["/queries/9/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE"
+      },
+      {
+        "id": "Q11",
+        "status": "FROZEN_PRIMARY_HUMAN_APPROVED",
+        "primary_anchor_ref": "/queries/10/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/10/acceptable_candidates/0"],
+        "reject_anchor_refs": ["/queries/10/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE",
+        "human_decision": "PRIMARY 333.13 APPROVED; 333.14 remains APPROVED REJECT"
+      },
+      {
+        "id": "Q12",
+        "status": "FROZEN_MULTI_ANCHOR_NO_PRIMARY",
+        "primary_anchor_ref": null,
+        "acceptable_anchor_refs": ["/queries/11/acceptable_candidates/0", "/queries/11/acceptable_candidates/1"],
+        "reject_anchor_refs": ["/queries/11/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE",
+        "synthesis_requirement": "Multiple source sections are necessary; do not infer all other clauses are wrong"
+      },
+      {
+        "id": "Q13",
+        "status": "FROZEN_PRIMARY_HUMAN_CORRECTED",
+        "primary_anchor_ref": "/queries/12/primary_candidate",
+        "acceptable_anchor_refs": ["/queries/12/acceptable_candidates/0"],
+        "reject_anchor_refs": ["/queries/12/reject_candidates/0"],
+        "relevance_set_status": "KNOWN_NONEXHAUSTIVE",
+        "human_decision": "PRIMARY 211.2.4; prior machine choice 242.10.3 retained as ACCEPTABLE special-location application"
+      },
+      {
+        "id": "Q14",
+        "status": "FROZEN_NO_SUPPORTED_ANSWER",
+        "ground_truth": "NO_SUPPORTED_ANSWER",
+        "primary_anchor_ref": null,
+        "acceptable_anchor_refs": [],
+        "reject_anchor_refs": ["/queries/13/reject_candidates/0", "/queries/13/reject_candidates/1", "/queries/13/reject_candidates/2"],
+        "relevance_set_status": "SOURCE_ONLY_31_TERM_NEGATIVE_INVESTIGATION_RETAINED",
+        "discrepancy_status": "NONE_OBSERVED"
+      }
+    ]
+  },
+  "human_approved_decisions": {
+    "candidate_correction_history_ref": "/correction_history/0",
+    "q02": "PRIMARY 142.3.1 APPROVED",
+    "q06": "PRIMARY 212.4.2 HUMAN_CORRECTED; 341.2 ACCEPTABLE",
+    "q08": "MULTI_MATCH_EXPECTED; 12 KNOWN_RELEVANT; PRIMARY NONE; APPROVED",
+    "q11": "PRIMARY 333.13 APPROVED; 333.14 REJECT APPROVED",
+    "q13": "PRIMARY 211.2.4 HUMAN_CORRECTED; 242.10.3 ACCEPTABLE"
+  },
+  "unresolved_items": [
+    {
+      "query_id": "Q03",
+      "item": "Whether a clearance provision exists in a later revision",
+      "status": "UNVERIFIED",
+      "freeze_impact": "NONE; benchmark corpus is fixed to 2024-749"
+    },
+    {
+      "query_id": "Q12",
+      "item": "Whether the two known acceptable anchors exhaust every section useful to the comparison",
+      "status": "UNVERIFIED",
+      "freeze_impact": "NONE; relevance set is explicitly non-exhaustive"
+    }
+  ],
+  "discrepancies": [],
+  "selection_leakage": {
+    "encountered": false,
+    "ground_truth_inputs": ["SHA-256-pinned source-only candidate artifacts"],
+    "provisional_index_used_before_ground_truth_freeze": false,
+    "prior_top_k_used": false,
+    "retrieval_ranking_used": false
+  },
+  "environment": {
+    "repository_head": "d305f08cbf19c7f0c5aa8b1abda456a577ea3558",
+    "node": "v25.6.1",
+    "retrieval_mode": "CURRENT_PROVISIONAL_VECTOR_PATH",
+    "retrieval_function": "research/empirical-readiness/scripts/regulationIndex.ts::searchProvisionalRegulationIndex",
+    "chunk_contract": {
+      "implementation": "packages/mcp-kec/src/knowledge/chunk.ts::createPageChunks",
+      "chunk_size": 1200,
+      "chunk_overlap": 150,
+      "minimum_chunk_length": 15,
+      "configuration_changed": false
+    },
+    "embedding": {
+      "provider": "ollama",
+      "model": "nomic-embed-text",
+      "dimensions": 768,
+      "choice": "PRODUCTION_DEFAULT_INTENTIONAL",
+      "known_limitation": "Korean retrieval performance is unverified for this model on regulation text",
+      "alternative_not_tested": "BGE-M3"
+    },
+    "index_metadata": {
+      "collection_id": "kec-regulation-provisional",
+      "indexed_at": "2026-08-23T14:32:16.220Z",
+      "chunk_count": 1896,
+      "distinct_pages": 1198,
+      "minimum_page": 1,
+      "maximum_page": 1207,
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38"
+    },
+    "measurement_timestamp": "2026-08-24T14:07:05.773Z"
+  },
+  "freeze_transitions": [
+    { "order": "A", "state": "QUERY_SET_V1_FROZEN", "completed": true },
+    { "order": "B", "state": "GROUND_TRUTH_V1_FROZEN", "completed": true },
+    { "order": "C", "state": "CURRENT_RETRIEVAL_BASELINE_MEASURED", "completed": true },
+    { "order": "D", "state": "RETRIEVAL_BASELINE_V1_FROZEN", "completed": true }
+  ],
+  "current_retrieval_measurement": {
+    "status": "CURRENT_RETRIEVAL_BASELINE_MEASURED",
+    "measured_after_query_and_ground_truth_freeze": true,
+    "primary_run": {
+      "started_at": "2026-08-24T14:07:03.237Z",
+      "completed_at": "2026-08-24T14:07:05.773Z",
+      "frozen_query_count": 14,
+      "top_k": 10,
+      "retrieval_function": "research/empirical-readiness/scripts/regulationIndex.ts::searchProvisionalRegulationIndex",
+      "retrieval_mode": "PRODUCTION_DEFAULT_VECTOR",
+      "query_reformulation": false,
+      "parameter_tuning": false,
+      "fallback_used": false
+    },
+    "pre_measurement_non_query_failures": [
+      {
+        "stage": "RUNTIME_RESOLUTION",
+        "result": "tsx not found from workspace root",
+        "retrieval_queries_executed": 0
+      },
+      {
+        "stage": "DIAGNOSTIC_METADATA_PREFLIGHT",
+        "result": "temporary diagnostic queried nonexistent index_metadata.collection column; corrected to id",
+        "retrieval_queries_executed": 0
+      }
+    ],
+    "output_recovery_repeats": {
+      "count": 2,
+      "queries": ["Q08", "Q03"],
+      "reason": "The primary run completed, but direct tool output was truncated. These exact frozen queries were repeated only to retain diagnostic fields; no query, model, parameter, corpus, or ground truth changed.",
+      "q08_completed_at": "2026-08-24T14:08:38.330Z",
+      "q03_completed_at": "2026-08-24T14:09:10.936Z"
+    },
+    "database_integrity": {
+      "original_path": ".volt-ai/kec-regulation-provisional/index.db",
+      "original_sha256_before": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "original_sha256_after_all_measurements": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "original_unchanged": true,
+      "original_opened_as_database": false,
+      "measurement_target": "byte-for-byte temporary copy",
+      "temporary_copy_mutated_by_production_read_path": true,
+      "temporary_copy_retained": false,
+      "known_debt": "SqliteKnowledgeStore construction runs schema migration even for the search path"
+    },
+    "anchor_match_rule": "A retrieved chunk matches an anchor only when PDF page is equal and whitespace-normalized chunk text contains the anchor's whitespace-normalized source excerpt. Clause metadata alone is diagnostic and is not sufficient.",
+    "ordinary_metrics": {
+      "query_ids": ["Q01", "Q02", "Q04", "Q05", "Q06", "Q07", "Q09", "Q10", "Q11", "Q12", "Q13"],
+      "query_count": 11,
+      "hit_at_1_count": 0,
+      "hit_at_3_count": 0,
+      "hit_at_10_count": 0,
+      "per_query": [
+        { "id": "Q01", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q02", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q04", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q05", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q06", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q07", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q09", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q10", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q11", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q12", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false },
+        { "id": "Q13", "hit_at_1": false, "hit_at_3": false, "hit_at_10": false }
+      ]
+    },
+    "q03_current_corpus_negative_diagnostic": {
+      "known_reject_hits_at_10": [],
+      "outside_known_set_count_at_10": 10,
+      "outside_known_set_interpretation": "UNKNOWN_NOT_FALSE",
+      "answer_claim_assessment": "NOT_APPLICABLE_RETRIEVAL_ONLY_NO_ANSWER_GENERATOR"
+    },
+    "q08_diagnostic_coverage": {
+      "ground_truth_mode": "MULTI_MATCH_EXPECTED",
+      "scoring_mode": "DIAGNOSTIC_COVERAGE",
+      "known_relevant_total": 12,
+      "known_relevant_hit_count_at_10": 0,
+      "known_relevant_coverage_at_10": 0,
+      "rank_of_each_known_relevant_anchor": [
+        { "clause_id": "142.2", "rank": null },
+        { "clause_id": "232.3.7", "rank": null },
+        { "clause_id": "241.5", "rank": null },
+        { "clause_id": "241.9.1", "rank": null },
+        { "clause_id": "241.13", "rank": null },
+        { "clause_id": "241.14.3", "rank": null },
+        { "clause_id": "241.16.4", "rank": null },
+        { "clause_id": "331.11", "rank": null },
+        { "clause_id": "334.1", "rank": null },
+        { "clause_id": "334.4", "rank": null },
+        { "clause_id": "334.6", "rank": null },
+        { "clause_id": "334.7", "rank": null }
+      ],
+      "outside_known_relevant_count_at_10": 10,
+      "outside_known_relevant_interpretation": "NOT_IN_KNOWN_SET_NOT_WRONG",
+      "pass_fail": null,
+      "recall_at_10": null
+    },
+    "q14_unsupported_answer_diagnostic": {
+      "ground_truth": "NO_SUPPORTED_ANSWER",
+      "known_reject_hits_at_10": [],
+      "outside_known_set_count_at_10": 10,
+      "outside_known_set_interpretation": "UNKNOWN_NOT_FALSE",
+      "answer_claim_assessment": "NOT_APPLICABLE_RETRIEVAL_ONLY_NO_ANSWER_GENERATOR"
+    },
+    "measurement_scope_boundary": "Metrics describe only the pinned provisional 2024-749 corpus, current 1,896-chunk index, production-default nomic-embed-text vector path, exact frozen queries, and anchor-match rule v1. They do not establish exhaustive relevance, source authority, answer quality, or a single cause for failure."
+  },
+  "integrity_checks": {
+    "status": "PASS",
+    "validated_at": "2026-08-24T14:10:00Z",
+    "checks": [
+      "1_EXACT_QUERY_STRINGS",
+      "2_QUERY_COUNT_14",
+      "3_Q02_PRIMARY_142_3_1",
+      "4_Q06_PRIMARY_212_4_2",
+      "5_Q08_MULTI_MATCH_PRIMARY_NONE",
+      "6_Q08_12_KNOWN_ANCHORS",
+      "7_Q08_REJECT_NONE",
+      "8_Q08_PASS_FAIL_NONE",
+      "9_Q11_PRIMARY_333_13",
+      "10_Q11_REJECT_333_14",
+      "11_Q13_PRIMARY_211_2_4",
+      "12_Q14_NO_SUPPORTED_ANSWER",
+      "13_NO_RETRIEVAL_GROUND_TRUTH_INPUT",
+      "14_NO_PRODUCTION_CODE_CHANGE",
+      "15_NO_CHUNKING_EMBEDDING_INDEX_CONFIG_CHANGE",
+      "16_CANDIDATE_JSON_SHA256_PIN",
+      "17_CANDIDATE_MARKDOWN_SHA256_PIN",
+      "18_QUERY_FINGERPRINT",
+      "19_SOURCE_PDF_SHA256_PIN",
+      "20_ORIGINAL_INDEX_SHA256_UNCHANGED",
+      "21_FREEZE_ORDER_A_B_C_D",
+      "22_Q08_DIAGNOSTIC_METRICS_NO_RECALL_OR_PASS_FAIL"
+    ],
+    "production_diff": [],
+    "configuration_changed": false
+  },
+  "final_verdict": "RETRIEVAL_BASELINE_V1_FROZEN"
+}

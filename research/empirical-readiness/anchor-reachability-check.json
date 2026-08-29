@@ -1,0 +1,1082 @@
+{
+  "schema": "voltai-anchor-reachability-check/v1",
+  "diagnostic": "ANCHOR_REACHABILITY_CHECK",
+  "created_at": "2026-08-24T14:34:45.396Z",
+  "repository_starting_head": "d305f08cbf19c7f0c5aa8b1abda456a577ea3558",
+  "repository_ending_head": "d305f08cbf19c7f0c5aa8b1abda456a577ea3558",
+  "epistemic_rules": [
+    "KNOWN_RELEVANT != EXHAUSTIVE_TRUTH",
+    "UNKNOWN != FALSE",
+    "NOT_IN_KNOWN_SET != WRONG",
+    "ANCHOR_UNREACHABLE != BAD_GROUND_TRUTH",
+    "NOT_RECONSTRUCTED != DIAGNOSED_CAUSE",
+    "RETRIEVAL_FAILURE != CHUNKING_FAILURE",
+    "OBSERVATION != DEFECT"
+  ],
+  "inputs_and_provenance": {
+    "frozen_baseline": {
+      "path": "research/empirical-readiness/retrieval-baseline-v1.json",
+      "sha256_before": "a8ec9750769e678e23628d958e473e7877fdd3747f46fe3d98428e73a4b5b50d",
+      "sha256_after": "a8ec9750769e678e23628d958e473e7877fdd3747f46fe3d98428e73a4b5b50d",
+      "unchanged_during_diagnostic": true,
+      "verdict": "RETRIEVAL_BASELINE_V1_FROZEN"
+    },
+    "candidate_json": {
+      "path": "research/empirical-readiness/retrieval-baseline-v1-candidates.json",
+      "sha256": "eebce4747655293534b1ccf436969cc13b23bc124f313b658e027094743986cb"
+    },
+    "source": {
+      "path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "page_count": 1207,
+      "status": "SOURCE_PROVISIONAL",
+      "authority_boundary": "Evaluation material only; not verified knowledge authority"
+    },
+    "baseline_database": {
+      "path": ".volt-ai/kec-regulation-provisional/index.db",
+      "sha256_before": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "sha256_after": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "unchanged_during_diagnostic": true,
+      "opened_as_database": false
+    },
+    "diagnostic_database_copy": {
+      "provenance": "byte-for-byte copy of baseline_database.sha256_before",
+      "sha256_before": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "sha256_after": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf",
+      "unchanged_during_read_only_diagnostic": true,
+      "sqlite_open_mode": "DatabaseSync readOnly=true; direct SELECT only; SqliteKnowledgeStore not constructed",
+      "retained": false
+    },
+    "index_metadata": {
+      "id": "kec-regulation-provisional",
+      "embedding_provider": "ollama",
+      "embedding_model": "nomic-embed-text",
+      "dimensions": 768,
+      "indexed_at": "2026-08-23T14:32:16.220Z"
+    }
+  },
+  "frozen_matcher_contract": {
+    "normalization": "ECMAScript text.replace(/\\s+/g, ' ').trim()",
+    "identity_gate": "same source_path and expected PDF page",
+    "single_chunk_rule": "one normalized stored chunk contains the full normalized frozen anchor excerpt",
+    "overlap_aware_join": "remove only the maximum exact suffix/prefix overlap for each consecutive pair; no fuzzy or semantic deduplication",
+    "window_bound": 3,
+    "same_page_only": true,
+    "adjacent_chunks_only": true,
+    "stored_chunks_mutated": false
+  },
+  "per_anchor_reachability": [
+    {
+      "query_id": "Q01",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/0/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "241.17.3",
+      "expected_pdf_page": 339,
+      "frozen_anchor_excerpt": "241.17.3 전기자동차의 충전장치 시설 1. 전기자동차의 충전장치는 다음에 따라 시설하여야 한다. 가.",
+      "normalized_excerpt_sha256": "48be54d7587f9e52fe1e538dafbe0184af6cf76c9c151abd59f0e20868bf4428",
+      "source_locator": "PDF page 339; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": false,
+      "classification": "ANCHOR_UNREACHABLE",
+      "matching_single_chunk_ids": [],
+      "matching_single_chunk_indexes": [],
+      "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "reconstruction_window_size": "NONE",
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q02",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/1/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "142.3.1",
+      "expected_pdf_page": 59,
+      "frozen_anchor_excerpt": "142.3.1 접지도체 1. 접지도체의 선정 가. 접지도체의 단면적은 142.3.2의 1에 의하며 큰 고장전",
+      "normalized_excerpt_sha256": "a01ba7748f3ec9c7d02bb1d023cda1847aa8aab4a09b6738e2de7fbd855014ab",
+      "source_locator": "PDF page 59; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": false,
+      "classification": "ANCHOR_UNREACHABLE",
+      "matching_single_chunk_ids": [],
+      "matching_single_chunk_indexes": [],
+      "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "reconstruction_window_size": "NONE",
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q02",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/1/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "142.3.2",
+      "expected_pdf_page": 60,
+      "frozen_anchor_excerpt": "142.3.2 보호도체 1. 보호도체의 최소 단면적은 다음에 의한다. 가. 보호도체의 최소 단면적은 “나”에",
+      "normalized_excerpt_sha256": "0069e56d8fcf9bfb2ddb97420804709a3331fe479240036339d8def7c3a77230",
+      "source_locator": "PDF page 60; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": false,
+      "classification": "ANCHOR_UNREACHABLE",
+      "matching_single_chunk_ids": [],
+      "matching_single_chunk_indexes": [],
+      "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "reconstruction_window_size": "NONE",
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q04",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/3/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "232.2",
+      "expected_pdf_page": 245,
+      "frozen_anchor_excerpt": "232.2 배선설비 공사의 종류 1. 사용하는 전선 또는 케이블의 종류에 따른 배선설비의 설치방법(버스바트렁",
+      "normalized_excerpt_sha256": "5a55ac8b07c146335db59cc082b5615715d9dbc9dba430af3f0c4c94d78ee8fb",
+      "source_locator": "PDF page 245; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=245#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q04",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/3/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "232.3",
+      "expected_pdf_page": 247,
+      "frozen_anchor_excerpt": "232.3 배선설비 적용 시 고려사항 232.3.1 회로 구성 1. 하나의 회로도체는 다른 다심케이블, 다른",
+      "normalized_excerpt_sha256": "9e1bb151393ad616d9552b6c543215ca9be414736f760bfe914646188de4b8e1",
+      "source_locator": "PDF page 247; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=247#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q04",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/3/acceptable_candidates/1",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "231.3.1",
+      "expected_pdf_page": 240,
+      "frozen_anchor_excerpt": "231.3.1 저압 옥내배선의 사용전선 1. 저압 옥내배선의 전선은 단면적 2.5 ㎟ 이상의 연동선 또는 이",
+      "normalized_excerpt_sha256": "172fdfa1629fb7efaf5a72982a9649724d7597e67be2e1d32a25e75983995112",
+      "source_locator": "PDF page 240; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=240#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q05",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/4/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "232.41.1",
+      "expected_pdf_page": 273,
+      "frozen_anchor_excerpt": "저압 케이블과 고압 또는 특고압 케이블은 동일 케이블 트레이 안에 포설하여서는 아니 된다. 다만,",
+      "normalized_excerpt_sha256": "badc46abde3c43c04037df90df582d833decb4ae69b45b9782b78971cb210e75",
+      "source_locator": "PDF page 273; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=273#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q05",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/4/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "232.3.7",
+      "expected_pdf_page": 251,
+      "frozen_anchor_excerpt": "232.3.7 배선설비와 다른 공급설비와의 접근 1. 다른 전기 공급설비의 접근 KS C IEC 60449(",
+      "normalized_excerpt_sha256": "a113e3474f82d4c203fde8d9558d65ead48fc9949f8c6e15df56911f31e2e851",
+      "source_locator": "PDF page 251; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=251#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q06",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/5/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "212.4.2",
+      "expected_pdf_page": 209,
+      "frozen_anchor_excerpt": "212.4.2 과부하 보호장치의 설치 위치 1. 설치위치 과부하 보호장치는 전로 중 도체의 단면적, 특성,",
+      "normalized_excerpt_sha256": "3a7bebb91e4b21b611ab7ab8628db0b48c238bdecd48755e56aba6674b8235b4",
+      "source_locator": "PDF page 209; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=209#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q06",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/5/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "212.5.2",
+      "expected_pdf_page": 211,
+      "frozen_anchor_excerpt": "212.5.2 단락보호장치의 설치위치 1. 단락전류 보호장치는 분기점(O)에 설치해야 한다. 다만",
+      "normalized_excerpt_sha256": "8267ec79185aee34e61e641456b6a049fa78cb7987beb32fc0db4b94f3e38f2c",
+      "source_locator": "PDF page 211; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=211#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q06",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/5/acceptable_candidates/1",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "341.2",
+      "expected_pdf_page": 483,
+      "frozen_anchor_excerpt": "변압기의 2차측 전로에는 과전류차단기 및 2차측 전로로부터 1차측 전로에 전 류가 흐를 때에 자동적으로 2차",
+      "normalized_excerpt_sha256": "201d8a1660f80d2ecd897f758e8ca54a1a382e233219376a0fce5884248966f9",
+      "source_locator": "PDF page 483; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=483#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q07",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/6/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "142.6",
+      "expected_pdf_page": 66,
+      "frozen_anchor_excerpt": "피뢰설비·전자통신설비 등의 접지극을 공용하는 통합접지시스템으로 하는 경우 다음과 같이 하여야 한다",
+      "normalized_excerpt_sha256": "d0b6d4d905900cdc5782a158516547e3bc8a07fd0dee53b58b9dce70c3d21fee",
+      "source_locator": "PDF page 66; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=66#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q07",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/6/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "153.2.2",
+      "expected_pdf_page": 76,
+      "frozen_anchor_excerpt": "153.2.2 금속제 설비의 등전위본딩 1. 건축물·구조물과 분리된 외부피뢰시스템의 경우,",
+      "normalized_excerpt_sha256": "ad69c035c3407cd4895857e8bb41496a6ea5708ebdcb1aa7aa82515efb2c72b1",
+      "source_locator": "PDF page 76; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=76#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "142.2",
+      "expected_pdf_page": 58,
+      "frozen_anchor_excerpt": "지중에 매설되어 있고 대지와의 전기저항 값이 3 Ω 이하의 값을 유지하고 있는 금속제 수도관로가 다",
+      "normalized_excerpt_sha256": "0414f503a8c4cbd4eafcf75fd5d1a0e3b2960f5c92676c9c43a54135a82145f4",
+      "source_locator": "PDF page 58; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=58#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/1",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "232.3.7",
+      "expected_pdf_page": 252,
+      "frozen_anchor_excerpt": "다. 지중 전선이 지중 약전류전선 등과 접근하거나 교차하는 경우에 상호 간의 간격이 저압 지중 전선",
+      "normalized_excerpt_sha256": "139e1c9ee505e9ea1b36cd8ca4a62d1b915725ad7f7445cdd236a7b9e4598d10",
+      "source_locator": "PDF page 252; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=252#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/2",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "241.5",
+      "expected_pdf_page": 315,
+      "frozen_anchor_excerpt": "다만, 대지전압이 150 V 이하의 발열선을 지중에 시설하는 경우로서 발열선을 시",
+      "normalized_excerpt_sha256": "6ba3630dab1a5ae9035a1c6d317f7703e3e1dc013e7bddb10a5ef17ab57821d5",
+      "source_locator": "PDF page 315; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=315#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/3",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "241.9.1",
+      "expected_pdf_page": 319,
+      "frozen_anchor_excerpt": "(2) 옥외에서 지중에 시설하는 것은 334.1 및 334.4, 지상에 시설하는 것은 3",
+      "normalized_excerpt_sha256": "f571837cd5461ab7f83995caf2a28736d772d4b6a64fac72c7ccb93658de85b8",
+      "source_locator": "PDF page 319; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=319#chunk=1"
+      ],
+      "matching_single_chunk_indexes": [
+        1
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/4",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "241.13",
+      "expected_pdf_page": 329,
+      "frozen_anchor_excerpt": "지중 의 저압 또는 고압의 배선은 334(334.3은 제외한다)의 지중전선로 규정에 따라 시설 하여",
+      "normalized_excerpt_sha256": "80addb6c6db87c69d314e7f00ddb071574bc0842df1e64c0750e3b803f85db06",
+      "source_locator": "PDF page 329; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=329#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/5",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "241.14.3",
+      "expected_pdf_page": 332,
+      "frozen_anchor_excerpt": "소세력 회로의 전선을 지중에 시설하는 경우는 다음에 의하여 시설하여야 한다. 가. 전선은 450/750 V",
+      "normalized_excerpt_sha256": "55e0760a04163d81831f7a3c175ea487c57367efcdfd1edfaccb764f46ee5c0e",
+      "source_locator": "PDF page 332; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": false,
+      "classification": "ANCHOR_UNREACHABLE",
+      "matching_single_chunk_ids": [],
+      "matching_single_chunk_indexes": [],
+      "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "reconstruction_window_size": "NONE",
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/6",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "241.16.4",
+      "expected_pdf_page": 337,
+      "frozen_anchor_excerpt": "전기부식방지 회로의 전선중 지중에 시설하는 부분은 334.1의 1과 2 및 334.2의",
+      "normalized_excerpt_sha256": "4b1822cf2310c619ddd20e97153c28e782fa01f5996dfb0f75b398fa23be5b40",
+      "source_locator": "PDF page 337; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=337#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/7",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "331.11",
+      "expected_pdf_page": 398,
+      "frozen_anchor_excerpt": "다. 지중부분 및 지표상 0.3 m 까지의 부분에는 내식성이 있는 것 또는 아연도금을 한 철봉을 사",
+      "normalized_excerpt_sha256": "4baaa0ded37e7e5f1d46ccce008ce3a2d24ec9248ca770272784726ca86659de",
+      "source_locator": "PDF page 398; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=398#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/8",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "334.1",
+      "expected_pdf_page": 466,
+      "frozen_anchor_excerpt": "지중 전선로를 관로식 또는 암거식에 의하여 시설하는 경우에는 다음에 따라야 한다. 가. 관로식에 의",
+      "normalized_excerpt_sha256": "b0ac5da578b602a843b3a9383864b699a3bcc249242497794c32e58a830082fb",
+      "source_locator": "PDF page 466; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": false,
+      "classification": "ANCHOR_UNREACHABLE",
+      "matching_single_chunk_ids": [],
+      "matching_single_chunk_indexes": [],
+      "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "reconstruction_window_size": "NONE",
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/9",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "334.4",
+      "expected_pdf_page": 471,
+      "frozen_anchor_excerpt": "지중전선의 피복으로 사용하는 금속체에는 140의 규정에 준하여 접지공사를 하여야 한다. 다만, 이에",
+      "normalized_excerpt_sha256": "9502c77e5918462e6e2e2bdd09a2d4ef051f0106a90122e96f5ff6b5518a28d5",
+      "source_locator": "PDF page 471; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=471#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/10",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "334.6",
+      "expected_pdf_page": 471,
+      "frozen_anchor_excerpt": "지중전선이 지중약전류 전선 등과 접근하거나 교차하는 경우에 상호 간의",
+      "normalized_excerpt_sha256": "2b23d63f6327185fec474abf1b246d6d97195a9e665cbb6b62e99c72f8a6e8f4",
+      "source_locator": "PDF page 471; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=471#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q08",
+      "anchor_role": "KNOWN_RELEVANT_ANCHOR",
+      "anchor_ref": "/queries/7/acceptable_candidates/11",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "334.7",
+      "expected_pdf_page": 472,
+      "frozen_anchor_excerpt": "지중전선이 다른 지중전선과 접근하거나 교차하는 경우에 지중함 내 이외의 곳에서 상호 간의 간격이 저",
+      "normalized_excerpt_sha256": "2f0a87285e6dd39040d1c3ebf08cc9ab58f24c251bd473016916d4319f2a25b0",
+      "source_locator": "PDF page 472; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=472#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q09",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/8/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "231.3.1",
+      "expected_pdf_page": 240,
+      "frozen_anchor_excerpt": "저압 옥내배선의 전선은 단면적 2.5 ㎟ 이상의 연동선 또는 이와 동등 이상의 강도 및 굵기의 것. 2. 옥",
+      "normalized_excerpt_sha256": "4122a2801fa82c72937f86cdc921579326e71cf6af53664db1bb98719657b197",
+      "source_locator": "PDF page 240; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": false,
+      "classification": "ANCHOR_UNREACHABLE",
+      "matching_single_chunk_ids": [],
+      "matching_single_chunk_indexes": [],
+      "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "reconstruction_window_size": "NONE",
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q10",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/9/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "142.2",
+      "expected_pdf_page": 57,
+      "frozen_anchor_excerpt": "142.2 접지극의 시설 및 접지저항 1. 접지극은 다음에 따라 시설하여야 한다. 가. 토양 또는",
+      "normalized_excerpt_sha256": "5088dfb426b928c74c0b64fcbdceee3a5e6ebd0ba041cce9f6163188bb5e25fd",
+      "source_locator": "PDF page 57; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": false,
+      "classification": "ANCHOR_UNREACHABLE",
+      "matching_single_chunk_ids": [],
+      "matching_single_chunk_indexes": [],
+      "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "reconstruction_window_size": "NONE",
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q10",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/9/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "142.1.1",
+      "expected_pdf_page": 57,
+      "frozen_anchor_excerpt": "142.1.1 접지시스템 구성요소 1. 접지시스템은 접지극, 접지도체, 보호도체 및 기타 설비로 구성하고,",
+      "normalized_excerpt_sha256": "dc5df56228b4037b68770b286655bb1af394652d636116a90d317d22e1bf4493",
+      "source_locator": "PDF page 57; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=57#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q11",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/10/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "333.13",
+      "expected_pdf_page": 430,
+      "frozen_anchor_excerpt": "333.13 상시 상정하중 1. 철주·철근 콘크리트주 또는 철탑의 강도계산에 사용하는 상시 상정하중은 풍압이",
+      "normalized_excerpt_sha256": "b71f08c57684ccce870534900b45259f6ac5a025298ab9e6cf1f051cf140d4c3",
+      "source_locator": "PDF page 430; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=430#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q11",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/10/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "333.12",
+      "expected_pdf_page": 429,
+      "frozen_anchor_excerpt": "333.12 특고압 가공전선로의 철주 ž 철근 콘크리트주 또는 철탑의 강도 1. 특고압 가공전선로의 지지물로",
+      "normalized_excerpt_sha256": "12ad1c97f8db44f730c7f29c0b5ffed5b07ebb6bc4e61e7514acb9fd75b2c1af",
+      "source_locator": "PDF page 429; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=429#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q12",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/11/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "522.2",
+      "expected_pdf_page": 559,
+      "frozen_anchor_excerpt": "522.2 태양광설비의 시설기준 522.2.1 태양전지 모듈의 시설 태양광설비에 시설하는 태양전지 모듈(이하",
+      "normalized_excerpt_sha256": "9070662f6d2b50b791cbbb46060f52b908b390d9788a70059c676f8ce53332e7",
+      "source_locator": "PDF page 559; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=559#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q12",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/11/acceptable_candidates/1",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "532.2",
+      "expected_pdf_page": 562,
+      "frozen_anchor_excerpt": "532.2 풍력설비의 시설기준 532.2.1 풍력터빈의 구조 기술기준 제169조에 의한 풍력터빈의 구조에 적",
+      "normalized_excerpt_sha256": "9bf2d9cfc5b26baba63e6f68749b41cc93842f953b665acc0be5f9f120f095aa",
+      "source_locator": "PDF page 562; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 1,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=562#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q13",
+      "anchor_role": "PRIMARY_ANCHOR",
+      "anchor_ref": "/queries/12/primary_candidate",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "211.2.4",
+      "expected_pdf_page": 192,
+      "frozen_anchor_excerpt": "211.2.4 누전차단기의 시설 1. 전원의 자동차단에 의한 저압전로의 보호대책으로 누전차단기를 시설해야할",
+      "normalized_excerpt_sha256": "61de3b05d92803be14b801b037eeb84b781a6fcf30f3fd9caf333b1931db45ba",
+      "source_locator": "PDF page 192; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=192#chunk=0"
+      ],
+      "matching_single_chunk_indexes": [
+        0
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    },
+    {
+      "query_id": "Q13",
+      "anchor_role": "ACCEPTABLE_ANCHOR",
+      "anchor_ref": "/queries/12/acceptable_candidates/0",
+      "source_path": ".volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf",
+      "source_sha256": "56f306db5947ca4c567786e873f6de63c9a3ba7b21f175baecb4ae94da2b0f38",
+      "clause_id": "242.10.3",
+      "expected_pdf_page": 362,
+      "frozen_anchor_excerpt": "의료장소의 전로에는 정격 감도전류 30 mA 이하, 동작시간 0.03초 이내의 누전차 단기를 설치할 것. 다",
+      "normalized_excerpt_sha256": "6db925fc07c27a7ccd061a895f91c7e1ccd07662d6bd221c8a31a877c9e19139",
+      "source_locator": "PDF page 362; readPdfPages extracted text; anchor_text exact",
+      "page_chunk_count": 2,
+      "single_chunk_reachable": true,
+      "classification": "ANCHOR_REACHABLE",
+      "matching_single_chunk_ids": [
+        "kec-regulation-provisional:.volt-ai/kec-regulation-provisional/raw/kea-kec-consolidated.pdf#page=362#chunk=1"
+      ],
+      "matching_single_chunk_indexes": [
+        1
+      ],
+      "boundary_observation": "NONE",
+      "reconstruction_window_size": 1,
+      "matching_boundary_windows": []
+    }
+  ],
+  "per_query_aggregation": [
+    {
+      "query_id": "Q01",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY",
+      "positive_anchor_count": 1,
+      "single_chunk_reachable_count": 0,
+      "single_chunk_unreachable_count": 1,
+      "reachability": "NO_KNOWN_ANCHOR_REACHABLE"
+    },
+    {
+      "query_id": "Q02",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY_HUMAN_APPROVED",
+      "positive_anchor_count": 2,
+      "single_chunk_reachable_count": 0,
+      "single_chunk_unreachable_count": 2,
+      "reachability": "NO_KNOWN_ANCHOR_REACHABLE"
+    },
+    {
+      "query_id": "Q03",
+      "frozen_ground_truth_status": "FROZEN_NOT_IN_THIS_REVISION_CANDIDATE",
+      "positive_anchor_count": 0,
+      "reachability": "NOT_APPLICABLE"
+    },
+    {
+      "query_id": "Q04",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY",
+      "positive_anchor_count": 3,
+      "single_chunk_reachable_count": 3,
+      "single_chunk_unreachable_count": 0,
+      "reachability": "FULLY_REACHABLE"
+    },
+    {
+      "query_id": "Q05",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY",
+      "positive_anchor_count": 2,
+      "single_chunk_reachable_count": 2,
+      "single_chunk_unreachable_count": 0,
+      "reachability": "FULLY_REACHABLE"
+    },
+    {
+      "query_id": "Q06",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY_HUMAN_CORRECTED",
+      "positive_anchor_count": 3,
+      "single_chunk_reachable_count": 3,
+      "single_chunk_unreachable_count": 0,
+      "reachability": "FULLY_REACHABLE"
+    },
+    {
+      "query_id": "Q07",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY",
+      "positive_anchor_count": 2,
+      "single_chunk_reachable_count": 2,
+      "single_chunk_unreachable_count": 0,
+      "reachability": "FULLY_REACHABLE"
+    },
+    {
+      "query_id": "Q08",
+      "frozen_ground_truth_status": "FROZEN_DIAGNOSTIC_MULTI_MATCH_HUMAN_APPROVED",
+      "positive_anchor_count": 12,
+      "single_chunk_reachable_count": 10,
+      "single_chunk_unreachable_count": 2,
+      "reachability": "PARTIALLY_REACHABLE"
+    },
+    {
+      "query_id": "Q09",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY",
+      "positive_anchor_count": 1,
+      "single_chunk_reachable_count": 0,
+      "single_chunk_unreachable_count": 1,
+      "reachability": "NO_KNOWN_ANCHOR_REACHABLE"
+    },
+    {
+      "query_id": "Q10",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY",
+      "positive_anchor_count": 2,
+      "single_chunk_reachable_count": 1,
+      "single_chunk_unreachable_count": 1,
+      "reachability": "PARTIALLY_REACHABLE"
+    },
+    {
+      "query_id": "Q11",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY_HUMAN_APPROVED",
+      "positive_anchor_count": 2,
+      "single_chunk_reachable_count": 2,
+      "single_chunk_unreachable_count": 0,
+      "reachability": "FULLY_REACHABLE"
+    },
+    {
+      "query_id": "Q12",
+      "frozen_ground_truth_status": "FROZEN_MULTI_ANCHOR_NO_PRIMARY",
+      "positive_anchor_count": 2,
+      "single_chunk_reachable_count": 2,
+      "single_chunk_unreachable_count": 0,
+      "reachability": "FULLY_REACHABLE"
+    },
+    {
+      "query_id": "Q13",
+      "frozen_ground_truth_status": "FROZEN_PRIMARY_HUMAN_CORRECTED",
+      "positive_anchor_count": 2,
+      "single_chunk_reachable_count": 2,
+      "single_chunk_unreachable_count": 0,
+      "reachability": "FULLY_REACHABLE"
+    },
+    {
+      "query_id": "Q14",
+      "frozen_ground_truth_status": "FROZEN_NO_SUPPORTED_ANSWER",
+      "positive_anchor_count": 0,
+      "reachability": "NOT_APPLICABLE"
+    }
+  ],
+  "totals": {
+    "total_positive_anchors_checked": 34,
+    "ANCHOR_REACHABLE": 27,
+    "ANCHOR_UNREACHABLE": 7,
+    "single_chunk_reachability_fraction": 0.7941176470588235,
+    "among_unreachable": {
+      "CROSS_CHUNK_BOUNDARY_2": 0,
+      "CROSS_CHUNK_BOUNDARY_3": 0,
+      "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW": 7,
+      "boundary_reconstructable_within_3_chunks": 0,
+      "boundary_reconstructable_within_3_chunks_fraction": 0
+    },
+    "query_level": {
+      "FULLY_REACHABLE": 7,
+      "PARTIALLY_REACHABLE": 2,
+      "NO_KNOWN_ANCHOR_REACHABLE": 3,
+      "NOT_APPLICABLE": 2
+    }
+  },
+  "q08_summary": {
+    "ground_truth_mode": "MULTI_MATCH_EXPECTED",
+    "scoring_mode": "DIAGNOSTIC_COVERAGE",
+    "primary_anchor": null,
+    "reject_anchors": [],
+    "pass_fail": null,
+    "relevance_set_status": "KNOWN_NONEXHAUSTIVE",
+    "known_anchor_total": 12,
+    "known_anchor_reachable_count": 10,
+    "known_anchor_unreachable_count": 2,
+    "known_anchor_reachability_fraction": 0.8333333333333334,
+    "unreachable_boundary_states": [
+      {
+        "anchor_ref": "/queries/7/acceptable_candidates/5",
+        "clause_id": "241.14.3",
+        "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW"
+      },
+      {
+        "anchor_ref": "/queries/7/acceptable_candidates/8",
+        "clause_id": "334.1",
+        "boundary_observation": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW"
+      }
+    ]
+  },
+  "not_applicable_queries": [
+    {
+      "query_id": "Q03",
+      "frozen_ground_truth_status": "FROZEN_NOT_IN_THIS_REVISION_CANDIDATE"
+    },
+    {
+      "query_id": "Q14",
+      "frozen_ground_truth_status": "FROZEN_NO_SUPPORTED_ANSWER"
+    }
+  ],
+  "extraction_lineage_context": {
+    "expected_common_path": "readPdfPages",
+    "observation": "The anchor was not reconstructed from any bounded consecutive 1-, 2-, or 3-chunk representation on its expected page despite the expected common readPdfPages extraction lineage.",
+    "applies_when": "boundary_observation=NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+    "cause": "UNRESOLVED_NOT_INVESTIGATED"
+  },
+  "implication_for_baseline_0_of_11": "The frozen 0/11 baseline combines retrieval misses with one or more ground-truth representations that the frozen single-chunk matcher cannot reach under the current legacy chunk representation.",
+  "additional_bounded_implications": [
+    "Bounded chunk-boundary splitting alone does not explain every unreachable anchor."
+  ],
+  "scored_anchor_context": {
+    "frozen_scored_query_count": 11,
+    "positive_anchors_associated_with_scored_queries": 22,
+    "single_chunk_unreachable_scored_anchor_count": 5,
+    "frozen_result_unchanged": "0/11",
+    "replacement_score_calculated": false
+  },
+  "unresolved_observations": [
+    {
+      "state": "NOT_RECONSTRUCTED_FROM_ADJACENT_WINDOW",
+      "count": 7,
+      "possible_explanations_not_tested": [
+        "normalization differences",
+        "page mapping differences",
+        "representation differences",
+        "extraction/input divergence",
+        "retained-artifact mismatch",
+        "another unobserved cause"
+      ],
+      "diagnosed_cause": null
+    }
+  ],
+  "integrity_checks": {
+    "status": "PASS",
+    "checks": [
+      "1_FROZEN_BASELINE_UNMODIFIED",
+      "2_FROZEN_QUERY_STRINGS_UNMODIFIED",
+      "3_GROUND_TRUTH_UNMODIFIED",
+      "4_HUMAN_DECISIONS_UNMODIFIED",
+      "5_FROZEN_ZERO_OF_ELEVEN_UNCHANGED",
+      "6_EXACT_BASELINE_DB_COPY_USED",
+      "7_NO_REINDEX",
+      "8_CHUNK_PARAMETERS_UNCHANGED",
+      "9_EMBEDDING_PARAMETERS_UNCHANGED",
+      "10_NO_PRODUCTION_CODE_CHANGED",
+      "11_ALL_POSITIVE_ANCHORS_CLASSIFIED",
+      "12_WINDOW_BOUND_MAXIMUM_THREE",
+      "13_NO_PAGE_BOUNDARY_CROSSED",
+      "14_ONLY_ADJACENT_CHUNKS",
+      "15_OVERLAP_JOIN_READ_ONLY",
+      "16_UNKNOWN_NOT_DEFECT",
+      "17_NOT_RECONSTRUCTED_CAUSE_UNPROVEN",
+      "18_TOTALS_CONSISTENT",
+      "19_Q08_CONTRACT_PRESERVED",
+      "20_NOT_APPLICABLE_Q03_Q14"
+    ],
+    "production_diff": [],
+    "frozen_artifact_sha256": "a8ec9750769e678e23628d958e473e7877fdd3747f46fe3d98428e73a4b5b50d",
+    "database_sha256": "3af8e8a1c34f7e90c19bab1de1454e6791c3a912401337e6065a11bc3512fadf"
+  },
+  "final_verdict": "ANCHOR_REACHABILITY_CHECK_COMPLETE"
+}
