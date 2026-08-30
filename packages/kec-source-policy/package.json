@@ -1,5 +1,5 @@
 {
-  "name": "@voltai/decision-sqlite",
+  "name": "@voltai/kec-source-policy",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,18 +10,13 @@
       "types": "./src/index.ts",
       "voltai-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./judgement-ledger": {
-      "types": "./src/judgementLedger.ts",
-      "voltai-source": "./src/judgementLedger.ts",
-      "default": "./dist/judgementLedger.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run --root ../.. packages/decision-sqlite/test"
+    "test": "vitest run --root ../.. packages/kec-source-policy/test"
   },
   "dependencies": {
-    "@voltai/knowledge-core": "workspace:*"
+    "@voltai/source-core": "workspace:*"
   }
 }

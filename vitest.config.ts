@@ -3,6 +3,17 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  plugins: [
+    {
+      name: "decode-absolute-file-url-spaces",
+      enforce: "pre",
+      resolveId(source) {
+        return source.startsWith("/") && source.includes("%20")
+          ? decodeURI(source)
+          : undefined;
+      },
+    },
+  ],
   resolve: {
     alias: {
       "@voltai/agent-review": fileURLToPath(

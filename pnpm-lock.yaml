@@ -57,6 +57,12 @@ importers:
         specifier: workspace:*
         version: link:../source-core
 
+  packages/kec-source-policy:
+    dependencies:
+      '@voltai/source-core':
+        specifier: workspace:*
+        version: link:../source-core
+
   packages/knowledge-company:
     dependencies:
       '@voltai/knowledge-core':
