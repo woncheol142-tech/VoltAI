@@ -111,12 +111,19 @@ type LocatorDoesNotRepeatLineage = Expect<
 type LocatorDoesNotRepeatLocatorSpace = Expect<
   Equal<Extract<keyof KecRequirementLocator, "locatorSpace">, never>
 >;
-type ProducerSignatureIsExact = Expect<
+type ProducerInputRemainsFirstParameter = Expect<
   Equal<
-    typeof extractKecRequirements,
-    (input: ExtractKecRequirementsInput) => Promise<
-      readonly KecRequirementExtraction[]
-    >
+    Parameters<typeof extractKecRequirements>[0],
+    ExtractKecRequirementsInput
+  >
+>;
+type ProducerRequiresVerifier = Expect<
+  Equal<Parameters<typeof extractKecRequirements>["length"], 2>
+>;
+type ProducerReturnRemainsExact = Expect<
+  Equal<
+    ReturnType<typeof extractKecRequirements>,
+    Promise<readonly KecRequirementExtraction[]>
   >
 >;
 type ContractIdRemainsExistingFoundation = Expect<
@@ -144,7 +151,9 @@ export type RequirementExtractionContractChecks =
   | ProvenanceLocatorsAreNonEmpty
   | LocatorDoesNotRepeatLineage
   | LocatorDoesNotRepeatLocatorSpace
-  | ProducerSignatureIsExact
+  | ProducerInputRemainsFirstParameter
+  | ProducerRequiresVerifier
+  | ProducerReturnRemainsExact
   | ContractIdRemainsExistingFoundation
   | BlobHashRemainsExistingFoundation;
 

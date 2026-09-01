@@ -1,0 +1,26 @@
+{
+  "name": "@voltai/kec-source-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/public.js",
+  "types": "dist/public.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/public.ts",
+      "voltai-source": "./src/public.ts",
+      "default": "./dist/public.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --root ../.. packages/kec-source-runtime/test"
+  },
+  "dependencies": {
+    "@voltai/source-admission": "workspace:*",
+    "@voltai/source-admission-sqlite": "workspace:*",
+    "@voltai/mcp-kec": "workspace:*",
+    "@voltai/extraction-core": "workspace:*",
+    "@voltai/source-core": "workspace:*"
+  }
+}

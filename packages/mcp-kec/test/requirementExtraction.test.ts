@@ -32,6 +32,7 @@ import {
   TASK90_LOCATOR_SPACE,
   deterministicKoreanPdfBytes,
 } from "./fixtures/requirementExtractionContracts.js";
+import { establishedSyntheticBindingVerifier } from "./fixtures/task96BindingVerifier.js";
 
 const infrastructure = vi.hoisted(() => ({
   acquiredSnapshots: [] as Uint8Array[],
@@ -45,8 +46,7 @@ vi.mock("node:fs/promises", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs/promises")>();
   infrastructure.readFile.mockImplementation(async (...args: unknown[]) => {
     const bytes = (await Reflect.apply(actual.readFile, undefined, args)) as
-      | Uint8Array
-      | string;
+      Uint8Array | string;
     if (!(bytes instanceof Uint8Array)) {
       throw new TypeError("Task90 tests expect byte-based file acquisition");
     }
@@ -109,6 +109,7 @@ type RequirementExtractionModule = {
   readonly KEC_REQUIREMENT_LOCATOR_SPACE: AnchorLocatorSpace;
   readonly extractKecRequirements: (
     input: ExtractInputContract,
+    verifier: unknown,
   ) => Promise<readonly KecRequirementExtractionContract[]>;
 };
 
@@ -205,6 +206,16 @@ async function loadProducer(): Promise<RequirementExtractionModule> {
   ) as Promise<RequirementExtractionModule>;
 }
 
+function extractRequirements(
+  producer: RequirementExtractionModule,
+  input: ExtractInputContract,
+): Promise<readonly KecRequirementExtractionContract[]> {
+  return producer.extractKecRequirements(
+    input,
+    establishedSyntheticBindingVerifier,
+  );
+}
+
 function inputFor(
   fixture: RequirementPdfFixture,
   sourceRevision = explicitSourceRevision(),
@@ -280,7 +291,7 @@ describe.runIf(producerExists)(
       const source = readFileSync(producerPath, "utf8");
 
       expect(producer.extractKecRequirements).toBeTypeOf("function");
-      expect(producer.extractKecRequirements).toHaveLength(1);
+      expect(producer.extractKecRequirements).toHaveLength(2);
       expect(producer.KEC_REQUIREMENT_EXTRACTION_CONTRACT_ID).toBe(
         TASK90_EXTRACTION_CONTRACT_ID,
       );
@@ -350,7 +361,8 @@ describe.runIf(producerExists)(
       const fixture = createPdfFixture();
       const producer = await loadProducer();
       const sourceRevision = explicitSourceRevision();
-      const results = await producer.extractKecRequirements(
+      const results = await extractRequirements(
+        producer,
         inputFor(fixture, sourceRevision),
       );
 
@@ -380,7 +392,8 @@ describe.runIf(producerExists)(
       expect(isAbsolute(invalidLocators[2]!.value)).toBe(true);
       for (const sourceLocator of invalidLocators) {
         await expect(
-          producer.extractKecRequirements(
+          extractRequirements(
+            producer,
             inputFor(fixture, explicitSourceRevision(), sourceLocator),
           ),
         ).rejects.toThrow(/file|locator|relative|project|path|source/i);
@@ -400,7 +413,8 @@ describe.runIf(producerExists)(
       const source = readFileSync(producerPath, "utf8");
 
       symlinkSync("requirements.pdf", aliasPath);
-      await producer.extractKecRequirements(
+      await extractRequirements(
+        producer,
         inputFor(fixture, explicitSourceRevision(), {
           scheme: "file",
           value: aliasRelativePath,
@@ -422,7 +436,7 @@ describe.runIf(producerExists)(
       const fixture = createPdfFixture();
       const producer = await loadProducer();
       const source = readFileSync(producerPath, "utf8");
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
       const expectedDigest = createHash("sha256")
         .update(fixture.bytes)
         .digest("hex");
@@ -435,7 +449,7 @@ describe.runIf(producerExists)(
       );
       expect(infrastructure.parsedSnapshotConstructors[0]).toBe(Uint8Array);
       expect(source).toMatch(
-        /const bytes = await readKecPdfBytes\(absolutePdfPath\);\s*const blobHash = sourceBlobHash\(bytes\);\s*const pages = await parseKecPdfTextItems\(bytes\);/u,
+        /const bytes = await readKecPdfBytes\(absolutePdfPath\);\s*const blobHash = sourceBlobHash\(bytes\);[\s\S]*verifyObservedBinding[\s\S]*const pages = await parseKecPdfTextItems\(bytes\);/u,
       );
       expect(results.length).toBeGreaterThan(0);
       for (const result of results) {
@@ -450,7 +464,8 @@ describe.runIf(producerExists)(
       const fixture = createPdfFixture();
       const producer = await loadProducer();
       const sourceRevision = explicitSourceRevision();
-      const results = await producer.extractKecRequirements(
+      const results = await extractRequirements(
+        producer,
         inputFor(fixture, sourceRevision),
       );
 
@@ -498,7 +513,7 @@ describe.runIf(producerExists)(
         })),
       );
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
       const extractedStatements = statements(results);
 
       for (const authoredStatement of EXPECTED_AUTHORED_REQUIREMENTS) {
@@ -518,7 +533,7 @@ describe.runIf(producerExists)(
         { text: "다음 조건에서는 설치하여서는 아니 된다", x: 72, y: 442 },
       ]);
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
       const extractedStatements = statements(results);
 
       expect(extractedStatements).toEqual(CONTEXTUAL_REQUIREMENTS);
@@ -541,8 +556,8 @@ describe.runIf(producerExists)(
         { text: "전기기기는 방수형으로 시설하여야 한다", x: 72, y: 684 },
       ]);
       const producer = await loadProducer();
-      const first = await producer.extractKecRequirements(inputFor(fixture));
-      const second = await producer.extractKecRequirements(inputFor(fixture));
+      const first = await extractRequirements(producer, inputFor(fixture));
+      const second = await extractRequirements(producer, inputFor(fixture));
 
       expect(statements(first)).toEqual([CHAINED_CONTEXT_REQUIREMENT]);
       expect(first[0]!.provenance.locators).toHaveLength(3);
@@ -565,7 +580,7 @@ describe.runIf(producerExists)(
         { text: "A 방식을 사용할 수 있다", x: 72, y: 680 },
       ]);
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
 
       expect(results).toEqual([]);
       expect(statements(results)).not.toContain("A 방식을 사용할 수 있다");
@@ -577,7 +592,7 @@ describe.runIf(producerExists)(
         { text: "보호장치를 설치하여야 한다", x: 72, y: 680 },
       ]);
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
 
       expect(results).toEqual([]);
       expect(statements(results)).not.toContain("보호장치를 설치하여야 한다");
@@ -592,9 +607,7 @@ describe.runIf(producerExists)(
           { text: independentClause, x: 72, y: 712 },
         ]);
         const producer = await loadProducer();
-        const results = await producer.extractKecRequirements(
-          inputFor(fixture),
-        );
+        const results = await extractRequirements(producer, inputFor(fixture));
 
         expect(statements(results)).toEqual([independentClause]);
         expect(results[0]!.provenance.locators).toHaveLength(1);
@@ -610,7 +623,7 @@ describe.runIf(producerExists)(
         })),
       );
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
 
       expect(results).toEqual([]);
     });
@@ -621,7 +634,7 @@ describe.runIf(producerExists)(
         { text: "한다", x: 210, y: 720 },
       ]);
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
 
       expect(statements(results)).toEqual(["배선은 시설하여야 한다"]);
       expect(
@@ -635,10 +648,12 @@ describe.runIf(producerExists)(
       const producer = await loadProducer();
       const sourceRevision = explicitSourceRevision();
 
-      const first = await producer.extractKecRequirements(
+      const first = await extractRequirements(
+        producer,
         inputFor(fixture, sourceRevision),
       );
-      const second = await producer.extractKecRequirements(
+      const second = await extractRequirements(
+        producer,
         inputFor(fixture, sourceRevision),
       );
 
@@ -651,10 +666,12 @@ describe.runIf(producerExists)(
       const producer = await loadProducer();
       const sourceRevision = explicitSourceRevision();
 
-      const original = await producer.extractKecRequirements(
+      const original = await extractRequirements(
+        producer,
         inputFor(fixture, sourceRevision, fixture.firstLocator),
       );
-      const renamed = await producer.extractKecRequirements(
+      const renamed = await extractRequirements(
+        producer,
         inputFor(fixture, sourceRevision, fixture.renamedLocator),
       );
 
@@ -679,8 +696,8 @@ describe.runIf(producerExists)(
         embedding: { provider: "second", model: "omega" },
       } as ExtractInputContract;
 
-      const first = await producer.extractKecRequirements(firstInput);
-      const second = await producer.extractKecRequirements(secondInput);
+      const first = await extractRequirements(producer, firstInput);
+      const second = await extractRequirements(producer, secondInput);
 
       expect(ids(second)).toEqual(ids(first));
       expect(statements(second)).toEqual(statements(first));
@@ -692,7 +709,7 @@ describe.runIf(producerExists)(
         { text: DUPLICATE_AUTHORED_REQUIREMENT, x: 72, y: 670 },
       ]);
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
 
       expect(statements(results)).toEqual([
         DUPLICATE_AUTHORED_REQUIREMENT,
@@ -718,7 +735,7 @@ describe.runIf(producerExists)(
       const producer = await loadProducer();
       const observedItems = await observeRealPdfTextItems(fixture.bytes);
       const extractedStatements = statements(
-        await producer.extractKecRequirements(inputFor(fixture)),
+        await extractRequirements(producer, inputFor(fixture)),
       );
 
       expect(observedItems.slice(0, 3)).toEqual([
@@ -736,9 +753,7 @@ describe.runIf(producerExists)(
           statement.includes(tableNumericRequirement),
         ),
       ).toBe(false);
-      expect(extractedStatements).toEqual([
-        "정격전류는 80 A 이하이어야 한다",
-      ]);
+      expect(extractedStatements).toEqual(["정격전류는 80 A 이하이어야 한다"]);
     });
 
     it("keeps an excluded table region as a heading-context barrier", async () => {
@@ -756,7 +771,7 @@ describe.runIf(producerExists)(
         { text: independentClause, x: 72, y: 610 },
       ]);
       const producer = await loadProducer();
-      const results = await producer.extractKecRequirements(inputFor(fixture));
+      const results = await extractRequirements(producer, inputFor(fixture));
       const extractedStatements = statements(results);
 
       expect(extractedStatements).toEqual([independentClause]);
@@ -793,14 +808,17 @@ describe.runIf(producerExists)(
     });
 
     it("distinguishes readable hash updates from actual SQL persistence mutations", () => {
-      expect(containsPersistenceMutation('createHash("sha256").update(value)'))
-        .toBe(false);
+      expect(
+        containsPersistenceMutation('createHash("sha256").update(value)'),
+      ).toBe(false);
       expect(containsPersistenceMutation("hash.update(value) ")).toBe(false);
       expect(
         containsPersistenceMutation("UPDATE requirements SET value = ?"),
       ).toBe(true);
       expect(
-        containsPersistenceMutation("insert into requirements(value) values (?)"),
+        containsPersistenceMutation(
+          "insert into requirements(value) values (?)",
+        ),
       ).toBe(true);
       expect(
         containsPersistenceMutation("DELETE FROM requirements WHERE id = ?"),

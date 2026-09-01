@@ -63,6 +63,24 @@ importers:
         specifier: workspace:*
         version: link:../source-core
 
+  packages/kec-source-runtime:
+    dependencies:
+      '@voltai/extraction-core':
+        specifier: workspace:*
+        version: link:../extraction-core
+      '@voltai/mcp-kec':
+        specifier: workspace:*
+        version: link:../mcp-kec
+      '@voltai/source-admission':
+        specifier: workspace:*
+        version: link:../source-admission
+      '@voltai/source-admission-sqlite':
+        specifier: workspace:*
+        version: link:../source-admission-sqlite
+      '@voltai/source-core':
+        specifier: workspace:*
+        version: link:../source-core
+
   packages/knowledge-company:
     dependencies:
       '@voltai/knowledge-core':
@@ -276,6 +294,18 @@ importers:
         version: link:../validation-core
 
   packages/resolution-core: {}
+
+  packages/source-admission:
+    dependencies:
+      '@voltai/source-core':
+        specifier: workspace:*
+        version: link:../source-core
+
+  packages/source-admission-sqlite:
+    dependencies:
+      '@voltai/source-admission':
+        specifier: workspace:*
+        version: link:../source-admission
 
   packages/source-core: {}
 

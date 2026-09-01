@@ -27,6 +27,7 @@ import {
   type PdfTextPlacement,
   type RequirementPdfFixture,
 } from "./fixtures/requirementExtractionContracts.js";
+import { establishedSyntheticBindingVerifier } from "./fixtures/task96BindingVerifier.js";
 
 const acquisition = vi.hoisted(() => ({ readFile: vi.fn() }));
 
@@ -72,6 +73,27 @@ async function producerModule(): Promise<ProducerModule> {
       new URL("../src/knowledge/requirementExtraction.ts", import.meta.url),
     )
   ) as Promise<ProducerModule>;
+}
+
+function extractCaptured(
+  producer: ProducerModule,
+  input: unknown,
+): Promise<KecCapturedRequirementSnapshot> {
+  return Reflect.apply(
+    producer.extractKecRequirementSnapshotWithCapture!,
+    producer,
+    [input, establishedSyntheticBindingVerifier],
+  ) as Promise<KecCapturedRequirementSnapshot>;
+}
+
+function extractSnapshot(
+  producer: ProducerModule,
+  input: unknown,
+): Promise<KecCapturedRequirementSnapshot["requirementSnapshot"]> {
+  return Reflect.apply(producer.extractKecRequirementSnapshot, producer, [
+    input,
+    establishedSyntheticBindingVerifier,
+  ]) as Promise<KecCapturedRequirementSnapshot["requirementSnapshot"]>;
 }
 
 function fixture(
@@ -180,9 +202,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
       { text: "전기기기는 방수형으로 시설하여야 한다", x: 72, y: 712 },
     ]);
     const producer = await producerModule();
-    const captured = await producer.extractKecRequirementSnapshotWithCapture!(
-      inputFor(created),
-    );
+    const captured = await extractCaptured(producer, inputFor(created));
     expect(acquisition.readFile).toHaveBeenCalledTimes(1);
     expect(captured.requirementSnapshot.binding.extractionContract).toBe(
       TASK90_EXTRACTION_CONTRACT_ID,
@@ -198,9 +218,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
     );
 
     acquisition.readFile.mockClear();
-    const legacy = await producer.extractKecRequirementSnapshot(
-      inputFor(created),
-    );
+    const legacy = await extractSnapshot(producer, inputFor(created));
     expect(acquisition.readFile).toHaveBeenCalledTimes(1);
     expect(captured.requirementSnapshot).toEqual(legacy);
     expect(
@@ -217,9 +235,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
       { text: "점검을 생략할 수 있다", x: 72, y: 660 },
     ]);
     const producer = await producerModule();
-    const captured = await producer.extractKecRequirementSnapshotWithCapture!(
-      inputFor(created),
-    );
+    const captured = await extractCaptured(producer, inputFor(created));
     const assemblies = assemblyEvents(captured);
     const requirements = captured.requirementSnapshot.requirements;
 
@@ -255,9 +271,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
       { text: "보호장치를 설치하여야 한다", x: 72, y: 712 },
     ]);
     const producer = await producerModule();
-    const captured = await producer.extractKecRequirementSnapshotWithCapture!(
-      inputFor(created),
-    );
+    const captured = await extractCaptured(producer, inputFor(created));
     expect(captured.requirementSnapshot.requirements).toHaveLength(1);
     const assembly = assemblyEvents(captured)[0]!;
     expect(assembly.fragments[0]).toMatchObject({
@@ -302,9 +316,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
     async (termination, placements, assemblyIndex) => {
       const created = fixture(placements);
       const producer = await producerModule();
-      const captured = await producer.extractKecRequirementSnapshotWithCapture!(
-        inputFor(created),
-      );
+      const captured = await extractCaptured(producer, inputFor(created));
       expect(
         assemblyEvents(captured)[assemblyIndex]?.contextSearchTermination,
       ).toBe(termination);
@@ -332,9 +344,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
       { text: "보호장치를 설치하여야 한다", x: 72, y: 680 },
     ]);
     const producer = await producerModule();
-    const captured = await producer.extractKecRequirementSnapshotWithCapture!(
-      inputFor(created),
-    );
+    const captured = await extractCaptured(producer, inputFor(created));
     expect(captured.requirementSnapshot.requirements).toEqual([]);
     expect(suppressedEvents(captured)).toEqual([
       {
@@ -387,9 +397,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
     ]);
 
     const producer = await producerModule();
-    const captured = await producer.extractKecRequirementSnapshotWithCapture!(
-      inputFor(created),
-    );
+    const captured = await extractCaptured(producer, inputFor(created));
     const excluded = captured.captureSnapshot.observations.filter(
       (observation) => observation.kind === "column-gap-region-excluded",
     );
@@ -416,9 +424,7 @@ describe.runIf(behaviorExists)("Task93 source-first capture semantics", () => {
       { text: "보호장치를 설치하여야 한다", x: 72, y: 650 },
     ]);
     const producer = await producerModule();
-    const captured = await producer.extractKecRequirementSnapshotWithCapture!(
-      inputFor(created),
-    );
+    const captured = await extractCaptured(producer, inputFor(created));
     const observations: readonly KecSourceCaptureObservation[] =
       captured.captureSnapshot.observations;
     expect(observations).toEqual(

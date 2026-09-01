@@ -15,6 +15,7 @@ import {
   explicitSourceRevision,
   type RequirementPdfFixture,
 } from "./fixtures/requirementExtractionContracts.js";
+import { establishedSyntheticBindingVerifier } from "./fixtures/task96BindingVerifier.js";
 import {
   cleanupTempSnapshotDatabases,
   createTempSnapshotDatabase,
@@ -43,6 +44,7 @@ const pdfFixtures: RequirementPdfFixture[] = [];
 type Producer = {
   readonly extractKecRequirementSnapshot: (
     input: unknown,
+    verifier: unknown,
   ) => Promise<KecRequirementExtractionSnapshot>;
 };
 type Store = {
@@ -59,6 +61,13 @@ async function loadProducer(): Promise<Producer> {
       new URL("../src/knowledge/requirementExtraction.ts", import.meta.url),
     )
   ) as Promise<Producer>;
+}
+
+function extractSnapshot(producer: Producer, input: unknown) {
+  return producer.extractKecRequirementSnapshot(
+    input,
+    establishedSyntheticBindingVerifier,
+  );
 }
 
 async function StoreConstructor(): Promise<new (dbPath: string) => Store> {
@@ -93,7 +102,7 @@ describe.runIf(verticalExists)(
         ]),
       );
       const producer = await loadProducer();
-      const snapshot = await producer.extractKecRequirementSnapshot({
+      const snapshot = await extractSnapshot(producer, {
         projectRoot: created.projectRoot,
         sourceLocator: created.firstLocator,
         sourceRevision: explicitSourceRevision(),
@@ -119,7 +128,7 @@ describe.runIf(verticalExists)(
       const created = fixture(deterministicKoreanPdfBytes());
       const producer = await loadProducer();
       const sourceRevision = explicitSourceRevision();
-      const first = await producer.extractKecRequirementSnapshot({
+      const first = await extractSnapshot(producer, {
         projectRoot: created.projectRoot,
         sourceLocator: created.firstLocator,
         sourceRevision,
@@ -128,7 +137,7 @@ describe.runIf(verticalExists)(
         join(created.projectRoot, created.firstLocator.value),
         join(created.projectRoot, "kec", "moved.pdf"),
       );
-      const renamed = await producer.extractKecRequirementSnapshot({
+      const renamed = await extractSnapshot(producer, {
         projectRoot: created.projectRoot,
         sourceLocator: { scheme: "file", value: "kec/moved.pdf" },
         sourceRevision,
@@ -149,7 +158,7 @@ describe.runIf(verticalExists)(
         deterministicKoreanPdfBytes("이 문장은 비규범적인 설명이다"),
       );
       const producer = await loadProducer();
-      const snapshot = await producer.extractKecRequirementSnapshot({
+      const snapshot = await extractSnapshot(producer, {
         projectRoot: created.projectRoot,
         sourceLocator: created.firstLocator,
         sourceRevision: explicitSourceRevision(),

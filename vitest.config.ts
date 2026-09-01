@@ -22,6 +22,18 @@ export default defineConfig({
       "@voltai/source-core": fileURLToPath(
         new URL("./packages/source-core/src/index.ts", import.meta.url),
       ),
+      "@voltai/source-admission": fileURLToPath(
+        new URL("./packages/source-admission/src/index.ts", import.meta.url),
+      ),
+      "@voltai/source-admission-sqlite": fileURLToPath(
+        new URL(
+          "./packages/source-admission-sqlite/src/index.ts",
+          import.meta.url,
+        ),
+      ),
+      "@voltai/kec-source-runtime": fileURLToPath(
+        new URL("./packages/kec-source-runtime/src/index.ts", import.meta.url),
+      ),
       "@voltai/extraction-core": fileURLToPath(
         new URL("./packages/extraction-core/src/index.ts", import.meta.url),
       ),

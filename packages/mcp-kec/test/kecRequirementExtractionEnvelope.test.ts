@@ -11,6 +11,7 @@ import {
   explicitSourceRevision,
   type RequirementPdfFixture,
 } from "./fixtures/requirementExtractionContracts.js";
+import { establishedSyntheticBindingVerifier } from "./fixtures/task96BindingVerifier.js";
 
 const packageRoot = fileURLToPath(new URL("..", import.meta.url));
 const producerPath = join(
@@ -33,8 +34,12 @@ type ProducerModule = {
   readonly KEC_REQUIREMENT_LOCATOR_SPACE: string;
   readonly extractKecRequirements: (
     input: unknown,
+    verifier: unknown,
   ) => Promise<readonly unknown[]>;
-  readonly extractKecRequirementSnapshot?: (input: unknown) => Promise<{
+  readonly extractKecRequirementSnapshot?: (
+    input: unknown,
+    verifier: unknown,
+  ) => Promise<{
     readonly binding: Record<string, unknown>;
     readonly requirements: readonly {
       readonly provenance: {
@@ -55,6 +60,20 @@ async function loadProducer(): Promise<ProducerModule> {
       new URL("../src/knowledge/requirementExtraction.ts", import.meta.url),
     )
   ) as Promise<ProducerModule>;
+}
+
+function extractSnapshot(producer: ProducerModule, input: unknown) {
+  return producer.extractKecRequirementSnapshot!(
+    input,
+    establishedSyntheticBindingVerifier,
+  );
+}
+
+function extractRequirements(producer: ProducerModule, input: unknown) {
+  return producer.extractKecRequirements(
+    input,
+    establishedSyntheticBindingVerifier,
+  );
 }
 
 function createFixture(bytes: Uint8Array): RequirementPdfFixture {
@@ -109,7 +128,7 @@ describe("Task91 additive extraction-envelope RED gate", () => {
       producerSource.match(/parseKecPdfTextItems\(bytes\)/gu),
     ).toHaveLength(1);
     expect(producerSource).toMatch(
-      /const bytes = await readKecPdfBytes\(absolutePdfPath\);\s*const blobHash = sourceBlobHash\(bytes\);\s*const pages = await parseKecPdfTextItems\(bytes\);/u,
+      /const bytes = await readKecPdfBytes\(absolutePdfPath\);\s*const blobHash = sourceBlobHash\(bytes\);[\s\S]*verifyObservedBinding[\s\S]*const pages = await parseKecPdfTextItems\(bytes\);/u,
     );
   });
 });
@@ -121,7 +140,7 @@ describe.runIf(hasEnvelopeApi)("Task91 extraction envelope behavior", () => {
       deterministicKoreanPdfBytes("이 문장은 설명 자료일 뿐이다"),
     );
     const sourceRevision = explicitSourceRevision();
-    const snapshot = await producer.extractKecRequirementSnapshot!({
+    const snapshot = await extractSnapshot(producer, {
       projectRoot: fixture.projectRoot,
       sourceLocator: fixture.firstLocator,
       sourceRevision,
@@ -154,8 +173,8 @@ describe.runIf(hasEnvelopeApi)("Task91 extraction envelope behavior", () => {
       sourceLocator: fixture.firstLocator,
       sourceRevision: explicitSourceRevision(),
     };
-    const snapshot = await producer.extractKecRequirementSnapshot!(input);
-    const legacy = await producer.extractKecRequirements(input);
+    const snapshot = await extractSnapshot(producer, input);
+    const legacy = await extractRequirements(producer, input);
 
     expect(snapshot.requirements).toEqual(legacy);
     for (const member of snapshot.requirements) {

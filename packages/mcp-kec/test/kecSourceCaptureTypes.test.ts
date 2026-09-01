@@ -92,6 +92,7 @@ describe.runIf(productionTypesExist)(
         type KecRequirementExtractionBinding,
         type KecRequirementExtractionSnapshot,
         type KecRequirementId,
+        type KecSourceBindingVerifier,
       } from ${importSpecifier(producerPath)};
       import {
         KecRequirementSnapshotStore,
@@ -144,7 +145,7 @@ describe.runIf(productionTypesExist)(
         "requirementSnapshot" | "captureSnapshot">>;
       type PairedRequirement = Expect<Equal<KecCapturedRequirementSnapshot["requirementSnapshot"], KecRequirementExtractionSnapshot>>;
       type Producer = Expect<Equal<typeof extractKecRequirementSnapshotWithCapture,
-        (input: ExtractKecRequirementsInput) => Promise<KecCapturedRequirementSnapshot>>>;
+        (input: ExtractKecRequirementsInput, verifier: KecSourceBindingVerifier) => Promise<KecCapturedRequirementSnapshot>>>;
       type Migration = Expect<Equal<typeof migrateRequirementSnapshotSchemaToV2,
         (dbPath: string) => void>>;
       type StoreWrite = Expect<Equal<KecRequirementSnapshotStore["storeCapturedSnapshot"],

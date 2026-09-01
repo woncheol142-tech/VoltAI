@@ -20,6 +20,7 @@ import type {
   KecRequirementExtractionBinding,
   KecRequirementExtractionSnapshot,
   KecRequirementId,
+  KecSourceBindingVerifier,
   extractKecRequirementSnapshot,
 } from "../../src/knowledge/requirementExtraction.js";
 import type {
@@ -76,6 +77,7 @@ type ProducerSignatureIsExact = Expect<
     typeof extractKecRequirementSnapshot,
     (
       input: ExtractKecRequirementsInput,
+      verifier: KecSourceBindingVerifier,
     ) => Promise<KecRequirementExtractionSnapshot>
   >
 >;

@@ -649,6 +649,7 @@ function requirementId(
 async function extractKecRequirementPipeline(
   input: ExtractKecRequirementsInput,
   captureEnabled: boolean,
+  verifier: KecSourceBindingVerifier,
 ): Promise<KecCapturedRequirementSnapshot> {
   if (input.sourceLocator.scheme !== "file") {
     throw new Error("Task90 supports only file source locators");
@@ -661,6 +662,18 @@ async function extractKecRequirementPipeline(
   );
   const bytes = await readKecPdfBytes(absolutePdfPath);
   const blobHash = sourceBlobHash(bytes);
+  const verdict = await verifier.verifyObservedBinding({
+    sourceRevision: input.sourceRevision,
+    blobHash,
+  });
+  switch (verdict.kind) {
+    case "BINDING_ADMITTED":
+      break;
+    case "BINDING_NOT_ADMITTED":
+    case "BINDING_WITHDRAWN":
+    case "BINDING_CONTRADICTION":
+      throw new KecSourceBindingVerificationError(verdict.kind);
+  }
   const pages = await parseKecPdfTextItems(bytes);
   const lineage: ExtractionLineage = {
     input: blobHash,
@@ -729,22 +742,53 @@ async function extractKecRequirementPipeline(
   };
 }
 
+export type KecSourceBindingVerdict =
+  | Readonly<{ kind: "BINDING_ADMITTED" }>
+  | Readonly<{ kind: "BINDING_NOT_ADMITTED" }>
+  | Readonly<{ kind: "BINDING_WITHDRAWN" }>
+  | Readonly<{ kind: "BINDING_CONTRADICTION" }>;
+
+export interface KecSourceBindingVerifier {
+  verifyObservedBinding(binding: {
+    readonly sourceRevision: SourceRevision;
+    readonly blobHash: SourceBlobHash;
+  }): KecSourceBindingVerdict | Promise<KecSourceBindingVerdict>;
+}
+
+export class KecSourceBindingVerificationError extends Error {
+  readonly verdict: Exclude<
+    KecSourceBindingVerdict["kind"],
+    "BINDING_ADMITTED"
+  >;
+
+  constructor(
+    verdict: Exclude<KecSourceBindingVerdict["kind"], "BINDING_ADMITTED">,
+  ) {
+    super(`Task90 source binding verification failed: ${verdict}`);
+    this.name = "KecSourceBindingVerificationError";
+    this.verdict = verdict;
+  }
+}
+
 export async function extractKecRequirementSnapshot(
   input: ExtractKecRequirementsInput,
+  verifier: KecSourceBindingVerifier,
 ): Promise<KecRequirementExtractionSnapshot> {
-  const extracted = await extractKecRequirementPipeline(input, false);
+  const extracted = await extractKecRequirementPipeline(input, false, verifier);
   return extracted.requirementSnapshot;
 }
 
 export async function extractKecRequirementSnapshotWithCapture(
   input: ExtractKecRequirementsInput,
+  verifier: KecSourceBindingVerifier,
 ): Promise<KecCapturedRequirementSnapshot> {
-  return extractKecRequirementPipeline(input, true);
+  return extractKecRequirementPipeline(input, true, verifier);
 }
 
 export async function extractKecRequirements(
   input: ExtractKecRequirementsInput,
+  verifier: KecSourceBindingVerifier,
 ): Promise<readonly KecRequirementExtraction[]> {
-  const snapshot = await extractKecRequirementSnapshot(input);
-  return snapshot.requirements;
+  const extracted = await extractKecRequirementPipeline(input, false, verifier);
+  return extracted.requirementSnapshot.requirements;
 }
