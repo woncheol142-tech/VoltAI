@@ -121,6 +121,36 @@ export interface SourceRevisionRegistry {
     sourceIdentity: SourceIdentity,
     revisionKey: SourceRevisionKey,
   ): void | Promise<void>;
+  has?(
+    sourceIdentity: SourceIdentity,
+    revisionKey: SourceRevisionKey,
+  ): boolean | Promise<boolean>;
+}
+
+export interface ResolvedJudgementAuthority {
+  resolveReference(
+    input: Readonly<{
+      recordId: string;
+      applicabilityKey: string;
+      questionKey: string;
+    }>,
+  ):
+    | Readonly<{
+        kind: "AUTHORITATIVE_JUDGEMENT";
+        decision: string;
+        recordId: string;
+        applicabilityKey: string;
+      }>
+    | Readonly<{ kind: "NOT_AUTHORITATIVE" }>
+    | Promise<
+        | Readonly<{
+            kind: "AUTHORITATIVE_JUDGEMENT";
+            decision: string;
+            recordId: string;
+            applicabilityKey: string;
+          }>
+        | Readonly<{ kind: "NOT_AUTHORITATIVE" }>
+      >;
 }
 
 export interface JudgementEscalationPort {
@@ -154,6 +184,7 @@ export type KecSourcePolicyDependencies = Readonly<{
   opaqueRevisionKeyIssuer?: OpaqueSourceRevisionKeyIssuer;
   sourceRevisionRegistry?: SourceRevisionRegistry;
   judgementEscalation?: JudgementEscalationPort;
+  resolvedJudgementAuthority?: ResolvedJudgementAuthority;
 }>;
 
 export type PolicyOperationInput = Readonly<Record<string, unknown>>;
@@ -176,6 +207,9 @@ export interface SourceIdentityPolicy {
   ): PolicyOperationResult;
   validateAssertionClaim(input: PolicyOperationInput): PolicyOperationResult;
   establishIdentityAtomically(
+    input: PolicyOperationInput,
+  ): PolicyOperationResult;
+  establishIdentityFromResolvedJudgement(
     input: PolicyOperationInput,
   ): PolicyOperationResult;
   registerIssuanceRequest(input: PolicyOperationInput): PolicyOperationResult;

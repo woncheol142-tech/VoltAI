@@ -16,6 +16,36 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
+      "@voltai/decision-sqlite/judgement-ledger": fileURLToPath(
+        new URL(
+          "./packages/decision-sqlite/src/judgementLedger.ts",
+          import.meta.url,
+        ),
+      ),
+      "@voltai/kec-source-policy-sqlite": fileURLToPath(
+        new URL(
+          "./packages/kec-source-policy-sqlite/src/index.ts",
+          import.meta.url,
+        ),
+      ),
+      "@voltai/kec-source-policy-judgement": fileURLToPath(
+        new URL(
+          "./packages/kec-source-policy-judgement/src/index.ts",
+          import.meta.url,
+        ),
+      ),
+      "@voltai/kec-source-resolution": fileURLToPath(
+        new URL(
+          "./packages/kec-source-resolution/src/index.ts",
+          import.meta.url,
+        ),
+      ),
+      "@voltai/kec-source-pipeline": fileURLToPath(
+        new URL("./packages/kec-source-pipeline/src/index.ts", import.meta.url),
+      ),
+      "@voltai/kec-source-policy": fileURLToPath(
+        new URL("./packages/kec-source-policy/src/index.ts", import.meta.url),
+      ),
       "@voltai/agent-review": fileURLToPath(
         new URL("./packages/agent-review/src/index.ts", import.meta.url),
       ),
@@ -32,7 +62,10 @@ export default defineConfig({
         ),
       ),
       "@voltai/kec-source-runtime": fileURLToPath(
-        new URL("./packages/kec-source-runtime/src/index.ts", import.meta.url),
+        // The generic workspace audit derives
+        // "./packages/kec-source-runtime/src/index.ts" mechanically, while
+        // this package's supported root is intentionally public.ts.
+        new URL("./packages/kec-source-runtime/src/public.ts", import.meta.url),
       ),
       "@voltai/extraction-core": fileURLToPath(
         new URL("./packages/extraction-core/src/index.ts", import.meta.url),

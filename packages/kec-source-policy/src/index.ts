@@ -19,6 +19,7 @@ export type {
   PolicyOperationResult,
   PolicyReplayApplicabilityKey,
   ReplayApplicabilityKeyFactory,
+  ResolvedJudgementAuthority,
   SchemeCapability,
   SourceIdentityPolicy,
   SourceRevisionAssertionScheme,

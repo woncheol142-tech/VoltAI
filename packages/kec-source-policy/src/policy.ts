@@ -940,6 +940,96 @@ function createKecPolicy(
     );
   };
 
+  const establishIdentityFromResolvedJudgement = async (
+    input: PolicyOperationInput,
+  ): Promise<unknown> => {
+    const questionKey = text(input.questionKey);
+    const policyCaseId = text(input.policyCaseId);
+    const evidenceSnapshotId = text(input.evidenceSnapshotId);
+    const policyEpoch = text(input.policyEpoch);
+    const assertion = record(input.assertion);
+    const claim =
+      assertion === undefined ? undefined : canonicalClaim(assertion);
+    const recordId = text(input.judgementRecordId);
+    if (
+      questionKey !== "kec.source.identity.origin/v1" ||
+      policyCaseId === undefined ||
+      evidenceSnapshotId === undefined ||
+      policyEpoch === undefined ||
+      assertion?.bindingStatus !== "BOUND" ||
+      claim === undefined ||
+      recordId === undefined ||
+      dependencies.resolvedJudgementAuthority === undefined
+    ) {
+      return {
+        kind: "NOT_ESTABLISHED",
+        automation: "HUMAN_JUDGEMENT_REQUIRED",
+        reason: "AUTHORITATIVE_JUDGEMENT_REQUIRED",
+      };
+    }
+    const candidateCoordinate = claimRegistryKey(claim);
+    const expectedApplicabilityKey = [
+      questionKey,
+      policyCaseId,
+      evidenceSnapshotId,
+      candidateCoordinate,
+      policyEpoch,
+    ]
+      .map((coordinate) => `${coordinate.length}:${coordinate}`)
+      .join("|");
+    if (text(input.applicabilityKey) !== expectedApplicabilityKey) {
+      return {
+        kind: "NOT_ESTABLISHED",
+        automation: "HUMAN_JUDGEMENT_REQUIRED",
+        reason: "JUDGEMENT_APPLICABILITY_MISMATCH",
+      };
+    }
+    const authoritative =
+      await dependencies.resolvedJudgementAuthority.resolveReference({
+        recordId,
+        applicabilityKey: expectedApplicabilityKey,
+        questionKey,
+      });
+    if (
+      authoritative.kind !== "AUTHORITATIVE_JUDGEMENT" ||
+      authoritative.decision !== "ESTABLISH_NEW_IDENTITY" ||
+      authoritative.recordId !== recordId ||
+      authoritative.applicabilityKey !== expectedApplicabilityKey
+    ) {
+      return {
+        kind: "NOT_ESTABLISHED",
+        automation: "HUMAN_JUDGEMENT_REQUIRED",
+        reason: "AUTHORITATIVE_JUDGEMENT_REQUIRED",
+      };
+    }
+    const existing =
+      dependencies.assertionClaimRegistry.identityFor(candidateCoordinate);
+    if (existing !== undefined) {
+      return { kind: "REUSE_ESTABLISHED_IDENTITY", sourceIdentity: existing };
+    }
+    const issued = await dependencies.opaqueIdentityIssuer.issue();
+    const established = dependencies.assertionClaimRegistry.associateAtomically(
+      candidateCoordinate,
+      issued,
+    );
+    const outcome = {
+      kind:
+        established === issued
+          ? "JUDGEMENT_ESTABLISHED_NEW_IDENTITY"
+          : "REUSE_ESTABLISHED_IDENTITY",
+      sourceIdentity: established,
+      canonicalAssertionClaim: claim,
+    };
+    const durable = dependencies.issuanceRequestRegistry.register(
+      text(input.requestKey) ?? "",
+      input.immutableRequestContent,
+      outcome,
+    );
+    return record(durable)?.kind === "ISSUANCE_REQUEST_COLLISION"
+      ? durable
+      : outcome;
+  };
+
   const establishRevision = async (
     input: PolicyOperationInput,
   ): Promise<unknown> => {
@@ -1015,6 +1105,7 @@ function createKecPolicy(
     canonicalizeAssertionClaims,
     validateAssertionClaim,
     establishIdentityAtomically,
+    establishIdentityFromResolvedJudgement,
     registerIssuanceRequest,
     createEvidenceSnapshot: (input) => {
       if (

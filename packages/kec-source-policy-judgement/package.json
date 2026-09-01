@@ -1,0 +1,24 @@
+{
+  "name": "@voltai/kec-source-policy-judgement",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "voltai-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --root ../.. packages/kec-source-policy-judgement/test"
+  },
+  "dependencies": {
+    "@voltai/kec-source-policy": "workspace:*",
+    "@voltai/decision-sqlite": "workspace:*",
+    "@voltai/source-core": "workspace:*"
+  }
+}

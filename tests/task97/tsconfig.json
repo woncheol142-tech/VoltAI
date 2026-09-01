@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": "../..",
+    "paths": {
+      "@voltai/source-core": ["packages/source-core/src/index.ts"],
+      "@voltai/source-admission": ["packages/source-admission/src/index.ts"],
+      "@voltai/source-admission-sqlite": [
+        "packages/source-admission-sqlite/src/index.ts"
+      ],
+      "@voltai/kec-source-policy": ["packages/kec-source-policy/src/index.ts"]
+    },
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["./**/*.ts"]
+}
