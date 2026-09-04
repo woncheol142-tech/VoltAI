@@ -107,6 +107,11 @@ export interface KecSourceRuntimeDependencies {
 export type VerifiedKecExtractionResult =
   | Readonly<{
       kind: "EXTRACTION_REFUSED";
+      reason: "DIAGNOSTIC_CONTEXT_NOT_AUTHORITATIVE";
+      realSourceObserved: false;
+    }>
+  | Readonly<{
+      kind: "EXTRACTION_REFUSED";
       verdict: Exclude<RuntimeBindingVerdict["kind"], "BINDING_ADMITTED">;
       realSourceObserved: false;
     }>

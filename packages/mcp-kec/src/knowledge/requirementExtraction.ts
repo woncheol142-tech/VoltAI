@@ -28,6 +28,13 @@ import {
   normalizeKecSourceText,
 } from "./sourceCapture.js";
 
+export { extractKecV2Technical } from "../technicalExtractionV2/technicalExtraction.js";
+export type {
+  ExtractKecV2TechnicalInput,
+  KecTechnicalFailureCode,
+  KecV2TechnicalExtractionResult,
+} from "../technicalExtractionV2/technicalExtraction.js";
+
 declare const kecRequirementIdBrand: unique symbol;
 
 export type KecRequirementId = string & {

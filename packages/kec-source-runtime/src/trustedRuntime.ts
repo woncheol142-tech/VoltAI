@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type {
   AdmissionRecordReference,
   VerifyBindingSemanticResult,
@@ -11,6 +13,10 @@ import {
   type CapturedSnapshot,
   type Task93Load,
 } from "./internal/task93Bridge.js";
+import {
+  DIAGNOSTIC_CONTEXT_REFUSAL,
+  isDiagnosticSourceContext,
+} from "./sourceContext.js";
 import type {
   KecVerifiedExecutionCoordinates,
   KecVerifiedExecutionReceipt,
@@ -18,6 +24,9 @@ import type {
   VerifiedKecExtractionInput,
   VerifiedKecExtractionResult,
 } from "./types.js";
+
+const TASK98_R0_V2_EXTRACTION_CONTRACT =
+  "kec:pdfjs-geometry-semantic-requirements:v2";
 
 export interface KecSourceRuntimeOpenOptions {
   readonly sourceAdmissionDatabasePath: string;
@@ -115,48 +124,75 @@ class ConcreteKecSourceRuntime implements KecSourceRuntime {
     input: VerifiedKecExtractionInput,
   ): Promise<VerifiedKecExtractionResult> {
     this.assertOpen();
-    let bindingVerdict: VerifyBindingSemanticResult | undefined;
-    let extracted: CapturedSnapshot;
-    try {
-      extracted = await this.#task93.extract(input, {
-        verifyObservedBinding: async (binding) => {
-          bindingVerdict =
-            await this.#admissionRepository.verifyBinding(binding);
-          return { kind: bindingVerdict.kind } as RuntimeBindingVerdict;
-        },
+    if (isDiagnosticSourceContext(input.sourceRevision)) {
+      return Object.freeze({
+        kind: "EXTRACTION_REFUSED",
+        reason: DIAGNOSTIC_CONTEXT_REFUSAL,
+        realSourceObserved: false,
       });
-    } catch (failure) {
-      if (
-        bindingVerdict !== undefined &&
-        bindingVerdict.kind !== "BINDING_ADMITTED" &&
-        failure instanceof Error &&
-        failure.name === "KecSourceBindingVerificationError"
-      ) {
-        return Object.freeze({
-          kind: "EXTRACTION_REFUSED",
-          verdict: bindingVerdict.kind,
-          realSourceObserved: false,
-        });
-      }
-      throw failure;
     }
-    if (bindingVerdict?.kind !== "BINDING_ADMITTED") {
-      throw new TypeError(
-        "Task90 completed without an admitted binding verdict",
-      );
+    const exactBytes = await this.#task93.acquireExactBytes(input);
+    const blobHash = Object.freeze({
+      algorithm: "sha-256" as const,
+      digest: createHash("sha256").update(exactBytes).digest("hex"),
+    });
+    const bindingVerdict = await this.#admissionRepository.verifyBinding({
+      sourceRevision: input.sourceRevision,
+      blobHash,
+    });
+    if (bindingVerdict.kind !== "BINDING_ADMITTED") {
+      return Object.freeze({
+        kind: "EXTRACTION_REFUSED",
+        verdict: bindingVerdict.kind,
+        realSourceObserved: false,
+      });
     }
-    const binding = extracted.requirementSnapshot.binding;
+    const technical = await this.#task93.extractKecV2Technical(
+      exactBytes,
+      input,
+    );
     const authorizing = referenceFrom(bindingVerdict);
     if (
-      authorizing.sourceIdentity !== binding.sourceRevision.sourceIdentity ||
-      authorizing.revisionKey !== binding.sourceRevision.revisionKey ||
-      authorizing.blobAlgorithm !== binding.blobHash.algorithm ||
-      authorizing.blobDigest !== binding.blobHash.digest
+      technical.extractionContract !== TASK98_R0_V2_EXTRACTION_CONTRACT ||
+      technical.sourceContext.sourceIdentity !==
+        input.sourceRevision.sourceIdentity ||
+      technical.sourceContext.revisionKey !==
+        input.sourceRevision.revisionKey ||
+      technical.byteIdentity.algorithm !== blobHash.algorithm ||
+      technical.byteIdentity.digest !== blobHash.digest ||
+      technical.byteIdentity.byteLength !== exactBytes.byteLength ||
+      authorizing.sourceIdentity !== input.sourceRevision.sourceIdentity ||
+      authorizing.revisionKey !== input.sourceRevision.revisionKey ||
+      authorizing.blobAlgorithm !== blobHash.algorithm ||
+      authorizing.blobDigest !== blobHash.digest
     ) {
       throw new TypeError(
-        "authorizing admission does not match extracted bytes",
+        "authorizing admission does not match technical extraction",
       );
     }
+    const extracted = await this.#task93.extract(input, {
+      verifyObservedBinding: (observed) => {
+        const exactObservedBinding =
+          observed.sourceRevision.sourceIdentity ===
+            input.sourceRevision.sourceIdentity &&
+          observed.sourceRevision.revisionKey ===
+            input.sourceRevision.revisionKey &&
+          observed.blobHash.algorithm === blobHash.algorithm &&
+          observed.blobHash.digest === blobHash.digest;
+        return {
+          kind: exactObservedBinding
+            ? "BINDING_ADMITTED"
+            : "BINDING_CONTRADICTION",
+          ...(exactObservedBinding
+            ? {
+                effectiveAdmissionReferences: [authorizing],
+                authorizingAdmissionReference: authorizing,
+              }
+            : {}),
+        } as RuntimeBindingVerdict;
+      },
+    });
+    const binding = extracted.requirementSnapshot.binding;
     const durableResult = this.#task93.durableResult(extracted);
     const commitment =
       computeKecVerifiedExtractionResultCommitment(durableResult);

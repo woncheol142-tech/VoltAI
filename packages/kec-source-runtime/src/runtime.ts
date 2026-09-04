@@ -4,6 +4,10 @@ import type { AdmissionRecordReference } from "@voltai/source-admission";
 import type { SourceBlobHash } from "@voltai/source-core";
 
 import { computeKecVerifiedExtractionResultCommitment } from "./internal/resultCommitment.js";
+import {
+  DIAGNOSTIC_CONTEXT_REFUSAL,
+  isDiagnosticSourceContext,
+} from "./sourceContext.js";
 import type {
   KecDurableVerifiedResult,
   KecSourceRuntimeDependencies,
@@ -169,6 +173,13 @@ export async function runVerifiedKecExtraction(
   input: VerifiedKecExtractionInput,
   dependencies: KecSourceRuntimeDependencies,
 ): Promise<VerifiedKecExtractionResult> {
+  if (isDiagnosticSourceContext(input.sourceRevision)) {
+    return Object.freeze({
+      kind: "EXTRACTION_REFUSED",
+      reason: DIAGNOSTIC_CONTEXT_REFUSAL,
+      realSourceObserved: false,
+    });
+  }
   establishedInput(input);
   if (!(dependencies.exactSourceBytes instanceof Uint8Array)) {
     throw new TypeError("exactSourceBytes must be a Uint8Array");

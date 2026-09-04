@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import type { SourceBlobHash, SourceRevision } from "@voltai/source-core";
 
 import type {
@@ -75,6 +77,37 @@ interface RequirementExtractionModule {
   ): Promise<CapturedSnapshot>;
 }
 
+interface TechnicalExtractionResult {
+  readonly byteIdentity: SourceBlobHash & Readonly<{ byteLength: number }>;
+  readonly sourceContext: SourceRevision;
+  readonly extractionContract: string;
+  readonly locatorSpace: string;
+  readonly captureContract: string;
+  readonly requirements: readonly [];
+  readonly observations: readonly [];
+}
+
+interface TechnicalExtractionModule {
+  readonly KEC_V2_TECHNICAL_EXTRACTION_CONTRACT_ID: string;
+  extractKecV2Technical(
+    input: Readonly<{
+      exactBytes: Uint8Array;
+      sourceContext: SourceRevision;
+      extractionContract: string;
+      mappingRegistry: Readonly<{ version: string; digest: string }>;
+      resourceLimits: Readonly<{
+        maxPages: number;
+        maxTextItemsPerPage: number;
+      }>;
+    }>,
+  ): Promise<TechnicalExtractionResult>;
+}
+
+interface ProjectPathModule {
+  assertProjectRoot(projectRoot: string): string;
+  resolveKecPdfPath(projectRoot: string, relativePath: string): string;
+}
+
 interface Task93StoreModule {
   readonly KecRequirementSnapshotStore: new (dbPath: string) => Task93Store;
 }
@@ -93,6 +126,8 @@ interface CaptureSemanticsModule {
 
 interface Task93Modules {
   readonly extraction: RequirementExtractionModule;
+  readonly technicalExtraction: TechnicalExtractionModule;
+  readonly projectPath: ProjectPathModule;
   readonly store: Task93StoreModule;
   readonly locatorCodec: LocatorCodecModule;
   readonly captureCodec: CaptureCodecModule;
@@ -114,14 +149,26 @@ function mcpKecModule(path: string): string {
 async function loadTask93Modules(): Promise<Task93Modules> {
   modulesPromise ??= Promise.all([
     import(mcpKecModule("knowledge/requirementExtraction")),
+    import(mcpKecModule("technicalExtractionV2/technicalExtraction")),
+    import(mcpKecModule("knowledge/projectPath")),
     import(mcpKecModule("requirementSnapshot/store")),
     import(mcpKecModule("requirementSnapshot/locatorCodec")),
     import(mcpKecModule("requirementSnapshot/captureCodec")),
     import(mcpKecModule("knowledge/sourceCapture")),
   ]).then(
-    ([extraction, store, locatorCodec, captureCodec, captureSemantics]) =>
+    ([
+      extraction,
+      technicalExtraction,
+      projectPath,
+      store,
+      locatorCodec,
+      captureCodec,
+      captureSemantics,
+    ]) =>
       ({
         extraction,
+        technicalExtraction,
+        projectPath,
         store,
         locatorCodec,
         captureCodec,
@@ -187,6 +234,43 @@ export class Task93Bridge {
     );
   }
 
+  async acquireExactBytes(
+    input: VerifiedKecExtractionInput,
+  ): Promise<Uint8Array> {
+    if (input.sourceLocator.scheme !== "file") {
+      throw new Error("Task96 supports only file source locators");
+    }
+    const projectRoot = this.modules.projectPath.assertProjectRoot(
+      input.projectRoot,
+    );
+    const absolutePath = this.modules.projectPath.resolveKecPdfPath(
+      projectRoot,
+      input.sourceLocator.value,
+    );
+    return new Uint8Array(await readFile(absolutePath));
+  }
+
+  async extractKecV2Technical(
+    exactBytes: Uint8Array,
+    input: VerifiedKecExtractionInput,
+  ): Promise<TechnicalExtractionResult> {
+    return this.modules.technicalExtraction.extractKecV2Technical({
+      exactBytes,
+      sourceContext: input.sourceRevision,
+      extractionContract:
+        this.modules.technicalExtraction
+          .KEC_V2_TECHNICAL_EXTRACTION_CONTRACT_ID,
+      mappingRegistry: Object.freeze({
+        version: "task98:r0:identity-mapping:v1",
+        digest: "0".repeat(64),
+      }),
+      resourceLimits: Object.freeze({
+        maxPages: 10_000,
+        maxTextItemsPerPage: 1_000_000,
+      }),
+    });
+  }
+
   storeCapturedSnapshot(snapshot: CapturedSnapshot): void {
     this.store.storeCapturedSnapshot(snapshot);
   }
@@ -239,4 +323,4 @@ export class Task93Bridge {
   }
 }
 
-export type { CapturedSnapshot, Task93Load };
+export type { CapturedSnapshot, Task93Load, TechnicalExtractionResult };
