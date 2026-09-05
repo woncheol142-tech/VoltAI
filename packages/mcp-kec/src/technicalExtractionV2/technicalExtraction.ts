@@ -2,10 +2,11 @@ import { createHash } from "node:crypto";
 
 import type { SourceRevision } from "@voltai/source-core";
 
+import { attachKecV2GlyphProvenance } from "./glyphProvenance.js";
 import {
-  attachKecV2GlyphProvenance,
-  type KecV2ProvenanceTextItemPage,
-} from "./glyphProvenance.js";
+  attachKecV2GeometricLines,
+  type KecV2GeometricTechnicalPage,
+} from "./geometricLines.js";
 import {
   InvalidKecV2MappingRegistry,
   type KecV2MappingRegistry,
@@ -70,7 +71,7 @@ export interface KecV2TechnicalExtractionResult {
   readonly captureContract: typeof KEC_V2_TECHNICAL_CAPTURE_CONTRACT_ID;
   readonly mappingRegistry: KecV2MappingRegistry;
   readonly resourceLimits: KecV2ResourceLimits;
-  readonly pages: readonly KecV2ProvenanceTextItemPage[];
+  readonly pages: readonly KecV2GeometricTechnicalPage[];
   readonly requirements: readonly [];
   readonly observations: readonly [];
 }
@@ -202,7 +203,7 @@ export async function extractKecV2Technical(
         `PDF page count ${document.numPages} exceeds maxPages ${input.resourceLimits.maxPages}`,
       );
     }
-    const pages: KecV2ProvenanceTextItemPage[] = [];
+    const pages: KecV2GeometricTechnicalPage[] = [];
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       let content: KecV2PdfTextContent;
       try {
@@ -218,10 +219,12 @@ export async function extractKecV2Technical(
         );
       }
       pages.push(
-        attachKecV2GlyphProvenance(
-          captureKecV2RawTextItemPage(pageNumber, content),
-          content.styles ?? Object.freeze({}),
-          mappingRegistry,
+        attachKecV2GeometricLines(
+          attachKecV2GlyphProvenance(
+            captureKecV2RawTextItemPage(pageNumber, content),
+            content.styles ?? Object.freeze({}),
+            mappingRegistry,
+          ),
         ),
       );
     }
