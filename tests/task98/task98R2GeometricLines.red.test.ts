@@ -6,6 +6,7 @@ import {
   ambiguousBridgeItems,
   BASELINE_CHAIN_ITEMS,
   DETERMINISTIC_TIE_ITEMS,
+  geometricItem,
   lineContinuationItems,
   ORIENTATION_ITEMS,
   PROJECTED_ORDER_ITEMS,
@@ -323,6 +324,52 @@ describe("Task98 R2 intentional RED contracts", () => {
       primarySorted: [0, 2, 3],
       primaryUniqueCount: 3,
       sourceAnomalies: anomalies,
+    });
+  });
+
+  it("[R2-I] conserves every retained identity through a three-tier script cascade", async () => {
+    const result = await extract([
+      geometricItem({ token: "a", x: 20, baseline: 100, width: 20, scale: 20 }),
+      geometricItem({ token: "b", x: 24, baseline: 108, width: 12, scale: 12 }),
+      geometricItem({ token: "c", x: 27, baseline: 112, width: 6, scale: 6 }),
+    ]);
+    const retainedItems = technicalItems(result);
+    const retainedIndices = retainedItems.map((item) => item.originalItemIndex);
+    expect({
+      retainedIndices,
+      scales: retainedItems.map(
+        (item) =>
+          (item.rawGeometry as { transform: readonly number[] }).transform[0],
+      ),
+      baselines: retainedItems.map(
+        (item) =>
+          (item.rawGeometry as { transform: readonly number[] }).transform[5],
+      ),
+    }).toEqual({
+      retainedIndices: [0, 1, 2],
+      scales: [20, 12, 6],
+      baselines: [100, 108, 112],
+    });
+
+    const page = observeR2Page(result);
+    const dispositionIndices = primaryDispositionIndices(page);
+    const dispositionCounts = Object.fromEntries(
+      retainedIndices.map((originalItemIndex) => [
+        originalItemIndex,
+        dispositionIndices.filter((index) => index === originalItemIndex)
+          .length,
+      ]),
+    );
+    expect({
+      retainedIndices,
+      dispositionIndices: [...dispositionIndices].sort(
+        (left, right) => left - right,
+      ),
+      dispositionCounts,
+    }).toEqual({
+      retainedIndices: [0, 1, 2],
+      dispositionIndices: [0, 1, 2],
+      dispositionCounts: { 0: 1, 1: 1, 2: 1 },
     });
   });
 
