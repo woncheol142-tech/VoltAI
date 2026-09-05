@@ -2,6 +2,26 @@ import { createHash } from "node:crypto";
 
 import type { SourceRevision } from "@voltai/source-core";
 
+import {
+  attachKecV2GlyphProvenance,
+  type KecV2ProvenanceTextItemPage,
+} from "./glyphProvenance.js";
+import {
+  InvalidKecV2MappingRegistry,
+  type KecV2MappingRegistry,
+  validateKecV2MappingRegistry,
+  type ValidatedKecV2MappingRegistry,
+} from "./mappingRegistry.js";
+import {
+  captureKecV2RawTextItemPage,
+  type KecV2PdfTextContent,
+} from "./rawTextItems.js";
+
+export type {
+  KecV2MappingEntry,
+  KecV2MappingRegistry,
+} from "./mappingRegistry.js";
+
 export const KEC_V2_TECHNICAL_EXTRACTION_CONTRACT_ID =
   "kec:pdfjs-geometry-semantic-requirements:v2" as const;
 export const KEC_V2_TECHNICAL_LOCATOR_SPACE =
@@ -23,11 +43,6 @@ export class KecTechnicalExtractionFailure extends Error {
     this.name = code;
     this.code = code;
   }
-}
-
-export interface KecV2MappingRegistry {
-  readonly version: string;
-  readonly digest: string;
 }
 
 export interface KecV2ResourceLimits {
@@ -55,6 +70,7 @@ export interface KecV2TechnicalExtractionResult {
   readonly captureContract: typeof KEC_V2_TECHNICAL_CAPTURE_CONTRACT_ID;
   readonly mappingRegistry: KecV2MappingRegistry;
   readonly resourceLimits: KecV2ResourceLimits;
+  readonly pages: readonly KecV2ProvenanceTextItemPage[];
   readonly requirements: readonly [];
   readonly observations: readonly [];
 }
@@ -64,6 +80,7 @@ interface PdfJsDocument {
   readonly getPage: (pageNumber: number) => Promise<{
     readonly getTextContent: () => Promise<{
       readonly items: readonly unknown[];
+      readonly styles?: Readonly<Record<string, unknown>>;
     }>;
   }>;
   readonly cleanup: () => Promise<void>;
@@ -103,7 +120,9 @@ function positiveSafeInteger(value: number, field: string): void {
   }
 }
 
-function validateInput(input: ExtractKecV2TechnicalInput): void {
+function validateInput(
+  input: ExtractKecV2TechnicalInput,
+): ValidatedKecV2MappingRegistry {
   if (!(input.exactBytes instanceof Uint8Array)) {
     throw new KecTechnicalExtractionFailure(
       "EXTRACTION_FAILURE",
@@ -127,21 +146,21 @@ function validateInput(input: ExtractKecV2TechnicalInput): void {
       "technical source context must be explicit",
     );
   }
-  if (
-    typeof input.mappingRegistry?.version !== "string" ||
-    input.mappingRegistry.version.length === 0 ||
-    !/^[0-9a-f]{64}$/u.test(input.mappingRegistry.digest)
-  ) {
-    throw new KecTechnicalExtractionFailure(
-      "EXTRACTION_FAILURE",
-      "mapping registry version and sha-256 digest are required",
-    );
-  }
   positiveSafeInteger(input.resourceLimits?.maxPages, "maxPages");
   positiveSafeInteger(
     input.resourceLimits?.maxTextItemsPerPage,
     "maxTextItemsPerPage",
   );
+  try {
+    return validateKecV2MappingRegistry(input.mappingRegistry);
+  } catch (cause) {
+    if (!(cause instanceof InvalidKecV2MappingRegistry)) throw cause;
+    throw new KecTechnicalExtractionFailure(
+      "EXTRACTION_FAILURE",
+      cause.message,
+      cause,
+    );
+  }
 }
 
 async function loadPdfJs(): Promise<PdfJsModule> {
@@ -155,7 +174,7 @@ async function loadPdfJs(): Promise<PdfJsModule> {
 export async function extractKecV2Technical(
   input: ExtractKecV2TechnicalInput,
 ): Promise<KecV2TechnicalExtractionResult> {
-  validateInput(input);
+  const mappingRegistry = validateInput(input);
   const pdfjs = await loadPdfJs();
   let loadingTask: PdfJsLoadingTask;
   try {
@@ -183,40 +202,48 @@ export async function extractKecV2Technical(
         `PDF page count ${document.numPages} exceeds maxPages ${input.resourceLimits.maxPages}`,
       );
     }
+    const pages: KecV2ProvenanceTextItemPage[] = [];
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-      let itemCount: number;
+      let content: KecV2PdfTextContent;
       try {
         const page = await document.getPage(pageNumber);
-        const content = await page.getTextContent();
-        itemCount = content.items.length;
+        content = await page.getTextContent();
       } catch (cause) {
         throw failure("GEOMETRY_FAILURE", cause);
       }
-      if (itemCount > input.resourceLimits.maxTextItemsPerPage) {
+      if (content.items.length > input.resourceLimits.maxTextItemsPerPage) {
         throw new KecTechnicalExtractionFailure(
           "RESOURCE_FAILURE",
-          `PDF page ${pageNumber} text item count ${itemCount} exceeds maxTextItemsPerPage ${input.resourceLimits.maxTextItemsPerPage}`,
+          `PDF page ${pageNumber} text item count ${content.items.length} exceeds maxTextItemsPerPage ${input.resourceLimits.maxTextItemsPerPage}`,
         );
       }
+      pages.push(
+        attachKecV2GlyphProvenance(
+          captureKecV2RawTextItemPage(pageNumber, content),
+          content.styles ?? Object.freeze({}),
+          mappingRegistry,
+        ),
+      );
     }
+
+    return Object.freeze({
+      byteIdentity: Object.freeze({
+        algorithm: "sha-256" as const,
+        digest: createHash("sha256").update(input.exactBytes).digest("hex"),
+        byteLength: input.exactBytes.byteLength,
+      }),
+      sourceContext: Object.freeze({ ...input.sourceContext }),
+      extractionContract: KEC_V2_TECHNICAL_EXTRACTION_CONTRACT_ID,
+      locatorSpace: KEC_V2_TECHNICAL_LOCATOR_SPACE,
+      captureContract: KEC_V2_TECHNICAL_CAPTURE_CONTRACT_ID,
+      mappingRegistry: mappingRegistry.value,
+      resourceLimits: Object.freeze({ ...input.resourceLimits }),
+      pages: Object.freeze(pages),
+      requirements: Object.freeze([]) as readonly [],
+      observations: Object.freeze([]) as readonly [],
+    });
   } finally {
     await document.cleanup().catch(() => undefined);
     await loadingTask.destroy().catch(() => undefined);
   }
-
-  return Object.freeze({
-    byteIdentity: Object.freeze({
-      algorithm: "sha-256" as const,
-      digest: createHash("sha256").update(input.exactBytes).digest("hex"),
-      byteLength: input.exactBytes.byteLength,
-    }),
-    sourceContext: Object.freeze({ ...input.sourceContext }),
-    extractionContract: KEC_V2_TECHNICAL_EXTRACTION_CONTRACT_ID,
-    locatorSpace: KEC_V2_TECHNICAL_LOCATOR_SPACE,
-    captureContract: KEC_V2_TECHNICAL_CAPTURE_CONTRACT_ID,
-    mappingRegistry: Object.freeze({ ...input.mappingRegistry }),
-    resourceLimits: Object.freeze({ ...input.resourceLimits }),
-    requirements: Object.freeze([]) as readonly [],
-    observations: Object.freeze([]) as readonly [],
-  });
 }
